@@ -16,7 +16,10 @@
   function load(src, cb) {
     var s = document.createElement('script');
     s.src = src; s.async = false;
-    s.onload = cb; s.onerror = function () { cb(new Error('load ' + src)); };
+    /* cb(null) explicitement : s.onload = cb passerait l'objet Event,
+       que l'appelant lirait comme une erreur. */
+    s.onload = function () { cb(null); };
+    s.onerror = function () { cb(new Error('load ' + src)); };
     document.head.appendChild(s);
   }
 
@@ -34,6 +37,7 @@
      plat (profondeur ~1/3 de la largeur). Sans ca, des qu'il tourne on voit
      une bulle au lieu d'un masque. On ecrase donc Z jusqu'au bon ratio. */
   var DEPTH_RATIO = 0.34;
+  var TILT = -0.20; /* inclinaison de base, objet suspendu */
   function normalise(THREE, obj) {
     var box = new THREE.Box3().setFromObject(obj);
     var size = box.getSize(new THREE.Vector3());
@@ -119,6 +123,7 @@
         });
         pivot.add(obj);
         pivot.rotation.y = -0.35;
+        pivot.rotation.z = TILT;
         loaded = true;
         host.classList.add('op3d-ready');
         if (opts.onReady) opts.onReady();
@@ -157,13 +162,17 @@
         if (!drag) {
           if (reduce) {
             pivot.rotation.y += (-0.35 - pivot.rotation.y) * 0.05;
+            pivot.rotation.z = TILT;
           } else {
             velX *= 0.94;
             /* va-et-vient de presentation, jamais de tour complet */
-            var target = Math.sin(t * 0.32) * 0.62;
-            pivot.rotation.y += (target - pivot.rotation.y) * 0.012 + velX;
-            pivot.rotation.x += (Math.sin(t * 0.24) * 0.10 - pivot.rotation.x) * 0.02;
-            pivot.position.y = Math.sin(t * 0.55) * 0.055;
+            var target = Math.sin(t * 0.34) * 0.70;
+            pivot.rotation.y += (target - pivot.rotation.y) * 0.014 + velX;
+            pivot.rotation.x += (Math.sin(t * 0.26) * 0.13 - pivot.rotation.x) * 0.02;
+            /* inclinaison qui respire, comme un objet suspendu */
+            pivot.rotation.z = TILT + Math.sin(t * 0.41) * 0.07;
+            pivot.position.y = Math.sin(t * 0.58) * 0.085;
+            pivot.position.x = Math.sin(t * 0.31) * 0.045;
           }
         }
         if (shadow) {

@@ -103,7 +103,7 @@
       "settings": {
         "image": "shopify://shop_images/onirala-masque-cadre.png",
         "image_height": "adapt",
-        "image_or_content_first": "image",
+        "image_or_content_first": "content",
         "enable_waves": true,
         "shape_color": "#f0cd4f",
         "shape_height_desktop": 100,
