@@ -74,7 +74,7 @@
       renderer.setSize(w, h);
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 0.9;
+      renderer.toneMappingExposure = 0.85;
       renderer.domElement.style.cssText =
         'display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y';
       host.appendChild(renderer.domElement);
@@ -84,12 +84,12 @@
       camera.position.set(0, 0.25, 5.4);
       camera.lookAt(0, 0, 0);
 
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x383838, 0.55));
-      var key = new THREE.DirectionalLight(0xffffff, 1.15);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x303030, 0.40));
+      var key = new THREE.DirectionalLight(0xffffff, 0.85);
       key.position.set(2.5, 3.5, 4); scene.add(key);
-      var rim = new THREE.DirectionalLight(0xffffff, 0.75);
+      var rim = new THREE.DirectionalLight(0xffffff, 0.50);
       rim.position.set(-3.5, 1.5, -2.5); scene.add(rim);
-      var fill = new THREE.DirectionalLight(0xffffff, 0.35);
+      var fill = new THREE.DirectionalLight(0xffffff, 0.22);
       fill.position.set(-1.5, -2, 2.5); scene.add(fill);
 
       /* ombre portee douce */
@@ -138,9 +138,9 @@
              l'objet tourne. Un noir mat uniforme donne le meme masque sous
              tous les angles. */
           n.material = new THREE.MeshStandardMaterial({
-            color: 0x090909,
-            roughness: 0.85,
-            metalness: 0.03,
+            color: 0x070707,
+            roughness: 0.95,
+            metalness: 0,
             side: THREE.DoubleSide
           });
           n.material.needsUpdate = true;
