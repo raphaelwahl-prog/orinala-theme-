@@ -208,7 +208,7 @@
         "variant_original_price_color": "#9ca3af",
         "variant_current_price_color": "#3b82f6",
         "variant_limit": 6,
-        "show_variant_images": true,
+        "show_variant_images": false,
         "show_compare_price": true,
         "show_variant_description": true,
         "show_savings": true,

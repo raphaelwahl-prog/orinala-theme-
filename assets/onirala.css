@@ -195,3 +195,21 @@
 /* --- Cartes garanties : relief au survol --- */
 .op-card{transform-style:preserve-3d}
 .op-card-icon{transform:translateZ(24px)}
+
+/* =========================================================
+   MASQUE 3D — scene WebGL dans le hero
+   ========================================================= */
+[id$="image_banner_TVECWz"] .banner__media{position:relative}
+.op3d-stage{position:absolute;inset:-14% -8% -6% -8%;z-index:3;opacity:0;
+  transition:opacity .7s cubic-bezier(.22,1,.36,1)}
+.op3d-stage.op3d-ready{opacity:1}
+.op3d-stage canvas{display:block;width:100%;height:100%}
+/* la scene est plus grande que la photo : le masque respire */
+[id$="image_banner_TVECWz"] .banner__media.op3d-live{overflow:visible}
+[id$="image_banner_TVECWz"] .banner__media.op3d-live img{opacity:0}
+/* on coupe l'ancienne animation CSS de la photo quand la 3D est active */
+[id$="image_banner_TVECWz"] .banner__media.op3d-live img{animation:none !important}
+[id$="image_banner_TVECWz"] .banner__media.op3d-live::after{display:none}
+@media (max-width:749px){
+  .op3d-stage{inset:-8% -4% -4% -4%}
+}

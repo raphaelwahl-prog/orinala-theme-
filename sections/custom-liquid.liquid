@@ -22,6 +22,8 @@
     {%- if op_slot -%}
       {{ 'onirala.css' | asset_url | stylesheet_tag }}
       {{ 'onirala.js' | asset_url | script_tag }}
+      <script>window.ONIRALA_3D_URL = {{ 'onirala-masque.glb' | asset_url | json }};</script>
+      {{ 'onirala-3d.js' | asset_url | script_tag }}
 
       {%- if section.settings.padding_top > 0 -%}
         <div class="op-banner" data-reveal>
