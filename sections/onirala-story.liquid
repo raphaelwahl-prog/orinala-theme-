@@ -1,0 +1,75 @@
+{{ 'onirala.css' | asset_url | stylesheet_tag }}
+<div class="op-pdp">
+
+  <section class="op-pdp-statement" data-reveal>
+    <h2>Le noir absolu.<br><span>Rien d'autre.</span></h2>
+    <p>Une coque 3D moulée qui épouse le visage sans jamais toucher les paupières. Zéro lumière, zéro pression, toute la nuit.</p>
+  </section>
+
+  <section class="op-pdp-features">
+    <div class="op-pdp-feature" data-reveal data-reveal-delay="0">
+      <span class="op-pdp-num">100 %</span>
+      <h3>D'obscurité</h3>
+      <p>Les contours moulés bloquent la lumière jusqu'à l'arête du nez, là où les masques plats laissent tout passer.</p>
+    </div>
+    <div class="op-pdp-feature" data-reveal data-reveal-delay="80">
+      <span class="op-pdp-num">0</span>
+      <h3>Pression sur les yeux</h3>
+      <p>Deux cavités 3D laissent vos yeux bouger librement. Vos cils ne touchent rien, même en clignant.</p>
+    </div>
+    <div class="op-pdp-feature" data-reveal data-reveal-delay="160">
+      <span class="op-pdp-num">28 g</span>
+      <h3>Sur le visage</h3>
+      <p>Assez léger pour être oublié avant même de vous endormir. Aucun point d'appui, aucune marque au réveil.</p>
+    </div>
+    <div class="op-pdp-feature" data-reveal data-reveal-delay="240">
+      <span class="op-pdp-num">8 h</span>
+      <h3>Sans transpirer</h3>
+      <p>Mousse à mémoire de forme et tissu maillé respirant : la chaleur s'évacue au lieu de s'accumuler.</p>
+    </div>
+  </section>
+
+  <dl class="op-pdp-specs" data-reveal>
+    <div class="op-pdp-spec"><dt>Poids</dt><dd>28 grammes</dd></div>
+    <div class="op-pdp-spec"><dt>Matière</dt><dd>Mousse à mémoire de forme</dd></div>
+    <div class="op-pdp-spec"><dt>Tour de tête</dt><dd>52 – 68 cm réglable</dd></div>
+    <div class="op-pdp-spec"><dt>Entretien</dt><dd>Lavable à la main</dd></div>
+  </dl>
+
+  <section class="op-pdp-compare" data-reveal>
+    <h2>La différence se voit dès la première nuit</h2>
+    <p>Onirala comparé à un masque de sommeil plat classique.</p>
+    <table class="op-pdp-table">
+      <thead>
+        <tr><th scope="col">&nbsp;</th><th scope="col">Onirala</th><th scope="col">Masque classique</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Obscurité totale, même en plein jour</th><td class="op-yes">Oui</td><td class="op-no">Non</td></tr>
+        <tr><th scope="row">Aucune pression sur les paupières</th><td class="op-yes">Oui</td><td class="op-no">Non</td></tr>
+        <tr><th scope="row">Yeux libres de bouger (cavités 3D)</th><td class="op-yes">Oui</td><td class="op-no">Non</td></tr>
+        <tr><th scope="row">Sangle réglable qui ne glisse pas</th><td class="op-yes">Oui</td><td class="op-no">Variable</td></tr>
+        <tr><th scope="row">Tissu respirant toute la nuit</th><td class="op-yes">Oui</td><td class="op-no">Variable</td></tr>
+        <tr><th scope="row">Satisfait ou remboursé 30 jours</th><td class="op-yes">Oui</td><td class="op-no">Variable</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="op-pdp-cta" data-reveal>
+    <h2>Dormez profondément dès ce soir</h2>
+    <p>Essayez-le 30 nuits. S'il ne change rien, il est remboursé.</p>
+    <a class="op-pdp-btn" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Je commande</a>
+  </section>
+
+</div>
+{{ 'onirala.js' | asset_url | script_tag }}
+{{ 'onirala-3d.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Onirala — page produit",
+  "tag": "section",
+  "class": "section",
+  "settings": [],
+  "presets": [{ "name": "Onirala — page produit" }]
+}
+{% endschema %}

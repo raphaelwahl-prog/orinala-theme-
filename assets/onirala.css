@@ -1,0 +1,197 @@
+/* Onirala — habillage premium blanc / doré */
+:root{--op-gold:#c9a96a;--op-gold-deep:#8b6f3e;--op-ink:#1a1a1a;--op-muted:#6b6b6b;--op-cream:#f8f5ee;--op-line:rgba(201,169,106,.28)}
+
+/* ---------- Header ---------- */
+.section-header{transition:background-color .4s ease,box-shadow .4s ease;border-bottom:1px solid var(--op-line);position:relative;z-index:3}
+.section-header.scrolled-past-header{background-color:#fff !important;box-shadow:0 1px 0 rgba(201,169,106,.4),0 20px 40px -28px rgba(0,0,0,.12)}
+
+/* ---------- Boutons ---------- */
+.button,.shop-add-to-cart-button,.product-form__submit,button[type='submit']{transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,filter .2s ease !important}
+.button:hover,.shop-add-to-cart-button:hover,.product-form__submit:hover,button[type='submit']:hover{transform:translateY(-2px);filter:brightness(1.04)}
+
+/* ---------- Hero ---------- */
+[id$="image_banner_TVECWz"] .banner{position:relative;background:#ffffff !important}
+[id$="image_banner_TVECWz"] .banner::before{content:'';position:absolute;inset:0;background:radial-gradient(70% 55% at 50% 100%,rgba(201,169,106,.07),transparent 72%);pointer-events:none;z-index:0}
+[id$="image_banner_TVECWz"] .banner::after{content:'';position:absolute;inset:0;background:radial-gradient(640px circle at var(--op-mx,60%) var(--op-my,35%),rgba(201,169,106,.10),transparent 60%);pointer-events:none;z-index:0}
+[id$="image_banner_TVECWz"] .banner__content,[id$="image_banner_TVECWz"] .banner__media{position:relative;z-index:1}
+[id$="image_banner_TVECWz"] .banner__heading{letter-spacing:-.02em;color:var(--op-ink) !important;text-shadow:none}
+[id$="image_banner_TVECWz"] .banner__media{perspective:1400px;will-change:transform,opacity}
+[id$="image_banner_TVECWz"] .banner__media img{
+  transform-style:preserve-3d !important;transform-origin:50% 50%;pointer-events:none !important;backface-visibility:hidden;
+  will-change:transform,filter;
+  filter:drop-shadow(0 26px 26px rgba(0,0,0,.22)) drop-shadow(0 0 40px rgba(201,169,106,.35)) !important;
+  animation:op-reveal 1.3s cubic-bezier(.16,1,.3,1) both,op-float 10s cubic-bezier(.45,.05,.55,.95) 1.3s infinite;
+  transition:transform .4s cubic-bezier(.22,1,.36,1) !important}
+[id$="image_banner_TVECWz"] .banner__media:hover img{animation-play-state:paused}
+@keyframes op-reveal{
+ 0%{opacity:0;filter:blur(16px) saturate(.6) drop-shadow(0 16px 16px rgba(0,0,0,.15));transform:perspective(1400px) scale(.9) rotateY(0) rotateX(0) translateY(18px)}
+ 55%{opacity:1}
+ 100%{opacity:1;filter:blur(0) saturate(1) drop-shadow(0 26px 26px rgba(0,0,0,.22)) drop-shadow(0 0 40px rgba(201,169,106,.35));transform:perspective(1400px) scale(1.04) rotateY(-8deg) rotateX(3deg) translateY(0)}}
+@keyframes op-float{
+ 0%,100%{transform:perspective(1400px) scale(1.04) rotateY(-8deg) rotateX(3deg) translateY(0)}
+ 25%{transform:perspective(1400px) scale(1.04) rotateY(-2deg) rotateX(1deg) translateY(-6px)}
+ 50%{transform:perspective(1400px) scale(1.04) rotateY(8deg) rotateX(-2deg) translateY(-12px)}
+ 75%{transform:perspective(1400px) scale(1.04) rotateY(2deg) rotateX(0) translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){
+ [id$="image_banner_TVECWz"] .banner__media img{animation:none !important;opacity:1 !important;transform:perspective(1400px) scale(1.04) rotateY(-6deg) rotateX(2deg) !important;transition:none !important}}
+
+/* ---------- Reveal au scroll ---------- */
+[data-reveal]{opacity:0;transform:translateY(28px)}
+[data-reveal].op-visible{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.22,1,.36,1)}
+@media (prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none}}
+
+/* ---------- Bannière propre (style Apple / LV) ---------- */
+.op-banner{max-width:1200px;margin:0 auto 64px;padding:0 20px}
+.op-banner-media{width:100%;aspect-ratio:21/9;background:var(--op-cream);border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.op-banner-media img{width:44%;max-width:420px;height:auto;object-fit:contain;filter:drop-shadow(0 20px 30px rgba(0,0,0,.12))}
+.op-banner-caption{text-align:center;padding-top:36px}
+.op-eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--op-gold-deep);margin:0 0 12px}
+.op-banner-heading{font-size:32px;line-height:1.2;font-weight:500;color:var(--op-ink);margin:0 0 16px}
+.op-link{display:inline-block;font-size:14px;color:var(--op-ink);text-decoration:underline;text-underline-offset:4px;transition:color .2s ease}
+.op-link:hover{color:var(--op-gold)}
+@media (max-width:768px){.op-banner-media{aspect-ratio:4/3}.op-banner-media img{width:62%}.op-banner-heading{font-size:24px}}
+
+/* ---------- Garanties ---------- */
+.op-trust{max-width:1200px;margin:0 auto;padding:0 20px}
+.op-trust-eyebrow{text-align:center;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--op-gold);margin:0 0 32px}
+.op-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.op-card{position:relative;text-align:center;padding:32px 20px;background:linear-gradient(180deg,rgba(201,169,106,.05),rgba(201,169,106,.02));border:1px solid var(--op-line);border-radius:16px;transition:transform .35s cubic-bezier(.22,1,.36,1),border-color .35s ease,box-shadow .35s ease}
+.op-card:hover{transform:translateY(-6px);border-color:rgba(201,169,106,.7);box-shadow:0 24px 48px -24px rgba(201,169,106,.35)}
+.op-card-icon{width:56px;height:56px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(201,169,106,.22),rgba(201,169,106,.05));border:1px solid rgba(201,169,106,.4);transition:transform .35s ease}
+.op-card:hover .op-card-icon{transform:scale(1.08) rotate(-4deg)}
+.op-card-icon svg{width:26px;height:26px;stroke:var(--op-gold-deep);fill:none;stroke-width:1.6}
+.op-card h3{font-size:17px;font-weight:600;color:var(--op-ink);margin:0 0 8px;letter-spacing:.3px}
+.op-card p{font-size:14px;line-height:1.5;color:rgba(26,26,26,.62);margin:0}
+@media (max-width:768px){.op-grid{grid-template-columns:repeat(2,1fr);gap:14px}.op-card{padding:24px 14px}}
+
+/* =========================================================
+   PAGE PRODUIT — refonte premium
+   ========================================================= */
+.op-pdp{max-width:1100px;margin:0 auto;padding:0 24px;color:var(--op-ink);font-feature-settings:"kern"}
+
+/* Déclaration principale */
+.op-pdp-statement{text-align:center;padding:96px 0 88px;border-bottom:1px solid rgba(0,0,0,.07)}
+.op-pdp-statement h2{font-size:clamp(34px,5vw,60px);line-height:1.08;letter-spacing:-.03em;font-weight:600;margin:0 0 22px;color:var(--op-ink)}
+.op-pdp-statement h2 span{color:var(--op-gold)}
+.op-pdp-statement p{font-size:clamp(16px,1.6vw,20px);line-height:1.6;color:var(--op-muted);max-width:620px;margin:0 auto}
+
+/* Grille de bénéfices */
+.op-pdp-features{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:80px 0;border-bottom:1px solid rgba(0,0,0,.07)}
+.op-pdp-feature{padding:0 28px;border-left:1px solid rgba(0,0,0,.07)}
+.op-pdp-feature:first-child{border-left:0;padding-left:0}
+.op-pdp-feature:last-child{padding-right:0}
+.op-pdp-feature .op-pdp-num{font-size:34px;font-weight:600;letter-spacing:-.03em;color:var(--op-gold);display:block;margin-bottom:14px}
+.op-pdp-feature h3{font-size:17px;font-weight:600;margin:0 0 10px;letter-spacing:-.01em}
+.op-pdp-feature p{font-size:14px;line-height:1.6;color:var(--op-muted);margin:0}
+@media (max-width:900px){.op-pdp-features{grid-template-columns:1fr 1fr;gap:40px 0;padding:56px 0}
+ .op-pdp-feature:nth-child(odd){border-left:0;padding-left:0}
+ .op-pdp-feature:nth-child(even){padding-right:0}}
+@media (max-width:560px){.op-pdp-features{grid-template-columns:1fr;gap:36px}
+ .op-pdp-feature{border-left:0;padding:0}}
+
+/* Bande caractéristiques */
+.op-pdp-specs{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding:64px 0;border-bottom:1px solid rgba(0,0,0,.07);text-align:center}
+.op-pdp-spec dt{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--op-gold-deep);margin:0 0 10px}
+.op-pdp-spec dd{margin:0;font-size:17px;font-weight:500;color:var(--op-ink)}
+@media (max-width:700px){.op-pdp-specs{grid-template-columns:1fr 1fr;gap:32px 16px;padding:48px 0}}
+
+/* Comparatif */
+.op-pdp-compare{padding:88px 0}
+.op-pdp-compare h2{font-size:clamp(26px,3.4vw,40px);letter-spacing:-.025em;font-weight:600;text-align:center;margin:0 0 12px}
+.op-pdp-compare > p{text-align:center;color:var(--op-muted);margin:0 0 44px;font-size:16px}
+.op-pdp-table{width:100%;border-collapse:collapse;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden}
+.op-pdp-table th,.op-pdp-table td{padding:18px 20px;text-align:left;font-size:15px;border-bottom:1px solid rgba(0,0,0,.06)}
+.op-pdp-table thead th{background:var(--op-cream);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--op-gold-deep);font-weight:600}
+.op-pdp-table thead th:nth-child(2){color:var(--op-ink)}
+.op-pdp-table td:nth-child(2),.op-pdp-table td:nth-child(3),.op-pdp-table th:nth-child(2),.op-pdp-table th:nth-child(3){text-align:center;width:130px}
+.op-pdp-table tbody tr:last-child th,.op-pdp-table tbody tr:last-child td{border-bottom:0}
+.op-pdp-table tbody th{font-weight:500;color:var(--op-ink)}
+.op-yes{color:var(--op-gold-deep);font-weight:600}
+.op-no{color:#c4c4c4}
+@media (max-width:640px){.op-pdp-table th,.op-pdp-table td{padding:14px 12px;font-size:13.5px}
+ .op-pdp-table td:nth-child(2),.op-pdp-table td:nth-child(3),.op-pdp-table th:nth-child(2),.op-pdp-table th:nth-child(3){width:76px}}
+
+/* CTA final */
+.op-pdp-cta{text-align:center;padding:84px 24px 96px;background:var(--op-cream);border-radius:16px;margin:0 0 24px}
+.op-pdp-cta h2{font-size:clamp(26px,3.4vw,40px);letter-spacing:-.025em;font-weight:600;margin:0 0 14px}
+.op-pdp-cta p{color:var(--op-muted);margin:0 0 30px;font-size:16px}
+.op-pdp-btn{display:inline-block;background:var(--op-gold);color:var(--op-ink);font-size:14px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:17px 44px;border-radius:6px;text-decoration:none;transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,background-color .2s ease}
+.op-pdp-btn:hover{transform:translateY(-2px);background:#b8945a;box-shadow:0 18px 34px -18px rgba(201,169,106,.9)}
+
+/* Harmonisation des sections natives de la page produit */
+.op-pdp-page .scrolling-features-bar,.op-pdp-page [class*="scrolling-features"]{background:#fff !important}
+.op-pdp-page .roadmap-section,.op-pdp-page [class*="roadmap"]{background:#fff !important}
+
+/* =========================================================
+   COUCHE 3D + ANIMATIONS
+   ========================================================= */
+
+/* --- Reveal 3D (remplace le reveal plat) --- */
+[data-reveal]{opacity:0;transform:perspective(1000px) translateY(30px) rotateX(6deg);transform-origin:50% 100%}
+[data-reveal].op-visible{opacity:1;transform:perspective(1000px) translateY(0) rotateX(0deg);transition:opacity .8s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1)}
+@media (prefers-reduced-motion:reduce){[data-reveal],[data-reveal].op-visible{opacity:1;transform:none;transition:none}}
+
+/* --- Cartes inclinables au curseur --- */
+.op-tilt{transform-style:preserve-3d;transition:transform .5s cubic-bezier(.22,1,.36,1),box-shadow .4s ease}
+.op-tilt.op-tilting{transition:transform .12s ease-out}
+.op-tilt > *{transform:translateZ(18px)}
+
+/* --- Chiffres animés --- */
+.op-pdp-num{display:inline-block;font-variant-numeric:tabular-nums}
+
+/* --- Balayage doré sur les boutons --- */
+.op-pdp-btn{position:relative;overflow:hidden;isolation:isolate}
+.op-pdp-btn::after{content:'';position:absolute;top:0;left:-140%;width:60%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:skewX(-18deg);pointer-events:none}
+.op-pdp-btn:hover::after{animation:op-sweep .9s ease}
+@keyframes op-sweep{to{left:160%}}
+
+/* --- Galerie produit : profondeur 3D --- */
+.op-gallery-3d{transform-style:preserve-3d;transition:transform .5s cubic-bezier(.22,1,.36,1),filter .5s ease;will-change:transform}
+.op-gallery-3d.op-tilting{transition:transform .1s ease-out}
+
+/* --- Ligne dorée qui se dessine sous les titres --- */
+.op-pdp-statement h2::after{content:'';display:block;width:0;height:2px;margin:26px auto 0;
+  background:linear-gradient(90deg,transparent,var(--op-gold),transparent);transition:width 1.1s cubic-bezier(.22,1,.36,1) .25s}
+.op-pdp-statement.op-visible h2::after{width:220px}
+
+/* --- Lignes du comparatif en cascade --- */
+.op-pdp-table tbody tr{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s cubic-bezier(.22,1,.36,1)}
+.op-pdp-compare.op-visible .op-pdp-table tbody tr{opacity:1;transform:none}
+.op-pdp-compare.op-visible .op-pdp-table tbody tr:nth-child(1){transition-delay:.10s}
+.op-pdp-compare.op-visible .op-pdp-table tbody tr:nth-child(2){transition-delay:.18s}
+.op-pdp-compare.op-visible .op-pdp-table tbody tr:nth-child(3){transition-delay:.26s}
+.op-pdp-compare.op-visible .op-pdp-table tbody tr:nth-child(4){transition-delay:.34s}
+.op-pdp-compare.op-visible .op-pdp-table tbody tr:nth-child(5){transition-delay:.42s}
+.op-pdp-compare.op-visible .op-pdp-table tbody tr:nth-child(6){transition-delay:.50s}
+@media (prefers-reduced-motion:reduce){.op-pdp-table tbody tr{opacity:1;transform:none;transition:none}}
+
+/* --- Séparateurs de caractéristiques qui s'étirent --- */
+.op-pdp-feature{position:relative}
+.op-pdp-feature::before{content:'';position:absolute;left:0;top:0;width:1px;height:0;background:var(--op-gold);
+  transition:height 1s cubic-bezier(.22,1,.36,1)}
+.op-pdp-feature.op-visible::before{height:100%}
+.op-pdp-feature:first-child::before{display:none}
+@media (max-width:900px){.op-pdp-feature::before{display:none}}
+
+/* --- Bannière : parallaxe interne --- */
+.op-banner-media{perspective:1200px}
+.op-banner-media img{transition:transform .6s cubic-bezier(.22,1,.36,1);will-change:transform}
+.op-banner-media:hover img{transform:scale(1.05) rotateY(-6deg) rotateX(3deg)}
+
+/* --- Ombre portée qui suit l'inclinaison du hero --- */
+[id$="image_banner_TVECWz"] .banner__media{position:relative}
+[id$="image_banner_TVECWz"] .banner__media::after{content:'';position:absolute;left:50%;bottom:6%;
+  width:46%;height:22px;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.20),transparent 70%);
+  filter:blur(6px);pointer-events:none;z-index:0;
+  animation:op-shadow 10s cubic-bezier(.45,.05,.55,.95) 1.3s infinite}
+@keyframes op-shadow{
+ 0%,100%{transform:translateX(-50%) scaleX(1);opacity:.55}
+ 50%{transform:translateX(-52%) scaleX(.86);opacity:.32}}
+@media (prefers-reduced-motion:reduce){[id$="image_banner_TVECWz"] .banner__media::after{animation:none}}
+
+/* --- Cartes garanties : relief au survol --- */
+.op-card{transform-style:preserve-3d}
+.op-card-icon{transform:translateZ(24px)}
