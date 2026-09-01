@@ -22,7 +22,6 @@
     {%- if op_slot -%}
       {{ 'onirala.css' | asset_url | stylesheet_tag }}
       {{ 'onirala.js' | asset_url | script_tag }}
-      {{ 'onirala-3d.js' | asset_url | script_tag }}
 
       {%- if section.settings.padding_top > 0 -%}
         <div class="op-banner" data-reveal>
