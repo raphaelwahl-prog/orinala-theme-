@@ -1,1 +1,442 @@
-{"sections":{"customer_reviews_carousel_NChMcf":{"type":"customer-reviews-carousel","blocks":{"review_LiRV9L":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_140713_20183e40-16c0-4081-b724-c9fed5313ffd.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"Je suis coach sportif, et je recommande SommetUltime à tous mes clients, ça booste l’énergie, développe les muscles, augmente les niveaux de testostérone, c’est une vraie magie en bouteille.","reviewer_name":"Alexandre","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}},"review_3kQCnb":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_141051_e120902b-12c6-4b27-996f-e42d07d99a3a.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"Tout ce dont j’ai besoin. Pur, holistique et testé en laboratoire. Parfait avant un travail intense ou une séance d’entraînement. Je le recommande à tout le monde.","reviewer_name":"Antoine","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}},"review_PmhraH":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_141103_62d8a8dc-fd6d-4a2a-bc93-c0ad16ad0a82.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"Qui aurait cru que cette gomme pouvait faire autant de choses ? Une peau plus nette, une perte de poids, de meilleures performances. C’est comme une potion magique pour le bien-être général. J’en suis obsédé.","reviewer_name":"Lucas","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}},"review_7y9hpf":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_141116_3307d680-bb23-4351-b746-e3a7fdf8eaeb.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"J’ai augmenté ma testostérone en moins de 10 semaines, ma peau s’est améliorée, et je me sens plus énergique que jamais.","reviewer_name":"Julien","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}}},"block_order":["review_LiRV9L","review_3kQCnb","review_PmhraH","review_7y9hpf"],"name":"Customer Reviews","settings":{"use_theme_colors":false,"section_width":1200,"section_background":"#ffffff","title_text":"Avis","accent_text":"Clients","title_color":"#000000","accent_color":"#f0cd4f","override_global_accent":false,"accent_text_margin_left":0,"use_accent_gradient":false,"accent_text_gradient":"linear-gradient(45deg, rgba(240, 205, 79, 1), rgba(209, 165, 8, 1) 100%)","accent_font_family":"inherit","accent_font_style":"normal","accent_font_weight":"inherit","custom_heading_styling":false,"heading_font_size":56,"heading_font_size_mobile":48,"heading_line_height":1.2,"show_description":false,"description_text":"See what our customers are saying about our products","description_color":"#000000","prev_button_bg":"#ffffff","prev_button_color":"#000000","prev_button_border":"#e0e0e0","next_button_bg":"#181b1d","next_button_color":"#ffffff","next_button_border":"#f0cd4f","scroll_amount":360,"card_width":390,"card_border_radius":10,"card_border_color":"#e0e0e0","card_background":"#ffffff","card_margin_top":0,"card_margin_right":0,"card_margin_bottom":0,"card_margin_left":0,"star_filled_color":"#ffc107","star_empty_color":"#e0e0e0","carousel_review_star_size":16,"review_text_color":"#000000","review_text_size":14,"review_text_size_mobile":12,"reviewer_info_color":"#000000","reviewer_info_bg_color":"#f5f5f5","reviewer_info_font_size":12,"verified_badge_text":"Verified Buyer","verified_badge_color":"#39ae07","verified_icon_color":"#39ae07","verified_badge_font_size":10,"enable_reviewer_info_border":false,"reviewer_info_border_width":1,"reviewer_info_border_style":"solid","reviewer_info_border_color":"#e0e0e0","reviewer_info_border_radius":8,"product_label":"Item Purchased","product_label_color":"#000000","product_title_color":"#000000","product_price_color":"#ef4a65","product_bg_color":"#f9f9f9","product_title_font_size":12,"product_price_font_size":12,"product_compare_price_font_size":10,"purchase_date_font_size":10,"product_border_color":"#eeeeee","product_border_width":1,"product_border_style":"solid","summary_star_color":"#ffbf00","summary_text_color":"#ffffff","rating_summary_text":"<p>Rated 4.8\/5 based on +10,839 Total Ratings<\/p>","rating_summary_font_size":13,"rating_summary_bg_color":"#ffffff","purchase_date_prefix":"Purchased on","purchase_date_color":"#000000","purchase_date_icon_color":"#000000","rating_summary_gradient":"linear-gradient(276deg, rgba(164, 129, 0, 1) 2%, rgba(0, 0, 0, 1) 100%)","enable_rating_summary_border":true,"rating_summary_border_width":1,"rating_summary_border_style":"solid","rating_summary_border_color":"#ffbf00","rating_summary_border_radius":50}},"store_faq_4ri3aP":{"type":"store-faq","blocks":{"faq_item_9iqrKK":{"type":"faq_item","settings":{"question":"Combien de gummies dois-je prendre par jour ?","answer":"<p>Nous vous recommandons de prendre <strong>un gummy par jour<\/strong>.<\/p><p>Chaque gummy contient un mélange concentré d’ingrédients soigneusement sélectionnés, notamment du <strong>Shilajit, de l’Ashwagandha, de la Maca, du Ginseng Panax, de la L-Arginine et du Safran<\/strong>, pour soutenir la vitalité, l’énergie et le bien-être au quotidien.<\/p><p>Grâce à sa formule hautement concentrée, <strong>un seul gummy par jour suffit<\/strong> pour accompagner votre routine quotidienne et vous aider à rester au meilleur de votre forme.<\/p>"}},"faq_item_TKitL8":{"type":"faq_item","settings":{"question":"Est-ce que cela va me donner des tremblements ou un “coup de fatigue” après ?","answer":"<p>Non. Les Performance Gummies sont totalement sans stimulants.<br\/><br\/>Au lieu de miser sur la caféine ou des stimulants artificiels, la formule soutient la production naturelle d’énergie, l’équilibre hormonal et une bonne circulation sanguine. Cela vous permet de profiter d’une énergie stable, d’une meilleure endurance et de meilleures performances, sans tremblements ni baisse d’énergie brutale.<\/p>"}},"faq_item_q6xV8c":{"type":"faq_item","settings":{"question":"À quel moment est-ce que je dois prendre ma gélule ?","answer":"<p>Vous pouvez prendre votre gélule à n’importe quel moment de la journée, mais la plupart des hommes préfèrent la prendre le matin ou en début d’après-midi afin de soutenir leur énergie, leur endurance et leur confiance tout au long de la journée.<\/p><p>Comme les ingrédients contribuent à l’équilibre de la testostérone, à la production d’oxyde nitrique et à la circulation sanguine, une prise quotidienne régulière aide à obtenir des résultats plus durables sur le long terme.<\/p>"}},"faq_item_UXcPEE":{"type":"faq_item","settings":{"question":"Voici la traduction en français, avec un ton naturel :","answer":"<p>Certains hommes remarquent une augmentation de l’énergie, de la confiance et de l’endurance dès les premiers jours.<br\/><br\/>Cependant, comme la formule agit en soutenant l’équilibre hormonal, la circulation sanguine et la production d’oxyde nitrique, les meilleurs résultats apparaissent généralement après 4 à 8 semaines d’utilisation quotidienne régulière.<\/p><p>Avec une prise constante, de nombreux utilisateurs constatent une amélioration progressive de leur vitalité, de leurs performances et de leur endurance au fil du temps.<\/p>"}},"faq_item_fXM3wr":{"type":"faq_item","settings":{"question":"Comment savoir si ces gummies sont de haute qualité ?","answer":"<p>Nos Performance Gummies sont fabriquées dans des installations certifiées GMP (Bonnes Pratiques de Fabrication) et font l’objet de tests réalisés par des laboratoires indépendants afin de garantir leur pureté et leur sécurité.<\/p><p>Nous utilisons des ingrédients soigneusement sélectionnés tels que le shilajit, l’ashwagandha, le maca, le ginseng Panax, la L-arginine et le safran, tous reconnus depuis longtemps pour leur soutien à la vitalité masculine, au désir et aux performances, ainsi qu’à la circulation sanguine.<\/p><p>Le résultat est une formule propre et puissante, spécialement conçue pour les hommes qui recherchent un véritable soutien de leurs performances.<\/p>"}},"faq_item_r66h4j":{"type":"faq_item","settings":{"question":"Puis-je prendre les Performance Gummies avec d’autres compléments alimentaires ?","answer":"<p>Oui. Les Performance Gummies peuvent généralement être prises en même temps que la plupart des compléments du quotidien.<\/p><p>Comme la formule vise à soutenir l’équilibre de la testostérone, la circulation sanguine et l’énergie naturelle, beaucoup d’hommes les associent à des multivitamines, des protéines en poudre ou d’autres produits de bien-être dans leur routine quotidienne.<\/p><p>Si vous prenez actuellement un traitement médical ou si vous avez une condition de santé particulière, il est recommandé de consulter votre professionnel de santé au préalable.<\/p>"}},"faq_item_GeLJef":{"type":"faq_item","settings":{"question":"Est-ce sûr pour une utilisation à long terme ?","answer":"<p>Oui. Les Performance Gummies sont formulées à partir d’ingrédients d’origine naturelle traditionnellement utilisés pour soutenir la vitalité masculine et l’équilibre hormonal.<\/p><p>Contrairement aux produits à base de stimulants, la formule agit en soutenant les mécanismes naturels du corps liés à la régulation hormonale, à la circulation et à l’énergie. Cela les rend adaptées à une utilisation quotidienne et régulière dans le cadre d’une routine sur le long terme.<\/p>"}}},"block_order":["faq_item_9iqrKK","faq_item_TKitL8","faq_item_q6xV8c","faq_item_UXcPEE","faq_item_fXM3wr","faq_item_r66h4j","faq_item_GeLJef"],"settings":{"use_theme_colors":true,"heading":"Foire Aux Questions","subtitle":"","heading_color":"#1773b0","section_padding":60,"section_bg_color":"#ffffff","border_radius":4,"border_color":"#e4f9ff","border_style":"full","question_color":"#1773b0","question_bg_color":"#ffffff","answer_color":"#1773b0","answer_bg_color":"#ffffff","accordion_mode":true,"image_border_radius":8,"center_when_no_image":true,"center_max_width":1000,"two_column_desktop":true,"column_gap":10,"faq_item_spacing":0,"individual_item_borders":false,"question_padding_top":20,"question_padding_bottom":15,"question_padding_left":17,"question_padding_right":14,"answer_padding_top":15,"answer_padding_bottom":15,"answer_padding_left":20,"answer_padding_right":20,"heading_font_size":36,"heading_font_size_mobile":38,"subtitle_font_size":16,"subtitle_font_size_mobile":14,"question_font_size":16,"question_font_size_mobile":14,"answer_font_size":14,"answer_font_size_mobile":13}}},"order":["customer_reviews_carousel_NChMcf","store_faq_4ri3aP"]}
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "custom_liquid_nUnYW7": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.presets.name",
+      "settings": {
+        "custom_liquid": "",
+        "padding_top": 0,
+        "padding_bottom": 0
+      }
+    },
+    "image_banner_TVECWz": {
+      "type": "a-image-banner-r2",
+      "blocks": {
+        "rating_PafcFX": {
+          "type": "rating",
+          "settings": {
+            "overall_rating_value": 4.8,
+            "rating_text": "Noté 4,8/5 par nos clients",
+            "overall_rating_star_size": 16,
+            "star_color": "#c9a96a",
+            "overall_rating_text_color": "#c9a96a",
+            "overall_rating_text_size": 14,
+            "overall_rating_text_size_mobile": 12,
+            "overall_rating_have_background": false,
+            "overall_rating_background_color": "#000000",
+            "overall_rating_use_gradient": false,
+            "overall_rating_gradient_color": "linear-gradient(160deg, rgba(251,51,164, 1) 0%, rgba(96,77,188, 1) 100%)",
+            "overall_rating_border_radius": 3,
+            "padding_top_desktop": 5,
+            "padding_bottom_desktop": 14,
+            "padding_top_mobile": 0,
+            "padding_bottom_mobile": 3
+          }
+        },
+        "heading_j6VgPc": {
+          "type": "heading",
+          "settings": {
+            "heading": "Dormez profondément, partout, tout le temps",
+            "size": 50,
+            "mobile_font_size": 28,
+            "color": "#1A1A1A",
+            "highlighted_color": "#C9A96A",
+            "heading_use_gradient": false,
+            "heading_gradient_color": "",
+            "padding_top_desktop": 5,
+            "padding_bottom_desktop": 14,
+            "padding_top_mobile": 3,
+            "padding_bottom_mobile": 3
+          }
+        },
+        "text_BpPwbx": {
+          "type": "text",
+          "settings": {
+            "text": "Votre cocon de sommeil",
+            "size": 15,
+            "size_mobile": 12,
+            "color": "#c9a96a",
+            "highlighted_color": "#000000",
+            "text_use_gradient": false,
+            "text_gradient_color": "",
+            "padding_top_desktop": 5,
+            "padding_bottom_desktop": 20,
+            "padding_top_mobile": 9,
+            "padding_bottom_mobile": 13
+          }
+        },
+        "buttons_k9izFg": {
+          "type": "buttons",
+          "settings": {
+            "button_label_1": "Je commande",
+            "button_link_1": "shopify://products/premium-3d-light-blocking-sleep-mask",
+            "button_label_1_size": 14,
+            "button_label_1_size_mobile": 12,
+            "button_1_text_color": "#1A1A1A",
+            "button_1_background_color": "#C9A96A",
+            "button_1_border_radius": 6,
+            "button_padding_vertical": 8,
+            "button_width_increase_desktop": 45,
+            "button_width_increase_mobile": 69,
+            "padding_top_desktop": 0,
+            "padding_bottom_desktop": 5,
+            "padding_top_mobile": 3,
+            "padding_bottom_mobile": 20
+          }
+        }
+      },
+      "block_order": [
+        "rating_PafcFX",
+        "heading_j6VgPc",
+        "text_BpPwbx",
+        "buttons_k9izFg"
+      ],
+      "settings": {
+        "image": "shopify://shop_images/onirala-masque-cadre.png",
+        "image_height": "adapt",
+        "image_or_content_first": "image",
+        "enable_waves": true,
+        "shape_color": "#C9A96A",
+        "shape_height_desktop": 100,
+        "shape_height_mobile": 47,
+        "desktop_content_position": "middle-center",
+        "desktop_content_alignment": "left",
+        "mobile_content_alignment": "center",
+        "use_gradient_background": false,
+        "section_background_gradient": "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(243,234,212,1) 100%)",
+        "section_background_color": "#FFFFFF",
+        "atlas_font": ""
+      }
+    },
+    "scrolling_ticker_8AXXc4": {
+      "type": "scrolling-ticker",
+      "blocks": {
+        "announcement_tPgghq": {
+          "type": "announcement",
+          "settings": {
+            "text": "LIVRAISON OFFERTE"
+          }
+        },
+        "announcement_CkHptw": {
+          "type": "announcement",
+          "settings": {
+            "text": "EN PROMOTION"
+          }
+        },
+        "announcement_Ya4P7M": {
+          "type": "announcement",
+          "settings": {
+            "text": "SOLDES D'ÉTÉ"
+          }
+        }
+      },
+      "block_order": [
+        "announcement_tPgghq",
+        "announcement_CkHptw",
+        "announcement_Ya4P7M"
+      ],
+      "name": "Scrolling Ticker",
+      "settings": {
+        "background_color": "#C9A96A",
+        "text_color": "#1A1A1A",
+        "font_weight": "600",
+        "scroll_speed": 15,
+        "show_dividers": true,
+        "divider_type": "text",
+        "divider_text": "+",
+        "divider_size": 16
+      }
+    },
+    "testimonials_zhAzJk": {
+      "type": "a-testimonials-r3",
+      "blocks": {
+        "slide_TTyzff": {
+          "type": "slide",
+          "settings": {
+            "review_heading": "",
+            "review_text": "Ce masque a littéralement changé mes nuits. Je ne peux plus m'en passer, que ce soit à la maison ou en déplacement. Une obscurité totale et un confort incroyable !\"",
+            "review_name": "Sarah Michell's",
+            "tab_label": "",
+            "author_name_color": "#0d0d0d",
+            "highlight_review": false,
+            "num_stars": 5,
+            "review_star_size": 20,
+            "review_slide_heading_size": 16,
+            "review_heading_weight": "",
+            "review_heading_color": "#0d0d0d",
+            "review_bolded_heading_color": "#0d0d0d",
+            "review_slide_text_size": 15,
+            "review_body_color": "#0d0d0d",
+            "review_bolded_body_color": "#0d0d0d"
+          }
+        },
+        "slide_zxFfGK": {
+          "type": "slide",
+          "settings": {
+            "review_heading": "",
+            "review_text": "Je voyage énormément pour le travail et ce masque est devenu mon meilleur allié dans le train et l'avion. Il ne presse pas les yeux et bloque 100 % de la lumière.",
+            "review_name": "Emily A.",
+            "tab_label": "",
+            "author_name_color": "#0d0d0d",
+            "highlight_review": true,
+            "num_stars": 5,
+            "review_star_size": 20,
+            "review_slide_heading_size": 16,
+            "review_heading_weight": "",
+            "review_heading_color": "#0d0d0d",
+            "review_bolded_heading_color": "#0d0d0d",
+            "review_slide_text_size": 15,
+            "review_body_color": "#0d0d0d",
+            "review_bolded_body_color": "#0d0d0d"
+          }
+        },
+        "slide_6VGPnY": {
+          "type": "slide",
+          "settings": {
+            "review_heading": "",
+            "review_text": "Travaillant de nuit, dormir le jour était un vrai cauchemar. Ce masque m'a changé la vie : obscurité totale garantie même en plein soleil !",
+            "review_name": "Will I.",
+            "tab_label": "",
+            "author_name_color": "#0d0d0d",
+            "highlight_review": false,
+            "num_stars": 5,
+            "review_star_size": 20,
+            "review_slide_heading_size": 16,
+            "review_heading_weight": "",
+            "review_heading_color": "#0d0d0d",
+            "review_bolded_heading_color": "#0d0d0d",
+            "review_slide_text_size": 15,
+            "review_body_color": "#0d0d0d",
+            "review_bolded_body_color": "#0d0d0d"
+          }
+        },
+        "slide_nGQn7p": {
+          "type": "slide",
+          "settings": {
+            "review_heading": "",
+            "review_text": "Ultra léger, respirant et d'une douceur incroyable. On ne le sent absolument pas sur le visage pendant la nuit, et le résultat est bluffant. Je le recommande à 100 % !",
+            "review_name": "Denisa N.",
+            "tab_label": "",
+            "author_name_color": "#0d0d0d",
+            "highlight_review": false,
+            "num_stars": 5,
+            "review_star_size": 20,
+            "review_slide_heading_size": 20,
+            "review_heading_weight": "",
+            "review_heading_color": "#0d0d0d",
+            "review_bolded_heading_color": "#0d0d0d",
+            "review_slide_text_size": 15,
+            "review_body_color": "#0d0d0d",
+            "review_bolded_body_color": "#0d0d0d"
+          }
+        }
+      },
+      "block_order": [
+        "slide_TTyzff",
+        "slide_zxFfGK",
+        "slide_6VGPnY",
+        "slide_nGQn7p"
+      ],
+      "settings": {
+        "section_heading": "Rejoignez nos +2 140 clients conquis",
+        "show_navigation_buttons": true,
+        "show_overall_rating": false,
+        "overall_rating_text": "rs",
+        "overall_rating_value": 4.8,
+        "show_tabs": false,
+        "tab_border_color": "#000000",
+        "tab_text_color": "#000000",
+        "tab_active_background": "#000000",
+        "tab_active_text_color": "#ffffff",
+        "show_opacity_on_inactive_slides": false,
+        "show_image_placeholder": false,
+        "heading_font_size": 35,
+        "mobile_heading_font_size": 25,
+        "heading_color": "#1A1A1A",
+        "bolded_heading_color": "#0d0d0d",
+        "heading_use_gradient": false,
+        "heading_gradient_color": "",
+        "use_gradient_background": false,
+        "section_background_gradient": "linear-gradient(180deg, rgba(248,245,238,1), rgba(255,255,255,1) 100%)",
+        "section_background_color": "#F5F1E8",
+        "overall_rating_star_size": 16,
+        "star_color": "#C9A96A",
+        "overall_rating_text_size": 14,
+        "overall_rating_text_color": "#ffffff",
+        "overall_rating_background_color": "#000000",
+        "overall_rating_use_gradient": false,
+        "overall_rating_gradient_color": "linear-gradient(160deg, rgba(251, 51, 164, 1), rgba(96, 77, 188, 1) 100%)",
+        "overall_rating_border_radius": 3,
+        "slide_box_shadow": false,
+        "slide_background_color": "#FFFFFF",
+        "navigation_button_size": 35,
+        "navgiation_button_background_color": "#FFFFFF",
+        "left_right_icon_color": "#1A1A1A",
+        "navigation_button_border_color": "#C9A96A",
+        "navigation_button_border_opacity": 50,
+        "navigation_button_border_width": 1,
+        "progress_bar_color": "#C9A96A",
+        "author_thumbnail_size": 66,
+        "author_thumbnail_border_color": "#ffffff",
+        "author_thumbnail_border_width": 2,
+        "review_slide_icon_color": "#000000",
+        "highlight_use_gradient_background": false,
+        "highlight_background_gradient": "linear-gradient(180deg, rgba(251,51,164, 1) 0%, rgba(96,77,188, 1) 100%)",
+        "highlight_background_color": "#000000",
+        "highlight_review_icon_color": "#ffffff",
+        "highlight_review_heading_color": "#ffffff",
+        "highlight_review_bolded_heading_color": "#000000",
+        "highlight_review_body_color": "#ffffff",
+        "highlight_review_bolded_body_color": "#ffffff",
+        "highlight_review_name_color": "#ffffff",
+        "section_padding_top": 24,
+        "section_padding_bottom": 36,
+        "atlas_font": ""
+      }
+    },
+    "borders_TanT6h": {
+      "type": "a-borders",
+      "settings": {
+        "shape": "waves",
+        "border_size": "60",
+        "flip_horizontal": true,
+        "flip_vertical": false,
+        "border_shape_color": "#FFFFFF",
+        "section_bg_color": "#C9A96A",
+        "use_section_bg_gradient": false,
+        "section_bg_gradient": "linear-gradient(180deg, rgba(251, 51, 164, 1), rgba(96, 77, 188, 1) 100%)",
+        "padding_top": 10,
+        "padding_bottom": 10
+      }
+    },
+    "custom_liquid_bRdgPA": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.presets.name",
+      "settings": {
+        "custom_liquid": "",
+        "padding_top": 40,
+        "padding_bottom": 52
+      }
+    },
+    "divider_eNXDET": {
+      "type": "divider",
+      "name": "Divider",
+      "settings": {
+        "divider_style": "wavy",
+        "background_color": "rgba(0,0,0,0)",
+        "flip_direction": false,
+        "color": "#c9a96a",
+        "height": 50,
+        "show_border": false,
+        "border_color": "#e0e0e0",
+        "border_width": 1,
+        "border_style": "solid",
+        "use_gradient": false,
+        "gradient_background": "linear-gradient(135deg, rgba(102, 126, 234, 1), rgba(118, 75, 162, 1) 100%)",
+        "padding_top": 20,
+        "padding_bottom": 20
+      }
+    },
+    "newsletter_rVzhVN": {
+      "type": "a-newsletter",
+      "blocks": {
+        "heading_kLeYC7": {
+          "type": "heading",
+          "settings": {
+            "heading": "Inscrivez-vous à notre newsletter",
+            "font_size": 35,
+            "mobile_font_size": 28,
+            "heading_text": "#1A1A1A",
+            "bolded_heading_text": "#0d0d0d",
+            "heading_use_gradient": false,
+            "heading_gradient_color": "linear-gradient(180deg, rgba(251,51,164, 1), rgba(127, 72, 176, 1) 50%, rgba(48, 145, 211, 1) 100%)",
+            "heading_padding_top": 0,
+            "heading_padding_top_mobile": 25,
+            "heading_padding_bottom": 7,
+            "heading_padding_bottom_mobile": 20
+          }
+        },
+        "paragraph_KfDwNn": {
+          "type": "paragraph",
+          "settings": {
+            "text": "<p>Recevez nos dernières actualités, offres et nouveautés directement dans votre boîte mail.</p>",
+            "font_size": 21,
+            "mobile_font_size": 14,
+            "body_text": "#6b5f47",
+            "bolded_body_text": "#000000",
+            "body_use_gradient": false,
+            "body_gradient_color": "linear-gradient(180deg, rgba(251,51,164, 1), rgba(127, 72, 176, 1) 50%, rgba(48, 145, 211, 1) 100%)",
+            "body_padding_top": 0,
+            "body_padding_top_mobile": 0,
+            "body_padding_bottom": 34,
+            "body_padding_bottom_mobile": 20
+          }
+        },
+        "email_form_mnzHQz": {
+          "type": "email_form",
+          "settings": {
+            "button_label": "S'abonner à notre newsletter",
+            "email_form_input_gap": 17,
+            "input_text_color": "#000000",
+            "input_placeholder_color": "#000000",
+            "input_background_color": "#e8e8e8",
+            "border_radius": 6,
+            "border_width": 1,
+            "border_color": "#f2f2f2",
+            "button_font_size": 14,
+            "button_text_color": "#1A1A1A",
+            "button_background_color": "#C9A96A",
+            "button_border_radius": 6,
+            "email_form_padding_top": 0,
+            "email_form_padding_top_mobile": 0,
+            "email_form_padding_bottom": 0,
+            "email_form_padding_bottom_mobile": 33
+          }
+        }
+      },
+      "block_order": [
+        "heading_kLeYC7",
+        "paragraph_KfDwNn",
+        "email_form_mnzHQz"
+      ],
+      "name": "Our newsletter",
+      "settings": {
+        "side_block_image": "shopify://shop_images/hf_20260806_221808_31056727-9082-4be9-825a-763a9a04c4c5.png",
+        "image_height": "small",
+        "image_first_desktop": false,
+        "content_alignment_desktop": "center",
+        "content_alignment_mobile": "center",
+        "full_width": false,
+        "use_gradient_background": false,
+        "section_background_gradient": "linear-gradient(180deg, rgba(245,241,232,1), rgba(255,255,255,1) 100%)",
+        "section_background_color": "#F5F1E8",
+        "padding_top": 24,
+        "padding_bottom": 24
+      }
+    },
+    "1786068440a1e9fdee": {
+      "type": "_blocks",
+      "settings": {}
+    }
+  },
+  "order": [
+    "custom_liquid_nUnYW7",
+    "image_banner_TVECWz",
+    "scrolling_ticker_8AXXc4",
+    "testimonials_zhAzJk",
+    "borders_TanT6h",
+    "custom_liquid_bRdgPA",
+    "divider_eNXDET",
+    "newsletter_rVzhVN",
+    "1786068440a1e9fdee"
+  ]
+}
