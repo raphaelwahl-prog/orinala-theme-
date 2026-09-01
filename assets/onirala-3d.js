@@ -6,6 +6,7 @@
 
   var THREE_SRC  = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
   var LOADER_SRC = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+  var UTILS_SRC  = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js';
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function ready(fn) {
@@ -27,7 +28,13 @@
     if (window.THREE && window.THREE.GLTFLoader) { cb(); return; }
     load(THREE_SRC, function (e) {
       if (e || !window.THREE) return;
-      load(LOADER_SRC, function (e2) { if (!e2 && window.THREE.GLTFLoader) cb(); });
+      load(LOADER_SRC, function (e2) {
+        if (e2 || !window.THREE.GLTFLoader) return;
+        /* BufferGeometryUtils sert a souder les sommets dupliques : sans ca les
+           aretes de la reconstruction restent visibles comme des lignes sur le
+           masque. S'il ne charge pas, on continue quand meme. */
+        load(UTILS_SRC, function () { cb(); });
+      });
     });
   }
 
@@ -67,7 +74,7 @@
       renderer.setSize(w, h);
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 0.9;
       renderer.domElement.style.cssText =
         'display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y';
       host.appendChild(renderer.domElement);
@@ -77,12 +84,12 @@
       camera.position.set(0, 0.25, 5.4);
       camera.lookAt(0, 0, 0);
 
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x404650, 0.85));
-      var key = new THREE.DirectionalLight(0xffffff, 1.9);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x383838, 0.55));
+      var key = new THREE.DirectionalLight(0xffffff, 1.15);
       key.position.set(2.5, 3.5, 4); scene.add(key);
-      var rim = new THREE.DirectionalLight(0xdce6ff, 1.25);
+      var rim = new THREE.DirectionalLight(0xffffff, 0.75);
       rim.position.set(-3.5, 1.5, -2.5); scene.add(rim);
-      var fill = new THREE.DirectionalLight(0xffffff, 0.55);
+      var fill = new THREE.DirectionalLight(0xffffff, 0.35);
       fill.position.set(-1.5, -2, 2.5); scene.add(fill);
 
       /* ombre portee douce */
@@ -115,10 +122,27 @@
         var obj = normalise(THREE, gltf.scene);
         obj.traverse(function (n) {
           if (!n.isMesh) return;
-          n.material.side = THREE.DoubleSide;
-          if (n.material.map) n.material.map.encoding = THREE.sRGBEncoding;
-          if ('roughness' in n.material) n.material.roughness = Math.min(0.95, (n.material.roughness || 0.8));
-          if ('envMapIntensity' in n.material) n.material.envMapIntensity = 1.1;
+          /* Souder les sommets puis recalculer les normales : la reconstruction
+             laisse des aretes dures qui se voient comme des lignes en travers
+             du masque. */
+          var U = THREE.BufferGeometryUtils;
+          if (U && U.mergeVertices) {
+            try {
+              var ng = U.mergeVertices(n.geometry, 1e-4);
+              ng.computeVertexNormals();
+              n.geometry = ng;
+            } catch (err) {}
+          }
+          /* Matiere uniforme : la texture issue de la photo n'habille que la
+             face avant, l'arriere est invente et la jointure se voit des que
+             l'objet tourne. Un noir mat uniforme donne le meme masque sous
+             tous les angles. */
+          n.material = new THREE.MeshStandardMaterial({
+            color: 0x090909,
+            roughness: 0.85,
+            metalness: 0.03,
+            side: THREE.DoubleSide
+          });
           n.material.needsUpdate = true;
         });
         pivot.add(obj);
