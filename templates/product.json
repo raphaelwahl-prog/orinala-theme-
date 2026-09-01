@@ -1,1 +1,681 @@
-{"sections":{"shop_product_details_JbqzwH":{"type":"shop-product-details","blocks":{"image_rating_XwBPCf":{"type":"image_rating","settings":{"star_color":"#ffc200","empty_star_color":"#e0e0e0","rating_text":"<p><strong>Noté 4,8\/5<\/strong> par plus de 110,500+ clients satisfaits.<\/p>","rating_value":"","text_color":"#333333","value_color":"#181b1d","rating_text_size":13,"rating_value_size":16,"star_size":21,"avatar_size":24,"layout_order":"stars_avatars_text","margin_top":10,"margin_bottom":0}},"title_4EWLUd":{"type":"title","settings":{"use_custom_title":false,"custom_title":"Custom Product Title","font_size":30,"margin_top":0,"margin_bottom":9,"title_color":"#000000","line_height":1.2}},"custom_liquid_tdpLAU":{"type":"custom_liquid","settings":{"custom_liquid":"<div class=\"pf-features\">\n  <div class=\"pf-item\">\n    <span class=\"pf-icon\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <path d=\"M6.5 6.5 17.5 17.5\"\/>\n        <path d=\"m21 21-1-1\"\/><path d=\"m3 3 1 1\"\/>\n        <path d=\"m18 22 4-4\"\/><path d=\"M2 6 6 2\"\/>\n        <path d=\"m3 10 7-7\"\/><path d=\"m14 21 7-7\"\/>\n      <\/svg>\n    <\/span>\n    <div class=\"pf-text\">\n      <h3 class=\"pf-title\">Énergie et vitalité au quotidien<\/h3>\n      <p class=\"pf-desc\">Stimule l'énergie quotidienne et l'endurance physique grâce à 2000 mg de Shilajit pur.<\/p>\n    <\/div>\n  <\/div>\n\n  <div class=\"pf-item\">\n    <span class=\"pf-icon\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <path d=\"M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z\"\/>\n        <path d=\"M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12\"\/>\n      <\/svg>\n    <\/span>\n    <div class=\"pf-text\">\n      <h3 class=\"pf-title\">Ingrédients à base de plantes pour le bien-être masculin<\/h3>\n      <p class=\"pf-desc\">Des plantes puissantes comme l'ashwagandha et la maca soutiennent activement la vigueur masculine.<\/p>\n    <\/div>\n  <\/div>\n\n  <div class=\"pf-item\">\n    <span class=\"pf-icon\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <path d=\"M13 2 3 14h9l-1 8 10-12h-9l1-8z\"\/>\n      <\/svg>\n    <\/span>\n    <div class=\"pf-text\">\n      <h3 class=\"pf-title\">Concentration et endurance naturelles<\/h3>\n      <p class=\"pf-desc\">Les adaptogènes aident à gérer le stress quotidien tout en améliorant la clarté mentale et l'humeur.<\/p>\n    <\/div>\n  <\/div>\n\n  <div class=\"pf-item\">\n    <span class=\"pf-icon\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"\/>\n        <path d=\"m9 12 2 2 4-4\"\/>\n      <\/svg>\n    <\/span>\n    <div class=\"pf-text\">\n      <h3 class=\"pf-title\">Formule propre, testée cliniquement et contrôlée<\/h3>\n      <p class=\"pf-desc\">À base de plantes et testée par des laboratoires indépendants pour garantir sécurité, pureté et confiance.<\/p>\n    <\/div>\n  <\/div>\n<\/div>\n\n<style>\n  .pf-features {\n    max-width: 520px;\n    margin: 0 auto;\n    display: flex;\n    flex-direction: column;\n    gap: 28px;\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n  }\n  .pf-item {\n    display: flex;\n    align-items: flex-start;\n    gap: 18px;\n  }\n  .pf-icon {\n    flex: 0 0 auto;\n    width: 44px;\n    height: 44px;\n    border-radius: 50%;\n    background: #f5c518;            \/* cercle jaune *\/\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    color: #1f1f1f;                 \/* glyphe foncé *\/\n  }\n  .pf-icon svg {\n    width: 22px;\n    height: 22px;\n  }\n  .pf-text {\n    padding-top: 1px;\n  }\n  .pf-title {\n    margin: 0 0 4px;\n    font-size: 16px;\n    font-weight: 700;\n    line-height: 1.3;\n    color: #1f1f1f;\n  }\n  .pf-desc {\n    margin: 0;\n    font-size: 14.5px;\n    line-height: 1.5;\n    color: #6b7280;                 \/* gris du texte *\/\n  }\n  @media (max-width: 480px) {\n    .pf-icon { width: 40px; height: 40px; }\n    .pf-icon svg { width: 20px; height: 20px; }\n    .pf-title { font-size: 15px; }\n    .pf-desc { font-size: 14px; }\n  }\n<\/style>"}},"add_to_cart_7nhY9K":{"type":"add_to_cart","settings":{"use_theme_colors":true,"show_fast_payment":false,"button_behavior":"add_to_cart","button_text_override":"AJOUTER AU PANIER","show_price_in_button":true,"button_icon":"none","custom_icon":"","icon_size":20,"buy_box_button_bg_color":"#ef4a65","button_text_color":"#ffffff","buy_box_button_hover_color":"#ef4a65","price_color":"#ffffff","use_global_button_styling":true,"custom_button_padding_y":12,"custom_button_font_size":14,"card_border_radius":10}},"custom_liquid_jy6Ra4":{"type":"custom_liquid","settings":{"custom_liquid":"<div class=\"pfc-benefits\">\n  <span class=\"pfc-item\">\n    <svg class=\"pfc-check\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n      <circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f5c518\"\/>\n      <path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/>\n    <\/svg>\n    <span>Réapprovisionnement tous les 30 jours<\/span>\n  <\/span>\n\n  <span class=\"pfc-item\">\n    <svg class=\"pfc-check\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n      <circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f5c518\"\/>\n      <path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/>\n    <\/svg>\n    <span>Résultats garantis sous 60 jours<\/span>\n  <\/span>\n<\/div>\n\n<style>\n  .pfc-benefits {\n    max-width: 420px;\n    margin: -12px auto 0;\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 10px 18px;\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n  }\n  .pfc-item {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    font-size: 12px;\n    line-height: 1.35;\n    color: #1f1f1f;\n  }\n  .pfc-check {\n    flex: 0 0 auto;\n    width: 18px;\n    height: 18px;\n    margin-top: 1px;\n  }\n  @media (max-width: 420px) {\n    .pfc-benefits { gap: 10px 12px; }\n    .pfc-item { font-size: 11px; }\n  }\n<\/style>"}},"custom_money_back_7WaRyE":{"type":"custom_money_back","settings":{"title_text":"30-Day Money Back Guarantee","description_text":"That's how confident we are in your results. But if you're not thrilled, send it back and we'll refund your purchase.","badge_svg":"","use_svg_badge":false,"badge_size":50,"gradient_start_color":"#ffff00","gradient_end_color":"#ffa500","title_color":"#000000","text_color":"#000000","title_font_size":15,"description_font_size":13,"border_style":"dotted","border_color":"#000000","border_radius":6,"margin_top":0,"margin_bottom":0,"enable_shine":true,"padding_top":7,"padding_right":10,"padding_bottom":6,"padding_left":10}},"custom_liquid_xQNtGz":{"type":"custom_liquid","settings":{"custom_liquid":"<div class=\"pfr-card\">\n  <div class=\"pfr-avatar\">K<\/div>\n\n  <div class=\"pfr-body\">\n    <div class=\"pfr-name-row\">\n      <span class=\"pfr-name\">Karim B., 42 ans — Lyon<\/span>\n      <span class=\"pfr-verified\">\n        <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n          <circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#16a34a\"\/>\n          <path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/>\n        <\/svg>\n        Achat vérifié\n      <\/span>\n    <\/div>\n\n    <p class=\"pfr-role\">⭐⭐⭐⭐⭐<\/p>\n\n    <p class=\"pfr-quote\">\n      J'avais essayé d'autres compléments avant, rien ne tenait dans la durée.\n      Là c'est différent. Dès la deuxième semaine j'avais plus d'endurance à la\n      salle, moins de coups de barre en milieu de journée. Au bout d'un mois je\n      me sens vraiment plus moi-même — plus de drive, plus de clarté mentale.\n      Je suis à ma deuxième commande.\n    <\/p>\n  <\/div>\n<\/div>\n\n<style>\n  .pfr-card {\n    max-width: 470px;\n    margin: 0 auto;\n    display: flex;\n    align-items: flex-start;\n    gap: 16px;\n    background: #f2f2f2;\n    border-radius: 14px;\n    padding: 20px 22px;\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n  }\n  .pfr-avatar {\n    flex: 0 0 76px;\n    width: 76px;\n    height: 76px;\n    border-radius: 50%;\n    background: #e2b23f;\n    color: #fff;\n    font-size: 32px;\n    font-weight: 800;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n  }\n  .pfr-body {\n    flex: 1 1 auto;\n    min-width: 0;\n  }\n  .pfr-name-row {\n    display: flex;\n    align-items: center;\n    flex-wrap: wrap;\n    gap: 8px;\n    margin-bottom: 2px;\n  }\n  .pfr-name {\n    font-size: 14px;\n    font-weight: 700;\n    color: #1f1f1f;\n  }\n  .pfr-verified {\n    display: inline-flex;\n    align-items: center;\n    gap: 5px;\n    font-size: 12px;\n    font-weight: 500;\n    color: #16a34a;\n  }\n  .pfr-verified svg {\n    width: 15px;\n    height: 15px;\n    flex: 0 0 auto;\n  }\n  .pfr-role {\n    margin: 0 0 10px;\n    font-size: 12px;\n    color: #6b7280;\n  }\n  .pfr-quote {\n    margin: 0;\n    font-size: 13px;\n    line-height: 1.55;\n    color: #3f4a44;\n  }\n<\/style>"}},"product_faq_R9JzNF":{"type":"product_faq","settings":{"use_theme_colors":true,"items_limit":10,"image_size":40,"image_border_radius":4,"image_fit":"cover","text_size":16,"answer_text_size":16,"item_padding":16,"question_padding":8,"margin_top":10,"margin_bottom":10,"border_radius":10,"border_color":"#e5e5e5","border_style":"bottom_only","question_color":"#000000","question_bg_color":"#ffffff","answer_color":"#000000","answer_bg_color":"#ffffff","accordion_mode":true,"question_1":"DÉTAILS DU PRODUIT","use_product_description_for_question_1":false,"answer_1":"<p>Les gummies SommetUltime® Performance constituent une solution naturelle, pure et testée en laboratoire, conçue pour les hommes souhaitant soutenir leurs performances physiques, leur clarté mentale, leur vitalité et leur endurance au quotidien.<\/p>","question_2":"INGRÉDIENTS","answer_2":"<p><\/p><ul><li><strong>L'Ashwagandha KSM-66®<\/strong> aide à réduire le stress et à favoriser un état d'esprit plus calme, équilibré et serein au quotidien.<\/li><li><strong>Le Shilajitpur de l'Himalaya<\/strong> agit en synergie pour soutenir l'équilibre hormonal masculin, la vitalité et le bien-être général.<\/li><li><strong>Le Gokshura (Tribulus Terrestris)<\/strong> contribue à soutenir naturellement la production de testostérone et les performances masculines.<\/li><li><strong>Le Ginseng Panax<\/strong> favorise l'énergie, la concentration et l'endurance physique et mentale.<\/li><li><strong>Le Kaunch (Mucuna Pruriens)<\/strong> soutient la libido, l'humeur et le bien-être hormonal masculin.<\/li><li><strong>Le Musli Noir (Curculigo Orchioides)<\/strong>est reconnu dans la médecine ayurvédique pour soutenir la vitalité masculine et les performances physiques.<\/li><\/ul>","question_3":"LIVRAISON ET RETOURS","answer_3":"<h3><strong>LIVRAISON<\/strong><\/h3><p>• <strong>Livraison gratuite :<\/strong> Nous offrons la livraison standard gratuite sur toutes les commandes.<br\/><br\/>• <strong>Zone de livraison :<\/strong> Nous livrons actuellement partout en France.<br\/><br\/>• <strong>Délais de livraison :<\/strong> Les commandes sont généralement livrées sous 5 jours après leur traitement, selon la destination.<\/p><h3><strong>RETOURS<\/strong><\/h3><p>Nous acceptons les retours dans les conditions suivantes :<\/p><p>• <strong>Délai de retour :<\/strong> Les articles doivent être retournés dans les 14 jours suivant leur réception.<br\/><br\/>• <strong>État de l’article :<\/strong> Les produits doivent être inutilisés, non ouverts et dans leur emballage d’origine.<br\/><br\/>• <strong>Preuve d’achat :<\/strong> Un reçu ou un numéro de commande est requis pour toute demande de retour.<\/p>","question_4":"","answer_4":"","question_5":"","answer_5":"","question_6":"","answer_6":"","question_7":"","answer_7":"","question_8":"","answer_8":"","question_9":"","answer_9":"","question_10":"","answer_10":""}}},"block_order":["image_rating_XwBPCf","title_4EWLUd","custom_liquid_tdpLAU","add_to_cart_7nhY9K","custom_liquid_jy6Ra4","custom_money_back_7WaRyE","custom_liquid_xQNtGz","product_faq_R9JzNF"],"name":"Product Details","settings":{"use_theme_colors":true,"current_product":"","section_bg_color":"#ffffff","blocks_spacing":4,"text_color":"#000000","accent_color":"#ef4a65","divider_color":"#eeeeee","show_product_info":true,"show_product_gallery":true,"show_product_variants":true,"thumbnail_border_color":"#eeeeee","thumbnail_active_border_color":"#ef4a65","dots_color":"#cccccc","enable_full_width_image":false,"enable_mobile_full_width_image":true,"hide_thumbnails":false,"dot_size":8,"dot_color":"#cccccc","dot_active_color":"#000000","show_desktop_arrows":false,"desktop_arrow_background":"#ffffff","desktop_arrow_border":"#e0e0e0","desktop_arrow_icon":"#000000","desktop_arrow_hover_background":"#f5f5f5","desktop_arrow_hover_border":"#d0d0d0","arrow_border_radius":50,"arrow_opacity":90,"desktop_arrow_placement":"overlaid","show_mobile_arrows":false,"mobile_arrow_placement":"overlaid","mobile_thumbnails_2x2_grid":true,"show_variant_selector":true,"variant_border_color":"#e5e7eb","variant_hover_border_color":"#3b82f6","variant_selected_border_color":"#3b82f6","variant_selected_bg_color":"#eff6ff","variant_badge_bg_color":"#3b82f6","variant_badge_text_color":"#ffffff","variant_title_color":"#1f2937","variant_description_color":"#6b7280","variant_original_price_color":"#9ca3af","variant_current_price_color":"#3b82f6","variant_limit":6,"show_variant_images":true,"show_compare_price":true,"show_variant_description":true,"show_savings":true,"highlight_second_variant":false,"best_value_text":"BEST VALUE"}},"scrolling_features_bar_AhP6EL":{"type":"scrolling-features-bar","blocks":{"feature_item_WJdNbm":{"type":"feature_item","settings":{"text":"Qualité premium","icon_type":"svg","icon":"<svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" viewbox=\"0 0 24 24\"><path d=\"M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z\"><\/path><\/svg>"}},"feature_item_CJxhgK":{"type":"feature_item","settings":{"text":"livraison rapide","icon_type":"svg","icon":"<svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" viewbox=\"0 0 24 24\"><path d=\"M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zm-6 0H5V6h9v2zm-9 11.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm12 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z\"><\/path><\/svg>"}},"feature_item_VMc6KP":{"type":"feature_item","settings":{"text":"Garantie satisfait ou remboursé de 60 jours","icon_type":"svg","icon":"<svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" viewbox=\"0 0 24 24\"><path d=\"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z\"><\/path><\/svg>"}}},"block_order":["feature_item_WJdNbm","feature_item_CJxhgK","feature_item_VMc6KP"],"settings":{"use_theme_colors":false,"vertical_padding":15,"item_gap":60,"mobile_item_gap":30,"font_size":14,"mobile_font_size":12,"letter_spacing":0.5,"uppercase_text":true,"icon_size":20,"mobile_icon_size":16,"icon_spacing":10,"icon_type":"svg","slider_direction":"left","scrolling_velocity":15,"pause_on_hover":true,"background_color":"#000000","text_color":"#f0cd4f","icon_color":"#f0cd4f","use_gradient_background":false,"background_gradient":""}},"roadmap_px8Lfq":{"type":"roadmap","blocks":{"roadmap_step_qcmBhk":{"type":"roadmap_step","settings":{"badge_text":"SEMAINE 1","title":"RÉÉQUILIBRAGE DU STRESS ET DE L'ÉNERGIE","description":"<ul><li><strong>Le taux de cortisol commence à diminuer, le brouillard mental s’estompe<\/strong><\/li><li><strong>Le sommeil s’améliore, les réveils sont plus agréables<\/strong><\/li><li><strong>L’humeur se stabilise, le stress devient plus facile à gérer<\/strong><\/li><li><strong>Les premiers signes d’un regain d’énergie et de concentration apparaissent<\/strong><\/li><\/ul>","custom_icon":""}},"roadmap_step_DiVHWG":{"type":"roadmap_step","settings":{"badge_text":"MOIS 1","title":"LES HORMONES ET LES PERFORMANCES RETROUVENT LEUR ÉQUILIBRE","description":"<ul><li><strong>Le soutien à la testostérone devient progressivement perceptible<\/strong><\/li><li><strong>Le désir revient de manière plus régulière<\/strong><\/li><li><strong>La circulation sanguine s’améliore jour après jour<\/strong><\/li><li><strong>La motivation et la confiance reviennent naturellement<\/strong><\/li><\/ul>","custom_icon":""}},"roadmap_step_YAM6Pp":{"type":"roadmap_step","settings":{"badge_text":"MOIS 3+","title":"PERFORMANCE ET VITALITÉ À LEUR MEILLEUR NIVEAU","description":"<ul><li><strong>Les 6 ingrédients agissent en parfaite synergie<\/strong><\/li><li><strong>L’équilibre hormonal est rétabli et durablement soutenu<\/strong><\/li><li><strong>Énergie, endurance et performances deviennent votre nouvelle norme<\/strong><\/li><li><strong>Votre partenaire le remarque. Vous le remarquez. La différence se voit.<\/strong><\/li><\/ul>","custom_icon":""}}},"block_order":["roadmap_step_qcmBhk","roadmap_step_DiVHWG","roadmap_step_YAM6Pp"],"name":"Roadmap","settings":{"use_theme_colors":false,"contained_section":true,"max_container_width":1200,"heading":"À QUOI VOUS ATTENDRE : LE CALENDRIER","subheading":"","heading_size":36,"heading_size_mobile":24,"subheading_size":16,"subheading_size_mobile":14,"step_title_size":20,"step_title_size_mobile":18,"step_description_size":14,"step_description_size_mobile":12,"accent_text":"DE VOS RÉSULTATS","override_global_accent":true,"use_accent_gradient":false,"accent_text_gradient":"linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(248, 248, 248, 1) 100%)","accent_color":"#f0cd4f","accent_font_family":"inherit","accent_font_style":"normal","accent_font_weight":700,"image_position":"right","image_column_width":40,"text_column_width":50,"image_border_radius":8,"timeline_width":2,"timeline_border_radius":2,"show_badges":true,"desktop_badge_font_size":12,"badge_font_size_mobile":11,"badge_border_radius":50,"badge_border_width":1,"badge_border_style":"solid","badge_border_color":"#ffce1b","desktop_content_alignment":"center","mobile_content_alignment":"center","roadmap_item_spacing_desktop":40,"roadmap_item_spacing_mobile":30,"enable_spacing":true,"section_spacing_desktop":72,"section_spacing_mobile":36,"section_background":"linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(248, 248, 248, 1) 100%)","text_color":"#121212","heading_color":"#121212","subheading_color":"#121212","step_title_color":"#121212","step_description_color":"#666666","timeline_color":"#e0e0e0","circle_color":"#f0cd4f","circle_icon_color":"#000000","badge_background":"#f0cd4f","badge_text_color":"#000000"}},"custom_liquid_x6Gdnd":{"type":"custom-liquid","name":"t:sections.custom-liquid.presets.name","settings":{"custom_liquid":"<section class=\"su-why\">\n  <h2 class=\"su-title\">Pourquoi les hommes choisissent Sommet&nbsp;Ultime<\/h2>\n  <p class=\"su-sub\">La seule formule de performance masculine conçue pour cibler le stress, les hormones et l'énergie — le tout en même temps.<\/p>\n\n  <div class=\"su-cards\">\n\n    <div class=\"su-card\">\n      <span class=\"su-icon\">\n        <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n          <path d=\"M13 2 4 13h6l-1 9 9-12h-6l1-8z\" fill=\"#171717\"\/>\n          <path d=\"M5.5 4.5 4 6M5 9.5 3.3 10.5\" stroke=\"#171717\" stroke-width=\"1.4\" stroke-linecap=\"round\"\/>\n        <\/svg>\n      <\/span>\n      <div class=\"su-content\">\n        <h3 class=\"su-h\">Cortisol sous contrôle<\/h3>\n        <p class=\"su-p\">Ashwagandha KSM-66® — l'adaptogène le plus étudié cliniquement pour la réduction du cortisol. Quand le stress baisse, la testostérone augmente naturellement.<\/p>\n      <\/div>\n    <\/div>\n\n    <div class=\"su-card\">\n      <span class=\"su-icon\">\n        <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n          <g fill=\"none\" stroke=\"#171717\" stroke-width=\"1.7\" stroke-linejoin=\"round\" stroke-linecap=\"round\">\n            <path d=\"M14 3v5l4.6 8.4A1.6 1.6 0 0 1 17.2 19H10.2a1.6 1.6 0 0 1-1.4-2.6L13 8V3\"\/>\n            <path d=\"M12.4 3h3.2\"\/>\n            <path d=\"M10.5 14h6.2\"\/>\n          <\/g>\n          <g fill=\"#171717\">\n            <path d=\"M6 8.7 4 9.85v2.3L6 13.3l2-1.15v-2.3z\"\/>\n            <path d=\"M5.5 5 3.9 5.92v1.84L5.5 8.68l1.6-.92V5.92z\"\/>\n          <\/g>\n        <\/svg>\n      <\/span>\n      <div class=\"su-content\">\n        <h3 class=\"su-h\">Formule performance 6-en-1<\/h3>\n        <p class=\"su-p\">Cible simultanément les trois causes profondes du déclin masculin — stress, déséquilibre hormonal et manque d'énergie. Rien n'est laissé de côté.<\/p>\n      <\/div>\n    <\/div>\n\n    <div class=\"su-card\">\n      <span class=\"su-icon\">\n        <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n          <path d=\"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5S5 13 5 15a7 7 0 0 0 7 7z\" fill=\"#171717\"\/>\n          <path d=\"M12 22a3.2 3.2 0 0 0 3.2-3.2c0-1.5-1.1-2.6-1.9-3.6-.5 1-1.5 1.3-1.5 1.3.6-1.7-.5-3.2-1.1-4-.4 1.1-1.1 1.8-1.6 2.6a3.4 3.4 0 0 0-.3 1.7A3.2 3.2 0 0 0 12 22z\" fill=\"#e7b94b\"\/>\n        <\/svg>\n      <\/span>\n      <div class=\"su-content\">\n        <h3 class=\"su-h\">Testostérone et libido restaurées<\/h3>\n        <p class=\"su-p\">Le Shilajit de l'Himalaya, le Gokshura et le Musli Noir agissent ensemble pour reconstruire vos fondations hormonales et raviver l'élan, le désir et la vitalité de l'intérieur.<\/p>\n      <\/div>\n    <\/div>\n\n    <div class=\"su-card\">\n      <span class=\"su-icon\">\n        <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n          <g fill=\"#171717\">\n            <rect x=\"6.2\" y=\"2.4\" width=\"6\" height=\"5\" rx=\"2.2\"\/>\n            <path d=\"M7 21v-6c0-1.1.9-2 2-2h1.4c1.9 0 3.4-1.5 3.4-3.4V7.2a2.4 2.4 0 0 1 4.8 0v2.4C18.6 14.9 15.2 19 10 19v2z\"\/>\n          <\/g>\n          <g>\n            <circle cx=\"6.6\" cy=\"17.6\" r=\"3.4\" fill=\"#171717\"\/>\n            <path d=\"M6.9 15.4 5.1 17.9h1.5l-.4 2 2-2.6H6.5l.4-1.9z\" fill=\"#e7b94b\"\/>\n          <\/g>\n        <\/svg>\n      <\/span>\n      <div class=\"su-content\">\n        <h3 class=\"su-h\">Énergie et endurance décuplées<\/h3>\n        <p class=\"su-p\">Le Panax Ginseng et le Kaunch (Mucuna Pruriens) favorisent l'énergie, l'endurance physique et le bien-être hormonal — la base de la performance au quotidien.<\/p>\n      <\/div>\n    <\/div>\n\n  <\/div>\n<\/section>\n\n<style>\n  @import url('https:\/\/fonts.googleapis.com\/css2?family=Poppins:wght@400;500;600;700;800&display=swap');\n\n  .su-why {\n    --gold: #e7b94b;\n    --gold-light: #f7e493;\n    --gold-dark: #c8992f;\n    width: 100%;\n    max-width: 100%;\n    margin: 0;\n    padding: 60px 80px;\n    background: radial-gradient(120% 80% at 50% 0%, #181818 0%, #0c0c0c 60%, #080808 100%);\n    font-family: \"Poppins\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n    box-sizing: border-box;\n  }\n  .su-why * { box-sizing: border-box; }\n\n  .su-why .su-title {\n    margin: 0 0 16px;\n    text-align: center;\n    font-size: 36px;\n    font-weight: 800;\n    line-height: 1.18;\n    letter-spacing: .4px;\n    text-transform: uppercase;\n    color: #ffffff !important;\n    -webkit-text-fill-color: #ffffff !important;\n    background: none !important;\n  }\n  .su-sub {\n    margin: 0 auto 40px;\n    max-width: 700px;\n    text-align: center;\n    font-size: 17px;\n    font-weight: 400;\n    line-height: 1.5;\n    color: #eaeaea;\n  }\n\n  .su-cards {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 24px;\n    max-width: 1100px;\n    margin: 0 auto;\n  }\n\n  .su-card {\n    display: flex;\n    align-items: flex-start;\n    gap: 20px;\n    padding: 28px 26px;\n    border-radius: 14px;\n    border: 1.6px solid transparent;\n    background-image:\n      linear-gradient(180deg, #101010, #161616),\n      linear-gradient(135deg, var(--gold-light), var(--gold-dark) 55%, #6f561c);\n    background-origin: border-box;\n    background-clip: padding-box, border-box;\n  }\n\n  .su-icon {\n    flex: 0 0 auto;\n    width: 72px;\n    height: 72px;\n    border-radius: 50%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    background: radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 55%, var(--gold-dark));\n    box-shadow: 0 0 18px rgba(231,185,75,.18);\n  }\n  .su-icon svg { width: 38px; height: 38px; }\n\n  .su-content { flex: 1 1 auto; min-width: 0; }\n\n  .su-why .su-card .su-h {\n    margin: 0 0 8px;\n    font-size: 17px;\n    font-weight: 800;\n    line-height: 1.22;\n    letter-spacing: .3px;\n    text-transform: uppercase;\n    color: #f3c75a !important;\n    -webkit-text-fill-color: #f3c75a !important;\n    background: none !important;\n  }\n  .su-p {\n    margin: 0;\n    font-size: 14.5px;\n    font-weight: 400;\n    line-height: 1.55;\n    color: #e6e6e6;\n  }\n\n  @media (max-width: 768px) {\n    .su-why { padding: 30px 14px 34px; }\n    .su-title { font-size: 24px; }\n    .su-sub { font-size: 15px; }\n    .su-cards { grid-template-columns: 1fr; gap: 18px; }\n    .su-card { gap: 15px; padding: 18px 16px; }\n    .su-icon { width: 60px; height: 60px; }\n    .su-icon svg { width: 32px; height: 32px; }\n    .su-h { font-size: 16px; }\n    .su-p { font-size: 13.5px; }\n  }\n<\/style>","padding_top":0,"padding_bottom":0}},"custom_liquid_gA8HGm":{"type":"custom-liquid","name":"t:sections.custom-liquid.presets.name","settings":{"custom_liquid":"<div class=\"su-mobile-img\">\n  <img\n    src=\"https:\/\/cdn.shopify.com\/s\/files\/1\/0999\/3817\/3312\/files\/hf_20260602_134014_4c66f60f-f306-4147-a402-4c9be8593c78.png?v=1780408131\"\n    alt=\"Performance Gummies comparées aux options classiques\"\n    loading=\"lazy\">\n<\/div>\n\n<style>\n  .su-mobile-img {\n    max-width: 560px;\n    margin: 0 auto;\n  }\n  .su-mobile-img img {\n    display: block;\n    width: 100%;\n    height: auto;\n  }\n  @media (min-width: 750px) {\n    .su-mobile-img { display: none !important; }\n  }\n<\/style>","padding_top":0,"padding_bottom":0}},"custom_liquid_n9wgki":{"type":"custom-liquid","name":"t:sections.custom-liquid.presets.name","settings":{"custom_liquid":"<section class=\"sur-carousel\">\n  <h2 class=\"sur-title\">Ce que nos clients disent<\/h2>\n\n  <div class=\"sur-track\">\n\n    <article class=\"sur-slide is-active\">\n      <div class=\"sur-avatar\">T<\/div>\n      <div class=\"sur-slide-content\">\n        <h3 class=\"sur-name\">Thomas M., 38 ans — Paris<\/h3>\n        <p class=\"sur-role\">⭐⭐⭐⭐⭐ Achat vérifié<\/p>\n        <div class=\"sur-quote\">\n          <span class=\"sur-mark\" aria-hidden=\"true\">\n            <svg viewBox=\"0 0 40 30\"><g fill=\"#e2b23f\">\n              <path d=\"M4 28h8L18 6h-8z\"\/><path d=\"M20 28h8L34 6h-8z\"\/>\n            <\/g><\/svg>\n          <\/span>\n          <p>J'étais sceptique au départ, mais après 3 semaines j'ai remarqué une vraie différence sur mon niveau d'énergie et ma concentration au quotidien. Le stress du boulot me pesait moins, je dormais mieux, et ma motivation est revenue. Ma femme a remarqué le changement avant moi. Je recommande vraiment.<\/p>\n        <\/div>\n      <\/div>\n    <\/article>\n\n    <article class=\"sur-slide\">\n      <div class=\"sur-avatar\">K<\/div>\n      <div class=\"sur-slide-content\">\n        <h3 class=\"sur-name\">Karim B., 42 ans — Lyon<\/h3>\n        <p class=\"sur-role\">⭐⭐⭐⭐⭐ Achat vérifié<\/p>\n        <div class=\"sur-quote\">\n          <span class=\"sur-mark\" aria-hidden=\"true\">\n            <svg viewBox=\"0 0 40 30\"><g fill=\"#e2b23f\">\n              <path d=\"M4 28h8L18 6h-8z\"\/><path d=\"M20 28h8L34 6h-8z\"\/>\n            <\/g><\/svg>\n          <\/span>\n          <p>J'avais essayé d'autres compléments avant, rien ne tenait dans la durée. Là c'est différent. Dès la deuxième semaine j'avais plus d'endurance à la salle, moins de coups de barre en milieu de journée. Au bout d'un mois je me sens vraiment plus moi-même — plus de drive, plus de clarté mentale. Je suis à ma deuxième commande.<\/p>\n        <\/div>\n      <\/div>\n    <\/article>\n\n    <article class=\"sur-slide\">\n      <div class=\"sur-avatar\">N<\/div>\n      <div class=\"sur-slide-content\">\n        <h3 class=\"sur-name\">Nicolas R., 35 ans — Bordeaux<\/h3>\n        <p class=\"sur-role\">⭐⭐⭐⭐⭐ Achat vérifié<\/p>\n        <div class=\"sur-quote\">\n          <span class=\"sur-mark\" aria-hidden=\"true\">\n            <svg viewBox=\"0 0 40 30\"><g fill=\"#e2b23f\">\n              <path d=\"M4 28h8L18 6h-8z\"\/><path d=\"M20 28h8L34 6h-8z\"\/>\n            <\/g><\/svg>\n          <\/span>\n          <p>Ce qui m'a convaincu c'est la composition — des ingrédients naturels que j'avais déjà recherchés séparément. Le fait de les avoir tous dans une seule gomme pratique c'est top. Résultat après 6 semaines : meilleure récupération après le sport, humeur plus stable, et une énergie qui dure toute la journée sans crash. Très satisfait.<\/p>\n        <\/div>\n      <\/div>\n    <\/article>\n\n  <\/div>\n\n  <div class=\"sur-nav\">\n    <button class=\"sur-arrow sur-prev\" type=\"button\" aria-label=\"Précédent\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m15 18-6-6 6-6\"\/><\/svg>\n    <\/button>\n    <button class=\"sur-arrow sur-next\" type=\"button\" aria-label=\"Suivant\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 18 6-6-6-6\"\/><\/svg>\n    <\/button>\n  <\/div>\n<\/section>\n\n<style>\n  .sur-carousel {\n    --ink: #1f2733;\n    --muted: #5d6573;\n    --cream: #f7f4ec;\n    --gold: #e2b23f;\n    width: 100%;\n    max-width: 100%;\n    margin: 0;\n    padding: 60px 80px;\n    background: var(--cream);\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n    box-sizing: border-box;\n  }\n  .sur-carousel * { box-sizing: border-box; }\n  .sur-title {\n    margin: 0 0 40px;\n    text-align: center;\n    font-size: 36px;\n    font-weight: 800;\n    line-height: 1.2;\n    letter-spacing: .3px;\n    text-transform: uppercase;\n    color: var(--ink) !important;\n    -webkit-text-fill-color: var(--ink) !important;\n    background: none !important;\n  }\n  .sur-track { max-width: 900px; margin: 0 auto; }\n  .sur-slide { display: none; }\n  .sur-slide.is-active {\n    display: flex;\n    align-items: center;\n    gap: 60px;\n    animation: surFade .35s ease;\n  }\n  @keyframes surFade { from { opacity: 0; } to { opacity: 1; } }\n  .sur-avatar {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 100px;\n    height: 100px;\n    border-radius: 50%;\n    background: var(--gold);\n    color: #fff;\n    font-size: 42px;\n    font-weight: 800;\n    flex: 0 0 100px;\n  }\n  .sur-slide-content { flex: 1; min-width: 0; }\n  .sur-name {\n    margin: 0 0 4px;\n    font-size: 24px;\n    font-weight: 700;\n    color: var(--ink) !important;\n    -webkit-text-fill-color: var(--ink) !important;\n    background: none !important;\n  }\n  .sur-role { margin: 0 0 20px; font-size: 15px; color: var(--muted); }\n  .sur-quote { position: relative; padding-left: 40px; }\n  .sur-mark { position: absolute; left: 0; top: 2px; width: 26px; }\n  .sur-mark svg { width: 26px; height: auto; display: block; }\n  .sur-quote p { margin: 0; font-size: 16px; line-height: 1.7; color: #3b4350; }\n  .sur-nav {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    gap: 30px;\n    margin-top: 40px;\n  }\n  .sur-arrow {\n    width: 48px;\n    height: 48px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 50%;\n    border: 1px solid transparent;\n    background: transparent;\n    color: #2b303a;\n    cursor: pointer;\n    transition: border-color .2s ease, background .2s ease;\n  }\n  .sur-arrow svg { width: 24px; height: 24px; }\n  .sur-arrow:hover { border-color: #c9c3b4; background: rgba(0,0,0,.03); }\n  @media (max-width: 768px) {\n    .sur-carousel { padding: 32px 18px 28px; }\n    .sur-title { font-size: 24px; }\n    .sur-slide.is-active { flex-direction: column; text-align: center; gap: 20px; }\n    .sur-avatar { width: 80px; height: 80px; flex: 0 0 80px; font-size: 32px; margin: 0 auto; }\n    .sur-name { font-size: 19px; text-align: center; }\n    .sur-role { text-align: center; }\n    .sur-quote { padding-left: 34px; }\n    .sur-quote p { font-size: 14.5px; }\n  }\n<\/style>\n\n<script>\n  (function () {\n    document.querySelectorAll('.sur-carousel').forEach(function (root) {\n      var slides = root.querySelectorAll('.sur-slide');\n      if (!slides.length) return;\n      var i = 0;\n      function show(n) {\n        i = (n + slides.length) % slides.length;\n        slides.forEach(function (s, idx) { s.classList.toggle('is-active', idx === i); });\n      }\n      var prev = root.querySelector('.sur-prev');\n      var next = root.querySelector('.sur-next');\n      if (prev) prev.addEventListener('click', function () { show(i - 1); });\n      if (next) next.addEventListener('click', function () { show(i + 1); });\n      show(0);\n    });\n  })();\n<\/script>","padding_top":0,"padding_bottom":0}},"custom_liquid_rUAMaJ":{"type":"custom-liquid","name":"t:sections.custom-liquid.presets.name","settings":{"custom_liquid":"<div class=\"su-mobile-img-2\">\n  <img\n    src=\"https:\/\/cdn.shopify.com\/s\/files\/1\/0999\/3817\/3312\/files\/hf_20260602_135119_e0e9904d-d362-42c1-8d81-91cb04a09a60.png?v=1780408468\"\n    alt=\"Sommet Ultime\"\n    loading=\"lazy\">\n<\/div>\n\n<style>\n  .su-mobile-img-2 {\n    max-width: 560px;\n    margin: 0 auto;\n  }\n  .su-mobile-img-2 img {\n    display: block;\n    width: 100%;\n    height: auto;\n  }\n  @media (min-width: 750px) {\n    .su-mobile-img-2 { display: none !important; }\n  }\n<\/style>","padding_top":0,"padding_bottom":0}},"custom_liquid_94tfac":{"type":"custom-liquid","name":"t:sections.custom-liquid.presets.name","settings":{"custom_liquid":"<section class=\"rfy-block\">\n  <h2 class=\"rfy-title\">Sommet Ultime est fait pour vous si…<\/h2>\n\n  <div class=\"rfy-inner\">\n    <ul class=\"rfy-list\">\n      <li class=\"rfy-item\">\n        <span class=\"rfy-check\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f3c233\"\/><path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/><\/svg>\n        <\/span>\n        <span>Vous ressentez moins d'élan et de désir qu'avant — et cela dure depuis plus longtemps que vous ne voudriez l'admettre.<\/span>\n      <\/li>\n      <li class=\"rfy-item\">\n        <span class=\"rfy-check\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f3c233\"\/><path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/><\/svg>\n        <\/span>\n        <span>Votre énergie s'effondre en cours de journée et vous vous réveillez déjà épuisé.<\/span>\n      <\/li>\n      <li class=\"rfy-item\">\n        <span class=\"rfy-check\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f3c233\"\/><path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/><\/svg>\n        <\/span>\n        <span>Vos performances sont irrégulières et vous ne savez jamais à quoi vous attendre.<\/span>\n      <\/li>\n      <li class=\"rfy-item\">\n        <span class=\"rfy-check\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f3c233\"\/><path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/><\/svg>\n        <\/span>\n        <span>Le stress et la baisse de moral sapent discrètement votre confiance et votre motivation.<\/span>\n      <\/li>\n      <li class=\"rfy-item\">\n        <span class=\"rfy-check\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f3c233\"\/><path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/><\/svg>\n        <\/span>\n        <span>Vous avez essayé des pilules ou d'autres compléments qui n'ont pas fonctionné, ou qui ont cessé de faire effet.<\/span>\n      <\/li>\n      <li class=\"rfy-item\">\n        <span class=\"rfy-check\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"#f3c233\"\/><path d=\"M7 12.5l3 3 7-7\" fill=\"none\" stroke=\"#1f1f1f\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\/><\/svg>\n        <\/span>\n        <span>Vous voulez traiter la cause profonde — pas seulement masquer le symptôme le temps d'une nuit.<\/span>\n      <\/li>\n    <\/ul>\n\n    <img class=\"rfy-img\"\n      src=\"https:\/\/cdn.shopify.com\/s\/files\/1\/0999\/3817\/3312\/files\/hf_20260602_135349_19deb44b-8cc4-456a-b8a6-bc34ccaeae85.jpg?v=1780408550\"\n      alt=\"Sommet Ultime Performance Gummies\" loading=\"lazy\">\n  <\/div>\n<\/section>\n\n<style>\n  .rfy-block {\n    --ink: #1f2733;\n    --text: #3b4350;\n    --cream: #f7f4ec;\n    width: 100%;\n    max-width: 100%;\n    margin: 0;\n    padding: 60px 80px;\n    background: var(--cream);\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n    box-sizing: border-box;\n  }\n  .rfy-block * { box-sizing: border-box; }\n\n  .rfy-title {\n    margin: 0 0 40px;\n    text-align: center;\n    font-size: 36px;\n    font-weight: 800;\n    line-height: 1.25;\n    letter-spacing: .2px;\n    text-transform: uppercase;\n    color: var(--ink) !important;\n    -webkit-text-fill-color: var(--ink) !important;\n    background: none !important;\n  }\n\n  .rfy-inner {\n    display: flex;\n    align-items: center;\n    gap: 60px;\n    max-width: 1100px;\n    margin: 0 auto;\n  }\n\n  .rfy-list {\n    list-style: none;\n    margin: 0;\n    padding: 0;\n    display: flex;\n    flex-direction: column;\n    gap: 20px;\n    flex: 1;\n  }\n  .rfy-item {\n    display: flex;\n    align-items: flex-start;\n    gap: 14px;\n    font-size: 16px;\n    line-height: 1.55;\n    color: var(--text);\n  }\n  .rfy-check {\n    flex: 0 0 auto;\n    width: 24px;\n    height: 24px;\n    margin-top: 1px;\n  }\n  .rfy-check svg { width: 24px; height: 24px; display: block; }\n\n  .rfy-img {\n    display: block;\n    width: 420px;\n    flex: 0 0 420px;\n    height: auto;\n    border-radius: 12px;\n  }\n\n  @media (max-width: 768px) {\n    .rfy-block { padding: 30px 16px; }\n    .rfy-title { font-size: 24px; }\n    .rfy-inner { flex-direction: column; gap: 30px; }\n    .rfy-img { width: 100%; flex: none; }\n    .rfy-item { font-size: 14px; gap: 12px; }\n  }\n<\/style>","padding_top":0,"padding_bottom":0}},"custom_liquid_NGrdeJ":{"type":"custom-liquid","name":"t:sections.custom-liquid.presets.name","settings":{"custom_liquid":"<section class=\"ing-slider\">\n  <h2 class=\"ing-title\">\n    <span class=\"ing-accent\">Des ingrédients puissants<\/span>\n    <span class=\"ing-dark\"> pour une performance optimale<\/span>\n  <\/h2>\n  <div class=\"ing-track\">\n    <div class=\"ing-slide\">\n      <img class=\"ing-img\" src=\"https:\/\/cdn.shopify.com\/s\/files\/1\/0999\/3817\/3312\/files\/Gemini_Generated_Image_c1sqaoc1sqaoc1sq_1.webp?v=1780408704\" alt=\"Ashwagandha\" loading=\"lazy\">\n      <div class=\"ing-card\">\n        <h3 class=\"ing-name\">Ashwagandha<\/h3>\n        <p class=\"ing-desc\">Réduit le cortisol, augmente la testostérone libre et renforce la résistance au stress.<\/p>\n      <\/div>\n    <\/div>\n    <div class=\"ing-slide\">\n      <img class=\"ing-img\" src=\"https:\/\/cdn.shopify.com\/s\/files\/1\/0999\/3817\/3312\/files\/Gemini_Generated_Image_c1sqaoc1sqaoc1sq_1_1.webp?v=1780408704\" alt=\"Shilajit\" loading=\"lazy\">\n      <div class=\"ing-card\">\n        <h3 class=\"ing-name\">Shilajit<\/h3>\n        <p class=\"ing-desc\">Augmente la testostérone totale et libre, et améliore la production d'ATP mitochondrial.<\/p>\n      <\/div>\n    <\/div>\n    <div class=\"ing-slide\">\n      <img class=\"ing-img\" src=\"https:\/\/cdn.shopify.com\/s\/files\/1\/0999\/3817\/3312\/files\/ginsjen_9c376acb-359a-4149-a743-00cc79cce187.webp?v=1780408704\" alt=\"Panax Ginseng\" loading=\"lazy\">\n      <div class=\"ing-card\">\n        <h3 class=\"ing-name\">Panax Ginseng<\/h3>\n        <p class=\"ing-desc\">Stimule la production de LH et la circulation sanguine ; effet anti-inflammatoire.<\/p>\n      <\/div>\n    <\/div>\n  <\/div>\n  <div class=\"ing-nav\">\n    <button class=\"ing-arrow ing-prev\" type=\"button\" aria-label=\"Précédent\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m15 18-6-6 6-6\"\/><\/svg>\n    <\/button>\n    <button class=\"ing-arrow ing-next\" type=\"button\" aria-label=\"Suivant\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 18 6-6-6-6\"\/><\/svg>\n    <\/button>\n  <\/div>\n<\/section>\n<style>\n  .ing-slider {\n    --accent: #9a6326;\n    --ink: #1f2733;\n    --card: #f2f2f2;\n    width: 100%;\n    max-width: 100%;\n    margin: 0;\n    padding: 60px 80px;\n    background: #ffffff;\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n    box-sizing: border-box;\n  }\n  .ing-slider * { box-sizing: border-box; }\n  .ing-title {\n    margin: 0 0 20px;\n    text-align: center;\n    font-size: 36px;\n    font-weight: 800;\n    line-height: 1.25;\n    letter-spacing: .2px;\n    text-transform: uppercase;\n  }\n  .ing-accent { color: var(--accent) !important; -webkit-text-fill-color: var(--accent) !important; background: none !important; }\n  .ing-dark { color: var(--ink) !important; -webkit-text-fill-color: var(--ink) !important; background: none !important; }\n  .ing-track {\n    display: flex;\n    justify-content: center;\n    gap: 40px;\n    padding: 70px 4px 8px;\n    align-items: stretch;\n  }\n  .ing-slide {\n    flex: 0 0 280px;\n    position: relative;\n    display: flex;\n    flex-direction: column;\n  }\n  .ing-img {\n    position: absolute;\n    top: -60px;\n    left: 50%;\n    transform: translateX(-50%);\n    width: auto;\n    height: 120px;\n    object-fit: contain;\n    z-index: 2;\n    pointer-events: none;\n  }\n  .ing-card {\n    position: relative;\n    z-index: 1;\n    flex: 1 1 auto;\n    margin-top: 14px;\n    padding: 60px 22px 28px;\n    background: var(--card);\n    border-radius: 14px;\n  }\n  .ing-name {\n    margin: 0 0 8px;\n    font-size: 18px;\n    font-weight: 700;\n    color: var(--ink) !important;\n    -webkit-text-fill-color: var(--ink) !important;\n    background: none !important;\n  }\n  .ing-desc {\n    margin: 0;\n    font-size: 14px;\n    line-height: 1.5;\n    color: #5d6573;\n  }\n  .ing-nav {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    gap: 24px;\n    margin-top: 22px;\n  }\n  .ing-arrow {\n    width: 40px;\n    height: 40px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 50%;\n    border: 1px solid #d9d9d9;\n    background: #fff;\n    color: #2b303a;\n    cursor: pointer;\n    transition: border-color .2s ease, background .2s ease;\n  }\n  .ing-arrow svg { width: 20px; height: 20px; }\n  .ing-arrow:hover { border-color: #b3b3b3; background: #fafafa; }\n  @media (max-width: 768px) {\n    .ing-slider { padding: 30px 16px; }\n    .ing-title { font-size: 24px; }\n    .ing-track { flex-direction: column; align-items: center; padding-top: 20px; gap: 60px; }\n    .ing-slide { flex: 0 0 auto; width: 100%; max-width: 320px; }\n    .ing-img { top: -50px; }\n  }\n<\/style>\n<script>\n  (function () {\n    document.querySelectorAll('.ing-slider').forEach(function (root) {\n      var track = root.querySelector('.ing-track');\n      var cards = track ? track.querySelectorAll('.ing-slide') : [];\n      if (!track || !cards.length) return;\n      function step() {\n        var s = getComputedStyle(track);\n        var gap = parseFloat(s.columnGap || s.gap) || 40;\n        return cards[0].offsetWidth + gap;\n      }\n      var prev = root.querySelector('.ing-prev');\n      var next = root.querySelector('.ing-next');\n      if (prev) prev.addEventListener('click', function () { track.scrollBy({ left: -step(), behavior: 'smooth' }); });\n      if (next) next.addEventListener('click', function () { track.scrollBy({ left: step(), behavior: 'smooth' }); });\n    });\n  })();\n<\/script>","padding_top":0,"padding_bottom":0}},"customer_reviews_carousel_Xd9Qa9":{"type":"customer-reviews-carousel","blocks":{"review_UMGMFL":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_140713_20183e40-16c0-4081-b724-c9fed5313ffd.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"Je suis coach sportif, et je recommande Ultimapeak Shilajit à tous mes clients, ça booste l’énergie, développe les muscles, augmente les niveaux de testostérone, c’est une vraie magie en bouteille.","reviewer_name":"Alexandre","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}},"review_pEWqge":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_141051_e120902b-12c6-4b27-996f-e42d07d99a3a.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"Tout ce dont j’ai besoin. Pur, holistique et testé en laboratoire. Parfait avant un travail intense ou une séance d’entraînement. Je le recommande à tout le monde.","reviewer_name":"Antoine","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}},"review_9UGUka":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_141103_62d8a8dc-fd6d-4a2a-bc93-c0ad16ad0a82.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"Qui aurait cru que cette gomme pouvait faire autant de choses ? Une peau plus nette, une perte de poids, de meilleures performances. C’est comme une potion magique pour le bien-être général. J’en suis obsédé(e) !","reviewer_name":"Lucas","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}},"review_RCPq7Y":{"type":"review","settings":{"review_image":"shopify:\/\/shop_images\/hf_20260602_141116_3307d680-bb23-4351-b746-e3a7fdf8eaeb.png","image_position":"center center","wrap_image":false,"rating":5,"review_text":"J’ai augmenté ma testostérone en moins de 10 semaines, ma peau s’est améliorée, et je me sens plus énergique que jamais.","reviewer_name":"Julien","reviewer_age":"","show_verified_badge":true,"show_purchased_product":false,"product_reference":"","product_title":"Product Name","product_price":"$29.99","product_compare_price":"$39.99","show_purchase_date":true,"purchase_date":"March 14th, 2025"}}},"block_order":["review_UMGMFL","review_pEWqge","review_9UGUka","review_RCPq7Y"],"name":"Customer Reviews","settings":{"use_theme_colors":false,"section_width":1200,"section_background":"#ffffff","title_text":"Avis","accent_text":"Clients","title_color":"#000000","accent_color":"#f0cd4f","override_global_accent":false,"accent_text_margin_left":0,"use_accent_gradient":false,"accent_text_gradient":"linear-gradient(45deg, rgba(240, 205, 79, 1), rgba(209, 165, 8, 1) 100%)","accent_font_family":"inherit","accent_font_style":"normal","accent_font_weight":"inherit","custom_heading_styling":false,"heading_font_size":56,"heading_font_size_mobile":48,"heading_line_height":1.2,"show_description":false,"description_text":"See what our customers are saying about our products","description_color":"#000000","prev_button_bg":"#ffffff","prev_button_color":"#000000","prev_button_border":"#e0e0e0","next_button_bg":"#181b1d","next_button_color":"#ffffff","next_button_border":"#f0cd4f","scroll_amount":360,"card_width":390,"card_border_radius":10,"card_border_color":"#e0e0e0","card_background":"#ffffff","card_margin_top":0,"card_margin_right":0,"card_margin_bottom":0,"card_margin_left":0,"star_filled_color":"#ffc107","star_empty_color":"#e0e0e0","carousel_review_star_size":16,"review_text_color":"#000000","review_text_size":14,"review_text_size_mobile":12,"reviewer_info_color":"#000000","reviewer_info_bg_color":"#f5f5f5","reviewer_info_font_size":12,"verified_badge_text":"Verified Buyer","verified_badge_color":"#39ae07","verified_icon_color":"#39ae07","verified_badge_font_size":10,"enable_reviewer_info_border":false,"reviewer_info_border_width":1,"reviewer_info_border_style":"solid","reviewer_info_border_color":"#e0e0e0","reviewer_info_border_radius":8,"product_label":"Item Purchased","product_label_color":"#000000","product_title_color":"#000000","product_price_color":"#ef4a65","product_bg_color":"#f9f9f9","product_title_font_size":12,"product_price_font_size":12,"product_compare_price_font_size":10,"purchase_date_font_size":10,"product_border_color":"#eeeeee","product_border_width":1,"product_border_style":"solid","summary_star_color":"#ffbf00","summary_text_color":"#ffffff","rating_summary_text":"<p>Rated 4.8\/5 based on +10,839 Total Ratings<\/p>","rating_summary_font_size":13,"rating_summary_bg_color":"#ffffff","purchase_date_prefix":"Purchased on","purchase_date_color":"#000000","purchase_date_icon_color":"#000000","rating_summary_gradient":"linear-gradient(276deg, rgba(164, 129, 0, 1) 2%, rgba(0, 0, 0, 1) 100%)","enable_rating_summary_border":true,"rating_summary_border_width":1,"rating_summary_border_style":"solid","rating_summary_border_color":"#ffbf00","rating_summary_border_radius":50}},"store_faq_Lpd3PW":{"type":"store-faq","blocks":{"faq_item_YYJUL8":{"type":"faq_item","settings":{"question":"Combien de gummies dois-je prendre par jour ?","answer":"<p>Nous vous recommandons de prendre <strong>un gummy par jour<\/strong>.<\/p><p>Chaque gummy contient un mélange concentré d'ingrédients soigneusement sélectionnés, notamment du <strong>Shilajit, de l'Ashwagandha, du Ginseng Panax, du Gokshura, du Musli Noir et du Kaunch<\/strong>, pour soutenir la vitalité, l'énergie et le bien-être au quotidien.<\/p><p>Grâce à sa formule hautement concentrée, <strong>un seul gummy par jour suffit<\/strong> pour accompagner votre routine quotidienne et vous aider à rester au meilleur de votre forme.<\/p>"}},"faq_item_xAnE8L":{"type":"faq_item","settings":{"question":"Est-ce que cela va me donner des tremblements ou un “coup de fatigue” après ?","answer":"<p>Non. Les Performance Gummies sont totalement sans stimulants.<br\/><br\/>Au lieu de miser sur la caféine ou des stimulants artificiels, la formule soutient la production naturelle d’énergie, l’équilibre hormonal et une bonne circulation sanguine. Cela vous permet de profiter d’une énergie stable, d’une meilleure endurance et de meilleures performances, sans tremblements ni baisse d’énergie brutale.<\/p>"}},"faq_item_AUEi9b":{"type":"faq_item","settings":{"question":"À quel moment est-ce que je dois prendre ma gélule ?","answer":"<p>Vous pouvez prendre votre gélule à n’importe quel moment de la journée, mais la plupart des hommes préfèrent la prendre le matin ou en début d’après-midi afin de soutenir leur énergie, leur endurance et leur confiance tout au long de la journée.<\/p><p>Comme les ingrédients contribuent à l’équilibre de la testostérone, à la production d’oxyde nitrique et à la circulation sanguine, une prise quotidienne régulière aide à obtenir des résultats plus durables sur le long terme.<\/p>"}},"faq_item_MhA9QW":{"type":"faq_item","settings":{"question":"À quel moment vais-je commencer à ressentir les effets ?","answer":"<p>Certains hommes remarquent une augmentation de l’énergie, de la confiance et de l’endurance dès les premiers jours.<br\/><br\/>Cependant, comme la formule agit en soutenant l’équilibre hormonal, la circulation sanguine et la production d’oxyde nitrique, les meilleurs résultats apparaissent généralement après 4 à 8 semaines d’utilisation quotidienne régulière.<\/p><p>Avec une prise constante, de nombreux utilisateurs constatent une amélioration progressive de leur vitalité, de leurs performances et de leur endurance au fil du temps.<\/p>"}},"faq_item_QKVnRn":{"type":"faq_item","settings":{"question":"Comment savoir si ces gummies sont de haute qualité ?","answer":"<p>Nos Performance Gummies sont fabriquées dans des installations certifiées GMP (Bonnes Pratiques de Fabrication) et font l'objet de tests réalisés par des laboratoires indépendants afin de garantir leur pureté et leur sécurité.<\/p><p>Nous utilisons des ingrédients soigneusement sélectionnés tels que le <strong>Shilajit, l'Ashwagandha, le Ginseng Panax, le Gokshura, le Musli Noir et le Kaunch<\/strong>, tous reconnus depuis longtemps pour leur soutien à la vitalité masculine, au désir et aux performances, ainsi qu'à l'équilibre hormonal.<\/p><p>Le résultat est une formule propre et puissante, spécialement conçue pour les hommes qui recherchent un véritable soutien de leurs performances.<\/p>"}},"faq_item_Dnc6cV":{"type":"faq_item","settings":{"question":"Puis-je prendre les Performance Gummies avec d’autres compléments alimentaires ?","answer":"<p>Oui. Les Performance Gummies peuvent généralement être prises en même temps que la plupart des compléments du quotidien.<\/p><p>Comme la formule vise à soutenir l’équilibre de la testostérone, la circulation sanguine et l’énergie naturelle, beaucoup d’hommes les associent à des multivitamines, des protéines en poudre ou d’autres produits de bien-être dans leur routine quotidienne.<\/p><p>Si vous prenez actuellement un traitement médical ou si vous avez une condition de santé particulière, il est recommandé de consulter votre professionnel de santé au préalable.<\/p>"}},"faq_item_appL6A":{"type":"faq_item","settings":{"question":"Est-ce sûr pour une utilisation à long terme ?","answer":"<p>Oui. Les Performance Gummies sont formulées à partir d’ingrédients d’origine naturelle traditionnellement utilisés pour soutenir la vitalité masculine et l’équilibre hormonal.<\/p><p>Contrairement aux produits à base de stimulants, la formule agit en soutenant les mécanismes naturels du corps liés à la régulation hormonale, à la circulation et à l’énergie. Cela les rend adaptées à une utilisation quotidienne et régulière dans le cadre d’une routine sur le long terme.<\/p>"}}},"block_order":["faq_item_YYJUL8","faq_item_xAnE8L","faq_item_AUEi9b","faq_item_MhA9QW","faq_item_QKVnRn","faq_item_Dnc6cV","faq_item_appL6A"],"settings":{"use_theme_colors":true,"heading":"Foire Aux Questions","subtitle":"","heading_color":"#1773b0","section_padding":60,"section_bg_color":"#ffffff","border_radius":4,"border_color":"#e4f9ff","border_style":"full","question_color":"#1773b0","question_bg_color":"#ffffff","answer_color":"#1773b0","answer_bg_color":"#ffffff","accordion_mode":true,"image_border_radius":8,"center_when_no_image":true,"center_max_width":1000,"two_column_desktop":true,"column_gap":10,"faq_item_spacing":0,"individual_item_borders":false,"question_padding_top":20,"question_padding_bottom":15,"question_padding_left":17,"question_padding_right":14,"answer_padding_top":15,"answer_padding_bottom":15,"answer_padding_left":20,"answer_padding_right":20,"heading_font_size":36,"heading_font_size_mobile":38,"subtitle_font_size":16,"subtitle_font_size_mobile":14,"question_font_size":16,"question_font_size_mobile":14,"answer_font_size":14,"answer_font_size_mobile":13}}},"order":["shop_product_details_JbqzwH","scrolling_features_bar_AhP6EL","roadmap_px8Lfq","custom_liquid_x6Gdnd","custom_liquid_gA8HGm","custom_liquid_n9wgki","custom_liquid_rUAMaJ","custom_liquid_94tfac","custom_liquid_NGrdeJ","customer_reviews_carousel_Xd9Qa9","store_faq_Lpd3PW"]}
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "shop_product_details_JbqzwH": {
+      "type": "shop-product-details",
+      "blocks": {
+        "image_rating_XwBPCf": {
+          "type": "image_rating",
+          "settings": {
+            "star_color": "#ffc200",
+            "empty_star_color": "#e0e0e0",
+            "rating_text": "<p><strong>Noté 4,8/5</strong> par plus de 2 140 clients.</p>",
+            "rating_value": "",
+            "text_color": "#333333",
+            "value_color": "#181b1d",
+            "rating_text_size": 13,
+            "rating_value_size": 16,
+            "star_size": 21,
+            "avatar_size": 24,
+            "layout_order": "stars_avatars_text",
+            "margin_top": 10,
+            "margin_bottom": 0
+          }
+        },
+        "title_4EWLUd": {
+          "type": "title",
+          "settings": {
+            "use_custom_title": false,
+            "custom_title": "Custom Product Title",
+            "font_size": 30,
+            "margin_top": 0,
+            "margin_bottom": 9,
+            "title_color": "#000000",
+            "line_height": 1.2
+          }
+        },
+        "custom_liquid_tdpLAU": {
+          "type": "custom_liquid",
+          "settings": {
+            "custom_liquid": "<div class=\"pf-features\"><div class=\"pf-item\"><span class=\"pf-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z\"/></svg></span><div class=\"pf-text\"><h3 class=\"pf-title\">Obscurité totale, même en plein jour</h3><p class=\"pf-desc\">Les contours moulés bloquent la lumière jusqu'à l'arête du nez, là où les masques plats laissent tout passer.</p></div></div><div class=\"pf-item\"><span class=\"pf-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z\"/><circle cx=\"12\" cy=\"12\" r=\"2.6\"/></svg></span><div class=\"pf-text\"><h3 class=\"pf-title\">Zéro pression sur les yeux</h3><p class=\"pf-desc\">Deux cavités 3D laissent vos paupières et vos cils totalement libres, même en clignant des yeux.</p></div></div><div class=\"pf-item\"><span class=\"pf-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 12h11a3 3 0 1 0-3-3\"/><path d=\"M3 17h14a3 3 0 1 1-3 3\"/><path d=\"M3 7h5a2.5 2.5 0 1 0-2.5-2.5\"/></svg></span><div class=\"pf-text\"><h3 class=\"pf-title\">Léger et respirant toute la nuit</h3><p class=\"pf-desc\">28 g de mousse à mémoire de forme et un tissu maillé qui évacue la chaleur, sans transpiration.</p></div></div></div>\n<style>\n.pf-features{display:grid;gap:16px;margin:6px 0 18px}\n.pf-item{display:flex;align-items:flex-start;gap:12px}\n.pf-icon{flex:0 0 34px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(201,169,106,.12);color:#8b6f3e}\n.pf-icon svg{width:18px;height:18px}\n.pf-title{font-size:14.5px;font-weight:600;color:#1a1a1a;margin:1px 0 3px;letter-spacing:-.01em}\n.pf-desc{font-size:13px;line-height:1.5;color:#6b6b6b;margin:0}\n</style>"
+          }
+        },
+        "add_to_cart_7nhY9K": {
+          "type": "add_to_cart",
+          "settings": {
+            "use_theme_colors": true,
+            "show_fast_payment": false,
+            "button_behavior": "add_to_cart",
+            "button_text_override": "AJOUTER AU PANIER",
+            "show_price_in_button": true,
+            "button_icon": "none",
+            "custom_icon": "",
+            "icon_size": 20,
+            "buy_box_button_bg_color": "#C9A96A",
+            "button_text_color": "#1A1A1A",
+            "buy_box_button_hover_color": "#B8945A",
+            "price_color": "#1A1A1A",
+            "use_global_button_styling": true,
+            "custom_button_padding_y": 12,
+            "custom_button_font_size": 14,
+            "card_border_radius": 10
+          }
+        },
+        "custom_liquid_jy6Ra4": {
+          "type": "custom_liquid",
+          "settings": {
+            "custom_liquid": "<div class=\"pfc-benefits\"><div class=\"pfc-item\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg><span>Livraison suivie offerte</span></div><div class=\"pfc-item\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg><span>Expédié sous 24 – 48 h</span></div><div class=\"pfc-item\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg><span>Satisfait ou remboursé 30 jours</span></div><div class=\"pfc-item\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg><span>Paiement 100 % sécurisé</span></div></div>\n<style>\n.pfc-benefits{max-width:440px;margin:14px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:10px 18px}\n.pfc-item{display:flex;align-items:center;gap:7px;font-size:12.5px;line-height:1.35;color:#4a4a4a}\n.pfc-item svg{width:14px;height:14px;flex:0 0 14px;color:#8b6f3e}\n@media (max-width:420px){.pfc-benefits{grid-template-columns:1fr}}\n</style>"
+          }
+        },
+        "custom_money_back_7WaRyE": {
+          "type": "custom_money_back",
+          "settings": {
+            "title_text": "Garantie 30 nuits — satisfait ou remboursé",
+            "description_text": "Essayez le masque pendant 30 nuits. S'il ne change rien à votre sommeil, renvoyez-le et nous vous remboursons.",
+            "badge_svg": "",
+            "use_svg_badge": false,
+            "badge_size": 50,
+            "gradient_start_color": "#E4CC9C",
+            "gradient_end_color": "#C9A96A",
+            "title_color": "#1A1A1A",
+            "text_color": "#4A4A4A",
+            "title_font_size": 15,
+            "description_font_size": 13,
+            "border_style": "dotted",
+            "border_color": "#C9A96A",
+            "border_radius": 6,
+            "margin_top": 0,
+            "margin_bottom": 0,
+            "enable_shine": true,
+            "padding_top": 7,
+            "padding_right": 10,
+            "padding_bottom": 6,
+            "padding_left": 10
+          }
+        },
+        "custom_liquid_xQNtGz": {
+          "type": "custom_liquid",
+          "settings": {
+            "custom_liquid": "<div class=\"pfr-card\"><div class=\"pfr-head\"><span class=\"pfr-avatar\">C</span><div><p class=\"pfr-name\">Camille R., 34 ans — Lyon</p><p class=\"pfr-verified\">Achat vérifié</p></div><span class=\"pfr-stars\">★★★★★</span></div><p class=\"pfr-text\">« Je travaille de nuit et je dors le jour. C'est le premier masque qui bloque vraiment toute la lumière, sans appuyer sur les yeux. Je peux même ouvrir les yeux dessous, rien ne touche mes cils. Endormissement beaucoup plus rapide depuis que je l'utilise. »</p></div>\n<style>\n.pfr-card{max-width:470px;margin:18px auto 0;padding:18px 20px;border:1px solid rgba(201,169,106,.3);border-radius:12px;background:#fdfbf7}\n.pfr-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}\n.pfr-avatar{width:34px;height:34px;border-radius:50%;background:#c9a96a;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex:0 0 34px}\n.pfr-name{margin:0;font-size:13.5px;font-weight:600;color:#1a1a1a}\n.pfr-verified{margin:1px 0 0;font-size:11.5px;color:#8b6f3e}\n.pfr-stars{margin-left:auto;color:#c9a96a;font-size:13px;letter-spacing:1px}\n.pfr-text{margin:0;font-size:13.5px;line-height:1.6;color:#4a4a4a}\n</style>"
+          }
+        },
+        "product_faq_R9JzNF": {
+          "type": "product_faq",
+          "settings": {
+            "use_theme_colors": true,
+            "items_limit": 10,
+            "image_size": 40,
+            "image_border_radius": 4,
+            "image_fit": "cover",
+            "text_size": 16,
+            "answer_text_size": 16,
+            "item_padding": 16,
+            "question_padding": 8,
+            "margin_top": 10,
+            "margin_bottom": 10,
+            "border_radius": 10,
+            "border_color": "#EDE4D2",
+            "border_style": "bottom_only",
+            "question_color": "#1A1A1A",
+            "question_bg_color": "#ffffff",
+            "answer_color": "#6B6B6B",
+            "answer_bg_color": "#ffffff",
+            "accordion_mode": true,
+            "question_1": "DÉTAILS DU PRODUIT",
+            "use_product_description_for_question_1": false,
+            "answer_1": "<p>Masque de sommeil à coque 3D moulée conçu pour une obscurité totale sans aucune pression sur les yeux. Les deux cavités laissent les paupières libres de bouger, les contours épousent l'arête du nez et les pommettes pour bloquer la lumière résiduelle. Sangle plate réglable de 52 à 68 cm, confortable même en dormant sur le côté.</p>",
+            "question_2": "MATIÈRES ET ENTRETIEN",
+            "answer_2": "<p><strong>Matières</strong> : mousse à mémoire de forme haute densité, doublure en tissu maillé respirant, sangle élastique réglable à fermeture plate. Poids total : 28 grammes.</p><p><strong>Entretien</strong> : lavage à la main à l'eau tiède avec un savon doux, puis séchage à l'air libre. Ne pas mettre au sèche-linge ni au lave-linge afin de préserver la forme de la coque.</p>",
+            "question_3": "LIVRAISON ET RETOURS",
+            "answer_3": "<p><strong>LIVRAISON</strong><br>• Livraison suivie offerte sur toutes les commandes.<br>• Expédition sous 24 à 48 h après validation de la commande.<br>• Numéro de suivi envoyé par email dès l'expédition.</p><p><strong>RETOURS</strong><br>• 30 jours pour changer d'avis à compter de la réception.<br>• Le produit doit être retourné dans un état permettant sa réutilisation.<br>• Remboursement effectué sous 5 jours ouvrés après réception du retour.</p>",
+            "question_4": "",
+            "answer_4": "",
+            "question_5": "",
+            "answer_5": "",
+            "question_6": "",
+            "answer_6": "",
+            "question_7": "",
+            "answer_7": "",
+            "question_8": "",
+            "answer_8": "",
+            "question_9": "",
+            "answer_9": "",
+            "question_10": "",
+            "answer_10": ""
+          }
+        }
+      },
+      "block_order": [
+        "image_rating_XwBPCf",
+        "title_4EWLUd",
+        "custom_liquid_tdpLAU",
+        "add_to_cart_7nhY9K",
+        "custom_liquid_jy6Ra4",
+        "custom_money_back_7WaRyE",
+        "custom_liquid_xQNtGz",
+        "product_faq_R9JzNF"
+      ],
+      "name": "Product Details",
+      "settings": {
+        "use_theme_colors": true,
+        "current_product": "",
+        "section_bg_color": "#ffffff",
+        "blocks_spacing": 4,
+        "text_color": "#1A1A1A",
+        "accent_color": "#C9A96A",
+        "divider_color": "#EDE4D2",
+        "show_product_info": true,
+        "show_product_gallery": true,
+        "show_product_variants": true,
+        "thumbnail_border_color": "#EDE4D2",
+        "thumbnail_active_border_color": "#C9A96A",
+        "dots_color": "#D8D8D8",
+        "enable_full_width_image": false,
+        "enable_mobile_full_width_image": true,
+        "hide_thumbnails": false,
+        "dot_size": 8,
+        "dot_color": "#D8D8D8",
+        "dot_active_color": "#1A1A1A",
+        "show_desktop_arrows": false,
+        "desktop_arrow_background": "#ffffff",
+        "desktop_arrow_border": "#e0e0e0",
+        "desktop_arrow_icon": "#000000",
+        "desktop_arrow_hover_background": "#f5f5f5",
+        "desktop_arrow_hover_border": "#d0d0d0",
+        "arrow_border_radius": 50,
+        "arrow_opacity": 90,
+        "desktop_arrow_placement": "overlaid",
+        "show_mobile_arrows": false,
+        "mobile_arrow_placement": "overlaid",
+        "mobile_thumbnails_2x2_grid": true,
+        "show_variant_selector": true,
+        "variant_border_color": "#EDE4D2",
+        "variant_hover_border_color": "#C9A96A",
+        "variant_selected_border_color": "#C9A96A",
+        "variant_selected_bg_color": "#FBF7EF",
+        "variant_badge_bg_color": "#C9A96A",
+        "variant_badge_text_color": "#1A1A1A",
+        "variant_title_color": "#1A1A1A",
+        "variant_description_color": "#6B6B6B",
+        "variant_original_price_color": "#A9A9A9",
+        "variant_current_price_color": "#1A1A1A",
+        "variant_limit": 6,
+        "show_variant_images": true,
+        "show_compare_price": true,
+        "show_variant_description": true,
+        "show_savings": true,
+        "highlight_second_variant": false,
+        "best_value_text": "LE PLUS CHOISI"
+      }
+    },
+    "scrolling_features_bar_AhP6EL": {
+      "type": "scrolling-features-bar",
+      "blocks": {
+        "feature_item_WJdNbm": {
+          "type": "feature_item",
+          "settings": {
+            "text": "Livraison suivie offerte",
+            "icon_type": "svg",
+            "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewbox=\"0 0 24 24\"><path d=\"M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z\"></path></svg>"
+          }
+        },
+        "feature_item_CJxhgK": {
+          "type": "feature_item",
+          "settings": {
+            "text": "Satisfait ou remboursé — 30 jours",
+            "icon_type": "svg",
+            "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewbox=\"0 0 24 24\"><path d=\"M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zm-6 0H5V6h9v2zm-9 11.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm12 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z\"></path></svg>"
+          }
+        },
+        "feature_item_VMc6KP": {
+          "type": "feature_item",
+          "settings": {
+            "text": "Paiement 100 % sécurisé",
+            "icon_type": "svg",
+            "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewbox=\"0 0 24 24\"><path d=\"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z\"></path></svg>"
+          }
+        }
+      },
+      "block_order": [
+        "feature_item_WJdNbm",
+        "feature_item_CJxhgK",
+        "feature_item_VMc6KP"
+      ],
+      "settings": {
+        "use_theme_colors": false,
+        "vertical_padding": 15,
+        "item_gap": 60,
+        "mobile_item_gap": 30,
+        "font_size": 14,
+        "mobile_font_size": 12,
+        "letter_spacing": 0.5,
+        "uppercase_text": true,
+        "icon_size": 20,
+        "mobile_icon_size": 16,
+        "icon_spacing": 10,
+        "icon_type": "svg",
+        "slider_direction": "left",
+        "scrolling_velocity": 15,
+        "pause_on_hover": true,
+        "background_color": "#F5F1E8",
+        "text_color": "#1A1A1A",
+        "icon_color": "#8B6F3E",
+        "use_gradient_background": false,
+        "background_gradient": ""
+      }
+    },
+    "roadmap_px8Lfq": {
+      "type": "roadmap",
+      "blocks": {
+        "roadmap_step_qcmBhk": {
+          "type": "roadmap_step",
+          "settings": {
+            "badge_text": "NUIT 1",
+            "title": "L'OBSCURITÉ TOTALE, DÈS LA PREMIÈRE NUIT",
+            "description": "<ul><li><strong>Plus aucune lumière parasite : réveil, rue, écran en veille</strong></li><li><strong>Les cavités 3D laissent les yeux libres, sans aucune pression</strong></li><li><strong>Vous vous endormez sans chercher la bonne position</strong></li></ul>",
+            "custom_icon": ""
+          }
+        },
+        "roadmap_step_DiVHWG": {
+          "type": "roadmap_step",
+          "settings": {
+            "badge_text": "SEMAINE 1",
+            "title": "UN ENDORMISSEMENT PLUS RAPIDE",
+            "description": "<ul><li><strong>Le cerveau associe le masque au moment du coucher</strong></li><li><strong>Moins de réveils nocturnes liés à la lumière</strong></li><li><strong>Des matins plus nets, sans sensation de nuit hachée</strong></li></ul>",
+            "custom_icon": ""
+          }
+        },
+        "roadmap_step_YAM6Pp": {
+          "type": "roadmap_step",
+          "settings": {
+            "badge_text": "MOIS 1",
+            "title": "UN RYTHME DE SOMMEIL INSTALLÉ",
+            "description": "<ul><li><strong>Une routine de coucher stable, même en voyage</strong></li><li><strong>Sieste, train, avion : la même obscurité partout</strong></li><li><strong>Le masque devient un réflexe, pas une contrainte</strong></li></ul>",
+            "custom_icon": ""
+          }
+        }
+      },
+      "block_order": [
+        "roadmap_step_qcmBhk",
+        "roadmap_step_DiVHWG",
+        "roadmap_step_YAM6Pp"
+      ],
+      "name": "Roadmap",
+      "settings": {
+        "use_theme_colors": false,
+        "contained_section": true,
+        "max_container_width": 1200,
+        "heading": "VOS NUITS",
+        "subheading": "<p>Ce qui change, nuit après nuit.</p>",
+        "heading_size": 36,
+        "heading_size_mobile": 24,
+        "subheading_size": 16,
+        "subheading_size_mobile": 14,
+        "step_title_size": 20,
+        "step_title_size_mobile": 18,
+        "step_description_size": 14,
+        "step_description_size_mobile": 12,
+        "accent_text": "AVEC ONIRALA",
+        "override_global_accent": true,
+        "use_accent_gradient": false,
+        "accent_text_gradient": "linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(248, 248, 248, 1) 100%)",
+        "accent_color": "#C9A96A",
+        "accent_font_family": "inherit",
+        "accent_font_style": "normal",
+        "accent_font_weight": 700,
+        "image_position": "right",
+        "image_column_width": 40,
+        "text_column_width": 50,
+        "image_border_radius": 8,
+        "timeline_width": 2,
+        "timeline_border_radius": 2,
+        "show_badges": true,
+        "desktop_badge_font_size": 12,
+        "badge_font_size_mobile": 11,
+        "badge_border_radius": 50,
+        "badge_border_width": 1,
+        "badge_border_style": "solid",
+        "badge_border_color": "#C9A96A",
+        "desktop_content_alignment": "center",
+        "mobile_content_alignment": "center",
+        "roadmap_item_spacing_desktop": 40,
+        "roadmap_item_spacing_mobile": 30,
+        "enable_spacing": true,
+        "section_spacing_desktop": 72,
+        "section_spacing_mobile": 36,
+        "section_background": "#FFFFFF",
+        "text_color": "#1A1A1A",
+        "heading_color": "#1A1A1A",
+        "subheading_color": "#6B6B6B",
+        "step_title_color": "#1A1A1A",
+        "step_description_color": "#6B6B6B",
+        "timeline_color": "#EDE4D2",
+        "circle_color": "#C9A96A",
+        "circle_icon_color": "#1A1A1A",
+        "badge_background": "#C9A96A",
+        "badge_text_color": "#1A1A1A"
+      }
+    },
+    "customer_reviews_carousel_Xd9Qa9": {
+      "type": "customer-reviews-carousel",
+      "blocks": {
+        "review_UMGMFL": {
+          "type": "review",
+          "settings": {
+            "review_image": "",
+            "image_position": "center center",
+            "wrap_image": false,
+            "rating": 5,
+            "review_text": "Je dors en plein jour à cause de mes horaires décalés. C'est le premier masque qui bloque vraiment 100 % de la lumière, sans appuyer sur les yeux.",
+            "reviewer_name": "Thomas M.",
+            "reviewer_age": "",
+            "show_verified_badge": true,
+            "show_purchased_product": false,
+            "product_reference": "",
+            "product_title": "Masque de sommeil Onirala",
+            "product_price": "$29.99",
+            "product_compare_price": "$39.99",
+            "show_purchase_date": false,
+            "purchase_date": ""
+          }
+        },
+        "review_pEWqge": {
+          "type": "review",
+          "settings": {
+            "review_image": "",
+            "image_position": "center center",
+            "wrap_image": false,
+            "rating": 5,
+            "review_text": "Les cavités permettent d'ouvrir les yeux sous le masque, on ne sent rien sur les cils. Léger au point de l'oublier.",
+            "reviewer_name": "Camille R.",
+            "reviewer_age": "",
+            "show_verified_badge": true,
+            "show_purchased_product": false,
+            "product_reference": "",
+            "product_title": "Masque de sommeil Onirala",
+            "product_price": "$29.99",
+            "product_compare_price": "$39.99",
+            "show_purchase_date": false,
+            "purchase_date": ""
+          }
+        },
+        "review_9UGUka": {
+          "type": "review",
+          "settings": {
+            "review_image": "",
+            "image_position": "center center",
+            "wrap_image": false,
+            "rating": 5,
+            "review_text": "Je le prends en avion à chaque vol. La sangle ne glisse pas et ne fait pas mal derrière la tête.",
+            "reviewer_name": "Nicolas D.",
+            "reviewer_age": "",
+            "show_verified_badge": true,
+            "show_purchased_product": false,
+            "product_reference": "",
+            "product_title": "Masque de sommeil Onirala",
+            "product_price": "$29.99",
+            "product_compare_price": "$39.99",
+            "show_purchase_date": false,
+            "purchase_date": ""
+          }
+        },
+        "review_RCPq7Y": {
+          "type": "review",
+          "settings": {
+            "review_image": "",
+            "image_position": "center center",
+            "wrap_image": false,
+            "rating": 5,
+            "review_text": "Endormissement beaucoup plus rapide depuis que je l'utilise. Le tissu reste respirant, aucune transpiration la nuit.",
+            "reviewer_name": "Léa B.",
+            "reviewer_age": "",
+            "show_verified_badge": true,
+            "show_purchased_product": false,
+            "product_reference": "",
+            "product_title": "Masque de sommeil Onirala",
+            "product_price": "$29.99",
+            "product_compare_price": "$39.99",
+            "show_purchase_date": false,
+            "purchase_date": ""
+          }
+        }
+      },
+      "block_order": [
+        "review_UMGMFL",
+        "review_pEWqge",
+        "review_9UGUka",
+        "review_RCPq7Y"
+      ],
+      "name": "Customer Reviews",
+      "settings": {
+        "use_theme_colors": false,
+        "section_width": 1200,
+        "section_background": "#ffffff",
+        "title_text": "Avis",
+        "accent_text": "clients",
+        "title_color": "#1A1A1A",
+        "accent_color": "#C9A96A",
+        "override_global_accent": false,
+        "accent_text_margin_left": 0,
+        "use_accent_gradient": false,
+        "accent_text_gradient": "linear-gradient(45deg, rgba(240, 205, 79, 1), rgba(209, 165, 8, 1) 100%)",
+        "accent_font_family": "inherit",
+        "accent_font_style": "normal",
+        "accent_font_weight": "inherit",
+        "custom_heading_styling": false,
+        "heading_font_size": 56,
+        "heading_font_size_mobile": 48,
+        "heading_line_height": 1.2,
+        "show_description": false,
+        "description_text": "",
+        "description_color": "#6B6B6B",
+        "prev_button_bg": "#ffffff",
+        "prev_button_color": "#1A1A1A",
+        "prev_button_border": "#EDE4D2",
+        "next_button_bg": "#1A1A1A",
+        "next_button_color": "#FFFFFF",
+        "next_button_border": "#C9A96A",
+        "scroll_amount": 360,
+        "card_width": 390,
+        "card_border_radius": 10,
+        "card_border_color": "#EDE4D2",
+        "card_background": "#ffffff",
+        "card_margin_top": 0,
+        "card_margin_right": 0,
+        "card_margin_bottom": 0,
+        "card_margin_left": 0,
+        "star_filled_color": "#C9A96A",
+        "star_empty_color": "#E6E0D4",
+        "carousel_review_star_size": 16,
+        "review_text_color": "#1A1A1A",
+        "review_text_size": 14,
+        "review_text_size_mobile": 12,
+        "reviewer_info_color": "#1A1A1A",
+        "reviewer_info_bg_color": "#F5F1E8",
+        "reviewer_info_font_size": 12,
+        "verified_badge_text": "Achat vérifié",
+        "verified_badge_color": "#8B6F3E",
+        "verified_icon_color": "#8B6F3E",
+        "verified_badge_font_size": 10,
+        "enable_reviewer_info_border": false,
+        "reviewer_info_border_width": 1,
+        "reviewer_info_border_style": "solid",
+        "reviewer_info_border_color": "#EDE4D2",
+        "reviewer_info_border_radius": 8,
+        "product_label": "Produit acheté",
+        "product_label_color": "#6B6B6B",
+        "product_title_color": "#1A1A1A",
+        "product_price_color": "#8B6F3E",
+        "product_bg_color": "#f9f9f9",
+        "product_title_font_size": 12,
+        "product_price_font_size": 12,
+        "product_compare_price_font_size": 10,
+        "purchase_date_font_size": 10,
+        "product_border_color": "#EDE4D2",
+        "product_border_width": 1,
+        "product_border_style": "solid",
+        "summary_star_color": "#C9A96A",
+        "summary_text_color": "#ffffff",
+        "rating_summary_text": "<p>Noté 4,8/5 — plus de 2 140 avis</p>",
+        "rating_summary_font_size": 13,
+        "rating_summary_bg_color": "#ffffff",
+        "purchase_date_prefix": "Acheté le",
+        "purchase_date_color": "#6B6B6B",
+        "purchase_date_icon_color": "#8B6F3E",
+        "rating_summary_gradient": "linear-gradient(276deg, rgba(201, 169, 106, 1) 2%, rgba(26, 26, 26, 1) 100%)",
+        "enable_rating_summary_border": true,
+        "rating_summary_border_width": 1,
+        "rating_summary_border_style": "solid",
+        "rating_summary_border_color": "#C9A96A",
+        "rating_summary_border_radius": 50
+      }
+    },
+    "store_faq_Lpd3PW": {
+      "type": "store-faq",
+      "blocks": {
+        "faq_item_YYJUL8": {
+          "type": "faq_item",
+          "settings": {
+            "question": "Est-ce qu'il bloque vraiment toute la lumière ?",
+            "answer": "<p>Oui. Les contours sont moulés pour épouser l'arête du nez et les pommettes, la zone par laquelle la lumière passe sur un masque plat classique. Résultat : une obscurité totale, même en plein jour.</p>"
+          }
+        },
+        "faq_item_xAnE8L": {
+          "type": "faq_item",
+          "settings": {
+            "question": "Est-ce qu'il appuie sur les yeux ?",
+            "answer": "<p>Non. La coque 3D crée deux cavités devant les yeux. Vous pouvez cligner et ouvrir les yeux librement sous le masque : rien ne touche vos paupières ni vos cils.</p>"
+          }
+        },
+        "faq_item_AUEi9b": {
+          "type": "faq_item",
+          "settings": {
+            "question": "Convient-il à toutes les tailles de tête ?",
+            "answer": "<p>Oui. La sangle est réglable de 52 à 68 cm environ, avec une fermeture plate qui ne se sent pas quand vous dormez sur le côté ou sur le dos.</p>"
+          }
+        },
+        "faq_item_MhA9QW": {
+          "type": "faq_item",
+          "settings": {
+            "question": "Est-ce qu'il tient bien la nuit entière ?",
+            "answer": "<p>Oui. Le maintien est assuré par la sangle réglable et la mousse à mémoire de forme qui épouse le visage. Il reste en place même en changeant de position.</p>"
+          }
+        },
+        "faq_item_QKVnRn": {
+          "type": "faq_item",
+          "settings": {
+            "question": "Fait-il transpirer ?",
+            "answer": "<p>Non. L'intérieur associe une mousse à mémoire de forme à un tissu maillé respirant, qui évacue la chaleur et l'humidité tout au long de la nuit.</p>"
+          }
+        },
+        "faq_item_Dnc6cV": {
+          "type": "faq_item",
+          "settings": {
+            "question": "Comment l'entretenir ?",
+            "answer": "<p>Lavage à la main à l'eau tiède avec un savon doux, puis séchage à l'air libre. Ne pas passer au sèche-linge afin de préserver la forme de la coque.</p>"
+          }
+        },
+        "faq_item_appL6A": {
+          "type": "faq_item",
+          "settings": {
+            "question": "Quels sont les délais de livraison et la garantie ?",
+            "answer": "<p>Expédition rapide avec numéro de suivi fourni. Vous disposez de 30 jours pour l'essayer : s'il ne vous convient pas, il est remboursé.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "faq_item_YYJUL8",
+        "faq_item_xAnE8L",
+        "faq_item_AUEi9b",
+        "faq_item_MhA9QW",
+        "faq_item_QKVnRn",
+        "faq_item_Dnc6cV",
+        "faq_item_appL6A"
+      ],
+      "settings": {
+        "use_theme_colors": true,
+        "heading": "Questions fréquentes",
+        "subtitle": "",
+        "heading_color": "#1A1A1A",
+        "section_padding": 60,
+        "section_bg_color": "#FFFFFF",
+        "border_radius": 4,
+        "border_color": "#EDE4D2",
+        "border_style": "full",
+        "question_color": "#1A1A1A",
+        "question_bg_color": "#FFFFFF",
+        "answer_color": "#6B6B6B",
+        "answer_bg_color": "#FFFFFF",
+        "accordion_mode": true,
+        "image_border_radius": 8,
+        "center_when_no_image": true,
+        "center_max_width": 1000,
+        "two_column_desktop": true,
+        "column_gap": 10,
+        "faq_item_spacing": 0,
+        "individual_item_borders": false,
+        "question_padding_top": 20,
+        "question_padding_bottom": 15,
+        "question_padding_left": 17,
+        "question_padding_right": 14,
+        "answer_padding_top": 15,
+        "answer_padding_bottom": 15,
+        "answer_padding_left": 20,
+        "answer_padding_right": 20,
+        "heading_font_size": 36,
+        "heading_font_size_mobile": 38,
+        "subtitle_font_size": 16,
+        "subtitle_font_size_mobile": 14,
+        "question_font_size": 16,
+        "question_font_size_mobile": 14,
+        "answer_font_size": 14,
+        "answer_font_size_mobile": 13
+      }
+    },
+    "1785982658d65e2231": {
+      "type": "apps",
+      "blocks": {
+        "loox_reviews_loox_dynamic_section_HKDc4G": {
+          "type": "shopify://apps/loox-reviews/blocks/loox-dynamic-section/5c3b337f-fd14-4df5-b1d6-80ec13e6e28e",
+          "settings": {
+            "reviews_to_display": "",
+            "default_tab": "automatic",
+            "only_photos": false,
+            "aggregated": false,
+            "limit": 20,
+            "hide_thumbnails": false,
+            "maxwidth": 1080,
+            "is_sample": true
+          }
+        }
+      },
+      "block_order": [
+        "loox_reviews_loox_dynamic_section_HKDc4G"
+      ],
+      "settings": {
+        "include_margins": true
+      }
+    },
+    "onirala_story": {
+      "type": "onirala-story",
+      "settings": {}
+    }
+  },
+  "order": [
+    "shop_product_details_JbqzwH",
+    "scrolling_features_bar_AhP6EL",
+    "roadmap_px8Lfq",
+    "onirala_story",
+    "customer_reviews_carousel_Xd9Qa9",
+    "store_faq_Lpd3PW",
+    "1785982658d65e2231"
+  ]
+}
