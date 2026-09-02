@@ -1,5 +1,5 @@
 /* Onirala — habillage (palette d’origine du thème) */
-:root{--op-gold:#f0cd4f;--op-gold-deep:#f0cd4f;--op-ink:#f2f5fa;--op-muted:#9aa8c0;--op-cream:#111a2e;--op-line:rgba(255,255,255,.10);--op-bg:#0b1120;--op-card:#16203a;--op-border:#263450}
+:root{--op-gold:#f0cd4f;--op-gold-deep:#f0cd4f;--op-ink:#EDF3EC;--op-muted:#A2B3A4;--op-cream:#122019;--op-line:rgba(255,255,255,.10);--op-bg:#0B1710;--op-card:#18291F;--op-border:#2A3E31}
 
 /* ---------- Header ---------- */
 /* Aucune bordure ni ligne d'ombre : le header et le hero doivent se lire
@@ -112,7 +112,7 @@
 .op-pdp-table tbody tr:last-child th,.op-pdp-table tbody tr:last-child td{border-bottom:0}
 .op-pdp-table tbody th{font-weight:500;color:var(--op-ink)}
 .op-yes{color:var(--op-gold-deep);font-weight:600}
-.op-no{color:#c4c4c4}
+.op-no{color:#7E9083}
 @media (max-width:640px){.op-pdp-table th,.op-pdp-table td{padding:14px 12px;font-size:13.5px}
  .op-pdp-table td:nth-child(2),.op-pdp-table td:nth-child(3),.op-pdp-table th:nth-child(2),.op-pdp-table th:nth-child(3){width:76px}}
 
@@ -120,12 +120,12 @@
 .op-pdp-cta{text-align:center;padding:84px 24px 96px;background:var(--op-cream);border-radius:16px;margin:0 0 24px}
 .op-pdp-cta h2{font-size:clamp(26px,3.4vw,40px);letter-spacing:-.025em;font-weight:600;margin:0 0 14px}
 .op-pdp-cta p{color:var(--op-muted);margin:0 0 30px;font-size:16px}
-.op-pdp-btn{display:inline-block;background:#181b1d;color:#ffffff;font-size:14px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:17px 44px;border-radius:6px;text-decoration:none;transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,background-color .2s ease}
-.op-pdp-btn:hover{transform:translateY(-2px);background:#3a3d40;box-shadow:0 18px 34px -18px rgba(240,205,79,.9)}
+.op-pdp-btn{display:inline-block;background:var(--op-gold);color:#0B1710;font-size:14px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:17px 44px;border-radius:6px;text-decoration:none;transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,background-color .2s ease}
+.op-pdp-btn:hover{transform:translateY(-2px);background:#F7DA6E;box-shadow:0 18px 34px -18px rgba(240,205,79,.9)}
 
 /* Harmonisation des sections natives de la page produit */
-.op-pdp-page .scrolling-features-bar,.op-pdp-page [class*="scrolling-features"]{background:#fff !important}
-.op-pdp-page .roadmap-section,.op-pdp-page [class*="roadmap"]{background:#fff !important}
+.op-pdp-page .scrolling-features-bar,.op-pdp-page [class*="scrolling-features"]{background:var(--op-bg) !important}
+.op-pdp-page .roadmap-section,.op-pdp-page [class*="roadmap"]{background:var(--op-bg) !important}
 
 /* =========================================================
    COUCHE 3D + ANIMATIONS
@@ -239,7 +239,7 @@
 .op-pdp-table thead th{background:var(--op-card);color:var(--op-gold)}
 .op-pdp-table thead th:nth-child(2){color:var(--op-ink)}
 .op-pdp-table tbody th{color:var(--op-ink)}
-.op-no{color:#5c6880}
+.op-no{color:#7E9083}
 .op-pdp-cta{background:var(--op-card)}
-.op-pdp-btn{background:var(--op-gold);color:#0b1120}
+.op-pdp-btn{background:var(--op-gold);color:#0B1710}
 .op-pdp-btn:hover{background:#e0bc3c}
