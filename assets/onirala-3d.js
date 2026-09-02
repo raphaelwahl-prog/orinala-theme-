@@ -151,11 +151,12 @@
             map: map,
             side: THREE.DoubleSide
           });
-          /* Le site est passe en fond nuit (#0B1120, luminance 17) : un masque
-             noir y disparaitrait. Mesure sur ce fond : x5 -> ecart de 27,
-             x7 -> 41, x9 -> 57, x11 -> 72. x9 le detache nettement tout en le
-             gardant sombre, comme le produit de la reference. */
-          n.material.color = new THREE.Color(9, 9, 9);
+          /* Le site est repasse en fond clair (#FBFAF7, luminance ~250).
+             Le x9 servait a decoller le masque du fond nuit ; sur blanc il
+             donnerait 13 x 9 = 117, soit un gris moyen. La texture a une
+             mediane brute de 13 et le masque sur la photo d'origine une
+             mediane de 30 : x2.4 redonne 31, un vrai noir sur le blanc. */
+          n.material.color = new THREE.Color(2.4, 2.4, 2.4);
           n.material.toneMapped = false;
           n.material.needsUpdate = true;
         });
