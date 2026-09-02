@@ -264,3 +264,14 @@
   .op-pdp-page .shop-image-container{background:var(--op-cream);
     border:1px solid var(--op-border);border-radius:14px}
 }
+
+/* Titre au-dessus des cartes de pack. Le bloc quantity_break n'expose pas
+   de reglage de titre dans son schema (title_text est passe au snippet
+   mais absent du schema, Shopify le supprime a l'enregistrement), donc on
+   le pose ici. */
+.op-pdp-page .quantity-break-container{position:relative;padding-top:30px}
+.op-pdp-page .quantity-break-container::before{
+  content:"Choisissez votre pack";
+  position:absolute;top:4px;left:0;
+  font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+  font-weight:600;color:var(--op-muted)}
