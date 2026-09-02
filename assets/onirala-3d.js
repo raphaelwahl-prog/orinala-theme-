@@ -133,14 +133,22 @@
               n.geometry = ng;
             } catch (err) {}
           }
-          /* On garde la texture d'origine : c'est la vraie maille du produit,
-             tiree de la photo. Elle n'habille que la face avant, l'arriere est
-             invente par la reconstruction — c'est pour ca que la rotation est
-             volontairement limitee plus bas, l'arriere ne passe jamais devant. */
-          n.material.side = THREE.DoubleSide;
-          if (n.material.map) n.material.map.encoding = THREE.sRGBEncoding;
-          if ('roughness' in n.material) n.material.roughness = 0.92;
-          if ('metalness' in n.material) n.material.metalness = 0;
+          /* Texture affichee telle quelle, sans eclairage ni correction de tons.
+             Raison : avec un materiau eclaire, la couleur finale depend du
+             moteur de rendu du navigateur, et le masque ressortait grisatre
+             chez le client alors qu'il mesurait noir en test. Ici la sortie
+             est exactement la texture, donc identique partout.
+             Le multiplicateur compense la texture du GLB, nettement plus
+             sombre que le produit reel : mesuree a 8 de mediane sans
+             eclairage, contre 30 sur la photo. x6 la ramene a ~32. */
+          var map = n.material.map;
+          if (map) map.encoding = THREE.sRGBEncoding;
+          n.material = new THREE.MeshBasicMaterial({
+            map: map,
+            side: THREE.DoubleSide
+          });
+          n.material.color = new THREE.Color(6, 6, 6);
+          n.material.toneMapped = false;
           n.material.needsUpdate = true;
         });
         pivot.add(obj);
