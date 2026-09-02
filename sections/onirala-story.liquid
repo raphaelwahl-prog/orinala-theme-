@@ -1,4 +1,36 @@
 {{ 'onirala.css' | asset_url | stylesheet_tag }}
+<script>
+  /* Marque la page produit : onirala.css est aussi charge sur l'accueil,
+     les regles de mise en page ne doivent s'appliquer qu'ici. */
+  (function () {
+    var root = document.documentElement;
+    root.classList.add('op-pdp-page');
+
+    /* Cale la colonne image collante sous l'en-tete reel. On ne mesure que
+       si l'en-tete est effectivement collant : sinon rien a degager. Un
+       en-tete masque ou de hauteur nulle retombe sur une valeur sure. */
+    function calerColonne() {
+      var hauteur = 0;
+      var candidats = document.querySelectorAll('.section-header, header.header');
+      for (var i = 0; i < candidats.length; i++) {
+        var el = candidats[i];
+        var pos = getComputedStyle(el).position;
+        if (pos !== 'sticky' && pos !== 'fixed') continue;
+        hauteur = Math.max(hauteur, el.offsetHeight);
+      }
+      var top = hauteur > 40 ? hauteur + 16 : 24;
+      root.style.setProperty('--op-sticky-top', top + 'px');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', calerColonne);
+    } else {
+      calerColonne();
+    }
+    window.addEventListener('load', calerColonne);
+    window.addEventListener('resize', calerColonne);
+  })();
+</script>
 <div class="op-pdp">
 
   <section class="op-pdp-statement" data-reveal>

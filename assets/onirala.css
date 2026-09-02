@@ -243,3 +243,24 @@
 .op-pdp-cta{background:var(--op-card)}
 .op-pdp-btn{background:var(--op-gold);color:#0B1120}
 .op-pdp-btn:hover{background:#e0bc3c}
+
+/* =========================================================
+   PAGE PRODUIT : mise en page facon la reference
+   Vignettes en rail vertical a gauche, image produit en grand,
+   colonne image collante pendant que la colonne achat defile.
+   ========================================================= */
+@media (min-width:1000px){
+  .op-pdp-page .shop-carousel-container{position:sticky;top:var(--op-sticky-top,88px);align-self:flex-start}
+  .op-pdp-page .shop-product-carousel{width:100%;display:flex;flex-direction:row-reverse;
+    align-items:flex-start;gap:16px;padding:0}
+  .op-pdp-page .shop-main-image-wrapper{flex:1 1 auto;min-width:0}
+  .op-pdp-page .shop-thumbnails-outer{flex:0 0 88px;width:88px;margin-top:0}
+  .op-pdp-page .shop-thumbnails-wrapper{width:88px !important;max-width:88px !important;
+    align-items:flex-start}
+  .op-pdp-page .shop-thumbnails{flex-direction:column;overflow-x:visible;overflow-y:visible;
+    gap:10px !important;width:88px;flex:0 0 auto}
+  .op-pdp-page .shop-thumbnail{width:88px !important;height:88px !important;
+    border-radius:10px;overflow:hidden}
+  .op-pdp-page .shop-image-container{background:var(--op-cream);
+    border:1px solid var(--op-border);border-radius:14px}
+}
