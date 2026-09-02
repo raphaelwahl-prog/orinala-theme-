@@ -233,13 +233,35 @@
     var img = media.querySelector('img');
     var stage = document.createElement('div');
     stage.className = 'op3d-stage';
+    /* Decoratif : la vraie information produit est la photo au-dessous, qui
+       porte son alt. Sans ca les lecteurs d'ecran annoncent un canvas nu. */
+    stage.setAttribute('aria-hidden', 'true');
     media.appendChild(stage);
-    mount(stage, url, {
-      onReady: function () {
-        if (img) { img.style.transition = 'opacity .5s ease'; img.style.opacity = '0'; }
-        media.classList.add('op3d-live');
-      }
-    });
+
+    function demarrer() {
+      mount(stage, url, {
+        onReady: function () {
+          if (img) { img.style.transition = 'opacity .5s ease'; img.style.opacity = '0'; }
+          media.classList.add('op3d-live');
+        }
+      });
+    }
+
+    /* three.js et le modele pesent environ 4,5 Mo a eux deux. On ne les
+       telecharge que lorsque la banniere approche de l'ecran : la photo
+       plate s'affiche immediatement et sert de rendu de repli. L'ancien
+       IntersectionObserver ne suspendait que la boucle de rendu, le
+       telechargement partait quand meme au chargement de la page. */
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entrees) {
+        if (!entrees[0].isIntersecting) return;
+        io.disconnect();
+        demarrer();
+      }, { rootMargin: '200px' });
+      io.observe(media);
+    } else {
+      demarrer();
+    }
   }
 
   ready(init);

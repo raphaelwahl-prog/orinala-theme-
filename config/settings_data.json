@@ -10,6 +10,7 @@
 {
   "current": {
     "logo": "shopify://shop_images/AD-4.png",
+    "favicon": "shopify://shop_images/AD-4.png",
     "logo_width": 150,
     "global_section_background_color": "#0B1120",
     "global_section_text_color": "#F2F5FA",
