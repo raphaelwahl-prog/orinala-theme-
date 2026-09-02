@@ -2,17 +2,22 @@
 :root{--op-gold:#f0cd4f;--op-gold-deep:#000000;--op-ink:#000000;--op-muted:#6b6b6b;--op-cream:#f8f8f8;--op-line:rgba(0,0,0,.10)}
 
 /* ---------- Header ---------- */
-.section-header{transition:background-color .4s ease,box-shadow .4s ease;border-bottom:1px solid var(--op-line);position:relative;z-index:3}
-.section-header.scrolled-past-header{background-color:#fff !important;box-shadow:0 1px 0 rgba(0,0,0,.12),0 20px 40px -28px rgba(0,0,0,.12)}
+/* Aucune bordure ni ligne d'ombre : le header et le hero doivent se lire
+   comme un seul bloc blanc continu. */
+.section-header{transition:background-color .4s ease;border-bottom:0 !important;box-shadow:none !important;position:relative;z-index:3}
+.section-header.scrolled-past-header{background-color:#fff !important;box-shadow:none !important}
 
 /* ---------- Boutons ---------- */
 .button,.shop-add-to-cart-button,.product-form__submit,button[type='submit']{transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,filter .2s ease !important}
 .button:hover,.shop-add-to-cart-button:hover,.product-form__submit:hover,button[type='submit']:hover{transform:translateY(-2px);filter:brightness(1.04)}
 
 /* ---------- Hero ---------- */
-[id$="image_banner_TVECWz"] .banner{position:relative;background:#ffffff !important}
-[id$="image_banner_TVECWz"] .banner::before{content:'';position:absolute;inset:0;background:radial-gradient(70% 55% at 50% 100%,rgba(240,205,79,.07),transparent 72%);pointer-events:none;z-index:0}
-[id$="image_banner_TVECWz"] .banner::after{content:'';position:absolute;inset:0;background:radial-gradient(640px circle at var(--op-mx,60%) var(--op-my,35%),rgba(240,205,79,.10),transparent 60%);pointer-events:none;z-index:0}
+[id$="image_banner_TVECWz"]{background:#ffffff !important;border-top:0 !important}
+[id$="image_banner_TVECWz"] .banner{position:relative;background:#ffffff !important;border-top:0 !important}
+/* Plus aucune teinte : le fond du hero est exactement le blanc du header,
+   sinon la jonction entre les deux blocs se voit. */
+[id$="image_banner_TVECWz"] .banner::before{display:none}
+[id$="image_banner_TVECWz"] .banner::after{display:none}
 [id$="image_banner_TVECWz"] .banner__content,[id$="image_banner_TVECWz"] .banner__media{position:relative;z-index:1}
 [id$="image_banner_TVECWz"] .banner__heading{letter-spacing:-.02em;color:var(--op-ink) !important;text-shadow:none}
 [id$="image_banner_TVECWz"] .banner__media{perspective:1400px;will-change:transform,opacity}

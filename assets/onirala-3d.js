@@ -74,7 +74,7 @@
       renderer.setSize(w, h);
       renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 0.85;
+      renderer.toneMappingExposure = 1.0;
       renderer.domElement.style.cssText =
         'display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y';
       host.appendChild(renderer.domElement);
@@ -84,12 +84,12 @@
       camera.position.set(0, 0.25, 5.4);
       camera.lookAt(0, 0, 0);
 
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x303030, 0.40));
-      var key = new THREE.DirectionalLight(0xffffff, 0.85);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x303030, 0.60));
+      var key = new THREE.DirectionalLight(0xffffff, 1.30);
       key.position.set(2.5, 3.5, 4); scene.add(key);
-      var rim = new THREE.DirectionalLight(0xffffff, 0.50);
+      var rim = new THREE.DirectionalLight(0xffffff, 0.80);
       rim.position.set(-3.5, 1.5, -2.5); scene.add(rim);
-      var fill = new THREE.DirectionalLight(0xffffff, 0.22);
+      var fill = new THREE.DirectionalLight(0xffffff, 0.35);
       fill.position.set(-1.5, -2, 2.5); scene.add(fill);
 
       /* ombre portee douce */
@@ -133,16 +133,14 @@
               n.geometry = ng;
             } catch (err) {}
           }
-          /* Matiere uniforme : la texture issue de la photo n'habille que la
-             face avant, l'arriere est invente et la jointure se voit des que
-             l'objet tourne. Un noir mat uniforme donne le meme masque sous
-             tous les angles. */
-          n.material = new THREE.MeshStandardMaterial({
-            color: 0x070707,
-            roughness: 0.95,
-            metalness: 0,
-            side: THREE.DoubleSide
-          });
+          /* On garde la texture d'origine : c'est la vraie maille du produit,
+             tiree de la photo. Elle n'habille que la face avant, l'arriere est
+             invente par la reconstruction — c'est pour ca que la rotation est
+             volontairement limitee plus bas, l'arriere ne passe jamais devant. */
+          n.material.side = THREE.DoubleSide;
+          if (n.material.map) n.material.map.encoding = THREE.sRGBEncoding;
+          if ('roughness' in n.material) n.material.roughness = 0.92;
+          if ('metalness' in n.material) n.material.metalness = 0;
           n.material.needsUpdate = true;
         });
         pivot.add(obj);
@@ -190,7 +188,7 @@
           } else {
             velX *= 0.94;
             /* va-et-vient de presentation, jamais de tour complet */
-            var target = Math.sin(t * 0.34) * 0.70;
+            var target = Math.sin(t * 0.34) * 0.42;
             pivot.rotation.y += (target - pivot.rotation.y) * 0.014 + velX;
             pivot.rotation.x += (Math.sin(t * 0.26) * 0.13 - pivot.rotation.x) * 0.02;
             /* inclinaison qui respire, comme un objet suspendu */
