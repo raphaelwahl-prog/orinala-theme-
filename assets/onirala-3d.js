@@ -151,9 +151,11 @@
             map: map,
             side: THREE.DoubleSide
           });
-          /* Octets bruts de la texture : mediane 13. Photo du produit : 30.
-             x3 la place a ~25, soit un cran plus noir que la photo. */
-          n.material.color = new THREE.Color(3, 3, 3);
+          /* Le site est passe en fond nuit (#0B1120, luminance 17) : un masque
+             noir y disparaitrait. Mesure sur ce fond : x5 -> ecart de 27,
+             x7 -> 41, x9 -> 57, x11 -> 72. x9 le detache nettement tout en le
+             gardant sombre, comme le produit de la reference. */
+          n.material.color = new THREE.Color(9, 9, 9);
           n.material.toneMapped = false;
           n.material.needsUpdate = true;
         });

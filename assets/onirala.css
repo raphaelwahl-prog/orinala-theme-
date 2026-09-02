@@ -1,19 +1,19 @@
 /* Onirala — habillage (palette d’origine du thème) */
-:root{--op-gold:#f0cd4f;--op-gold-deep:#000000;--op-ink:#000000;--op-muted:#6b6b6b;--op-cream:#f8f8f8;--op-line:rgba(0,0,0,.10)}
+:root{--op-gold:#f0cd4f;--op-gold-deep:#f0cd4f;--op-ink:#f2f5fa;--op-muted:#9aa8c0;--op-cream:#111a2e;--op-line:rgba(255,255,255,.10);--op-bg:#0b1120;--op-card:#16203a;--op-border:#263450}
 
 /* ---------- Header ---------- */
 /* Aucune bordure ni ligne d'ombre : le header et le hero doivent se lire
    comme un seul bloc blanc continu. */
 .section-header{transition:background-color .4s ease;border-bottom:0 !important;box-shadow:none !important;position:relative;z-index:3}
-.section-header.scrolled-past-header{background-color:#fff !important;box-shadow:none !important}
+.section-header.scrolled-past-header{background-color:var(--op-bg) !important;box-shadow:none !important}
 
 /* ---------- Boutons ---------- */
 .button,.shop-add-to-cart-button,.product-form__submit,button[type='submit']{transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,filter .2s ease !important}
 .button:hover,.shop-add-to-cart-button:hover,.product-form__submit:hover,button[type='submit']:hover{transform:translateY(-2px);filter:brightness(1.04)}
 
 /* ---------- Hero ---------- */
-[id$="image_banner_TVECWz"]{background:#ffffff !important;border-top:0 !important}
-[id$="image_banner_TVECWz"] .banner{position:relative;background:#ffffff !important;border-top:0 !important}
+[id$="image_banner_TVECWz"]{background:var(--op-bg) !important;border-top:0 !important}
+[id$="image_banner_TVECWz"] .banner{position:relative;background:var(--op-bg) !important;border-top:0 !important}
 /* Plus aucune teinte : le fond du hero est exactement le blanc du header,
    sinon la jonction entre les deux blocs se voit. */
 [id$="image_banner_TVECWz"] .banner::before{display:none}
@@ -218,3 +218,28 @@
 @media (max-width:749px){
   .op3d-stage{inset:-8% -4% -4% -4%}
 }
+
+/* =========================================================
+   THEME SOMBRE — cartes, tableaux et sections maison
+   ========================================================= */
+.op-banner-media{background:var(--op-card)}
+.op-card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+  border-color:var(--op-border)}
+.op-card:hover{border-color:rgba(240,205,79,.6);box-shadow:0 24px 48px -24px rgba(0,0,0,.7)}
+.op-card p{color:var(--op-muted)}
+.op-card-icon{background:radial-gradient(circle at 30% 30%,rgba(240,205,79,.22),rgba(240,205,79,.05));
+  border-color:rgba(240,205,79,.35)}
+.op-card-icon svg{stroke:var(--op-gold)}
+.op-pdp{color:var(--op-ink)}
+.op-pdp-statement{border-bottom-color:var(--op-border)}
+.op-pdp-features,.op-pdp-specs{border-bottom-color:var(--op-border)}
+.op-pdp-feature{border-left-color:var(--op-border)}
+.op-pdp-table{border-color:var(--op-border)}
+.op-pdp-table th,.op-pdp-table td{border-bottom-color:var(--op-border)}
+.op-pdp-table thead th{background:var(--op-card);color:var(--op-gold)}
+.op-pdp-table thead th:nth-child(2){color:var(--op-ink)}
+.op-pdp-table tbody th{color:var(--op-ink)}
+.op-no{color:#5c6880}
+.op-pdp-cta{background:var(--op-card)}
+.op-pdp-btn{background:var(--op-gold);color:#0b1120}
+.op-pdp-btn:hover{background:#e0bc3c}
