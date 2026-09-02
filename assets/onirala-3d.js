@@ -72,9 +72,13 @@
       var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setSize(w, h);
-      renderer.outputEncoding = THREE.sRGBEncoding;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      /* Aucune conversion de couleur : ni decodage sRGB, ni correction de
+         tons. Le pixel affiche vaut exactement l'octet de la texture multiplie
+         par la couleur du materiau. C'est le seul moyen d'obtenir le meme
+         rendu sur tous les navigateurs — avec le chemin sRGB, Safari rendait
+         le masque gris clair la ou le moteur de test le rendait noir. */
+      renderer.outputEncoding = THREE.LinearEncoding;
+      renderer.toneMapping = THREE.NoToneMapping;
       renderer.domElement.style.cssText =
         'display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y';
       host.appendChild(renderer.domElement);
@@ -142,12 +146,14 @@
              sombre que le produit reel : mesuree a 8 de mediane sans
              eclairage, contre 30 sur la photo. x6 la ramene a ~32. */
           var map = n.material.map;
-          if (map) map.encoding = THREE.sRGBEncoding;
+          if (map) map.encoding = THREE.LinearEncoding;
           n.material = new THREE.MeshBasicMaterial({
             map: map,
             side: THREE.DoubleSide
           });
-          n.material.color = new THREE.Color(6, 6, 6);
+          /* Octets bruts de la texture : mediane 13. Photo du produit : 30.
+             x3 la place a ~25, soit un cran plus noir que la photo. */
+          n.material.color = new THREE.Color(3, 3, 3);
           n.material.toneMapped = false;
           n.material.needsUpdate = true;
         });
