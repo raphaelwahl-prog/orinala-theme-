@@ -285,7 +285,8 @@
                   "blocks": {}
                 }
               },
-              "block_order": []
+              "block_order": [],
+              "disabled": true
             },
             "divider_XjYQhi": {
               "type": "_a-divider",
@@ -332,7 +333,7 @@
               "name": "Buy buttons",
               "settings": {
                 "add_to_cart_full_width": true,
-                "show_buy_now_button": true,
+                "show_buy_now_button": false,
                 "padding_top": 6,
                 "padding_bottom": 6,
                 "padding_top_mobile": 6,
@@ -445,7 +446,8 @@
                   "block_order": []
                 }
               },
-              "block_order": []
+              "block_order": [],
+              "disabled": true
             },
             "payment_badges_mdNTxn": {
               "type": "_a-payment_badges",
@@ -481,7 +483,8 @@
                 "padding_top_mobile": 0,
                 "padding_bottom_mobile": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "icon_with_text_UYemba": {
               "type": "_a-icon-with-text-r2",
@@ -511,7 +514,8 @@
                 "padding_top_mobile": 10,
                 "padding_bottom_mobile": 10
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "reviews_N963dq": {
               "type": "_a-reviews",
