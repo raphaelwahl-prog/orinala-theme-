@@ -1,0 +1,1451 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "a-main-product-r3",
+      "blocks": {
+        "product-gallery": {
+          "type": "_a-product-gallery-r2",
+          "static": true,
+          "settings": {
+            "gallery_layout": "thumbnail_slider",
+            "desktop_thumbnails_left": false,
+            "enable_sticky_info": true,
+            "image_zoom": "lightbox",
+            "full_width_gallery_mobile": false,
+            "media_size": "small",
+            "mobile_thumbnails": "show",
+            "enable_video_looping": false,
+            "show_gallery_nav_buttons": true,
+            "show_button_navigation_mobile": true,
+            "nav_button_size": 41,
+            "nav_button_bg_color": "#ffffff",
+            "nav_button_hover_bg_color": "#F2EFE8",
+            "nav_button_border_color": "#E3DED2",
+            "nav_button_hover_border_color": "#55584A",
+            "nav_button_icon_color": "#21201C",
+            "nav_button_hover_icon_color": "#21201C",
+            "slider_counter_font_size": 12,
+            "slider_counter_color": "#6E6A5E",
+            "slider_counter_active_color": "#21201C",
+            "gallery_caption_left": "",
+            "gallery_caption_right": "",
+            "gallery_caption_color": "#21201C",
+            "gallery_caption_muted_color": "#6E6A5E",
+            "gallery_quote_text": "",
+            "gallery_quote_source": "",
+            "gallery_quote_bg": "#F2EFE8"
+          },
+          "blocks": {
+            "product-media": {
+              "type": "_a-product-media-r2",
+              "static": true,
+              "settings": {
+                "media_fit": "cover",
+                "media_border_radius": 6,
+                "media_border_radius_mobile": 6,
+                "media_border_width": 0,
+                "media_border_color": "#E3DED2",
+                "mobile_media_ratio": "square",
+                "mobile_media_height": "large",
+                "media_badge_position": "top-right",
+                "media_badge_size": "medium",
+                "media_pill_text": "",
+                "media_pill_bg": "#55584A",
+                "media_pill_color": "#FBFAF7",
+                "media_circle_text": "",
+                "media_circle_bg": "#55584A",
+                "media_circle_color": "#FBFAF7",
+                "media_circle_size": 96,
+                "media_circle_size_mobile": 64
+              },
+              "blocks": {}
+            },
+            "product-thumbnails": {
+              "type": "_a-product-thumbnails",
+              "static": true,
+              "settings": {
+                "show_navigation_buttons": false,
+                "mobile_thumb_size": "small",
+                "active_thumbnail_border_width": 1,
+                "thumbnail_border_radius": 10,
+                "active_thumbnail_border_color": "#55584A"
+              },
+              "blocks": {
+                "product-thumbnails-dots": {
+                  "type": "_a-product-thumbnails-dots",
+                  "static": true,
+                  "settings": {
+                    "max_dots_visible": 6,
+                    "dots_size": 10,
+                    "dots_color": "#C9C2B2",
+                    "dots_active_color": "#55584A"
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            }
+          },
+          "block_order": []
+        },
+        "product-information": {
+          "type": "_a-product-information-r3",
+          "static": true,
+          "settings": {},
+          "blocks": {
+            "rating_HYWfzY": {
+              "type": "_a-rating",
+              "name": "Product Rating",
+              "settings": {
+                "rating_alignment": "flex-start",
+                "padding_top": 3,
+                "padding_bottom": 3,
+                "padding_top_mobile": 12,
+                "padding_bottom_mobile": 3
+              },
+              "blocks": {
+                "rating_profile_images": {
+                  "type": "_a-rating_profile_images",
+                  "static": true,
+                  "settings": {
+                    "profile_image_size": 21,
+                    "profile_image_border_width": 1,
+                    "profile_image_overlap": 8,
+                    "profile_image_border_color": "#E3DED2"
+                  },
+                  "blocks": {
+                    "profile_images_list": {
+                      "type": "_a-profile_images_list",
+                      "static": true,
+                      "settings": {},
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": []
+                },
+                "rating_content": {
+                  "type": "_a-rating_content",
+                  "static": true,
+                  "settings": {
+                    "rating_text": "<p>2,000+</p>",
+                    "product_rating": 0,
+                    "rating_text_font_size": 13,
+                    "rating_text_mob_font_size": 12,
+                    "rating_text_color": "#6E6A5E",
+                    "rating_container_background": "#F2EFE8",
+                    "is_rating_container_gradient": false,
+                    "rating_container_gradient_color": "linear-gradient(160.21deg, #F2EFE8 -0.37%, #E3DED2 181.87%)",
+                    "rating_container_border_radius": 2,
+                    "rating_container_vertical_padding": 4,
+                    "rating_container_horizontal_padding": 0,
+                    "star_size": 15,
+                    "stars_color": "#55584A",
+                    "stars_background_color": "#F2EFE8",
+                    "stars_gap": 0,
+                    "stars_margin": 8
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            },
+            "a_heading_Xayagp": {
+              "type": "_a-heading",
+              "name": "Heading",
+              "settings": {
+                "heading": "Masque de Nuit 3D Sommeil Profond — Obscurité Absolue & Confort Soie",
+                "heading_tag": "h3",
+                "heading_use_weight": true,
+                "heading_size": 29,
+                "heading_mob_size": 16,
+                "heading_color": "#21201C",
+                "bolded_heading_color": "#21201C",
+                "heading_use_gradient": false,
+                "heading_gradient_color": "linear-gradient(180deg, rgba(234, 56, 133, 1), rgba(95, 77, 188, 1) 100%)",
+                "heading_padding_top": 0,
+                "heading_padding_bottom": 0,
+                "heading_padding_top_mobile": 0,
+                "heading_padding_bottom_mobile": 0
+              },
+              "blocks": {}
+            },
+            "price_rNLTVV": {
+              "type": "_a-price",
+              "name": "Product Price",
+              "settings": {
+                "layout": "price_first",
+                "price_gap": 8,
+                "regular_font_size": 22,
+                "main_price_color": "#21201C",
+                "compare_price_font_size": 18,
+                "compare_price_color": "#6E6A5E",
+                "padding_top": 6,
+                "padding_bottom": 6,
+                "padding_top_mobile": 0,
+                "padding_bottom_mobile": 0
+              },
+              "blocks": {
+                "price_badge": {
+                  "type": "_a-price_badge",
+                  "static": true,
+                  "settings": {
+                    "sale_badge_text": "ÉCONOMISEZ [percentage]",
+                    "sale_badge_text_color": "#FBFAF7",
+                    "sale_badge_background_color": "#55584A",
+                    "sale_badge_has_gradient": false,
+                    "sale_badge_background_gradient": "linear-gradient(180deg, rgba(251, 51, 164, 1), rgba(96, 77, 188, 1) 100%)",
+                    "sale_badge_corner_radius": 0,
+                    "sale_badge_font_size": 12,
+                    "sale_badge_height": 20,
+                    "sale_badge_padding": 8
+                  },
+                  "blocks": {}
+                },
+                "price_unit_price": {
+                  "type": "_a-price_unit_price",
+                  "static": true,
+                  "settings": {
+                    "show_unit_price": true,
+                    "unit_price_font_size": 12,
+                    "unit_price_color": "#6E6A5E"
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            },
+            "bullet_point_benefits_L9Ekdy": {
+              "type": "_a-bullet-point-benefits-r2",
+              "name": "Product Features",
+              "settings": {
+                "display_layout": "pills_column_2",
+                "column_gap": 8,
+                "pill_background": "#ffffff",
+                "pill_text_color": "#21201C",
+                "pill_border_color": "#E3DED2",
+                "pill_border_radius": 40,
+                "pill_font_size": 12,
+                "pill_font_weight": 500,
+                "pill_padding_horizontal": 8,
+                "pill_padding_vertical": 2,
+                "body_font_size": 14,
+                "text_color": "#21201C",
+                "text_highlighted_color": "#55584A",
+                "emoji_size": 18,
+                "emoji_color": "#21201C",
+                "emoji_text_gap": 6,
+                "show_emoji_chip": false,
+                "emoji_chip_bg": "#F2EFE8",
+                "emoji_chip_size": 40,
+                "emoji_chip_radius": 20,
+                "padding_top": 6,
+                "padding_bottom": 6,
+                "padding_top_mobile": 8,
+                "padding_bottom_mobile": 0
+              },
+              "blocks": {
+                "bullet-point-benefits-list": {
+                  "type": "_a-bullet-point-benefits-list-r2",
+                  "static": true,
+                  "settings": {
+                    "point_1": "Confort optimal",
+                    "icon_1": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_2": "Obscurité totale",
+                    "icon_2": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_3": "Respirant",
+                    "icon_3": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_4": "Nomade",
+                    "icon_4": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_5": "",
+                    "icon_5": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_6": "",
+                    "icon_6": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_7": "",
+                    "icon_7": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_8": "",
+                    "icon_8": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_9": "",
+                    "icon_9": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_10": "",
+                    "icon_10": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_11": "",
+                    "icon_11": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                    "point_12": "",
+                    "icon_12": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>"
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            },
+            "divider_XjYQhi": {
+              "type": "_a-divider",
+              "name": "Divider",
+              "settings": {
+                "divider_height": 1,
+                "divider_color": "#E3DED2",
+                "divider_opacity": 20,
+                "padding_top": 10,
+                "padding_bottom": 10,
+                "padding_top_mobile": 10,
+                "padding_bottom_mobile": 10
+              },
+              "blocks": {}
+            },
+            "variant_picker_cca4P7": {
+              "type": "_a-variant_picker-r2",
+              "name": "Variant Picker",
+              "settings": {
+                "enable_color_swatches": true,
+                "picker_type": "button",
+                "custom_swatch_option_name": "Couleur",
+                "color_swatch_type": "image",
+                "swatch_size": "4rem",
+                "swatch_type": "circle",
+                "variants_custom_color": "#21201C",
+                "pills_border_radius": 70,
+                "pills_font_size": 14,
+                "pills_vertical_spacing": 10,
+                "pills_horizontal_spacing": 15,
+                "pills_background_color": "#F2EFE8",
+                "pills_selected_background_color": "#55584A",
+                "pills_text_color": "#21201C",
+                "pills_selected_text_color": "#FBFAF7",
+                "padding_top": 0,
+                "padding_bottom": 12,
+                "padding_top_mobile": 0,
+                "padding_bottom_mobile": 0
+              },
+              "blocks": {}
+            },
+            "quantity_selector_BqH8Bi": {
+              "type": "_a-quantity_selector-r2",
+              "name": "Buy buttons",
+              "settings": {
+                "add_to_cart_full_width": true,
+                "show_buy_now_button": true,
+                "padding_top": 6,
+                "padding_bottom": 6,
+                "padding_top_mobile": 6,
+                "padding_bottom_mobile": 6
+              },
+              "blocks": {
+                "quantity_label": {
+                  "type": "_a-quantity_label",
+                  "static": true,
+                  "settings": {
+                    "quantity_label_font_size": 14,
+                    "quantity_label_color": "#21201C",
+                    "subtotal_font_size": 12,
+                    "subtotal_color": "#21201C"
+                  },
+                  "blocks": {}
+                },
+                "inventory_quantity": {
+                  "type": "_a-inventory_quantity",
+                  "static": true,
+                  "settings": {
+                    "inventory_threshold": 10,
+                    "show_inventory_quantity": true,
+                    "inventory_status_color": "#6E6A5E",
+                    "inventory_status_color_low": "#ee9441",
+                    "inventory_status_color_in_stock": "#1b9139",
+                    "stock_indicator_font_size": 12,
+                    "stock_dot_size": 14
+                  },
+                  "blocks": {}
+                },
+                "quantity_form": {
+                  "type": "_a-quantity_form",
+                  "static": true,
+                  "settings": {
+                    "border_radius": 6,
+                    "button_border_radius": 3,
+                    "background_color": "#F2EFE8",
+                    "border_color": "#E3DED2",
+                    "text_color": "#21201C",
+                    "button_icon_color": "#FBFAF7",
+                    "button_background_color": "#55584A"
+                  },
+                  "blocks": {}
+                },
+                "add_to_cart_button": {
+                  "type": "_a-add_to_cart_button-r2",
+                  "static": true,
+                  "settings": {
+                    "add_to_cart_text": "Ajouter au panier",
+                    "button_font_size": 14,
+                    "uppercase_text": false,
+                    "text_color": "#21201C",
+                    "bg_color": "#FBFAF7",
+                    "border_radius": 6
+                  },
+                  "blocks": {}
+                },
+                "buy_now_button": {
+                  "type": "_a-buy_now_button-r2",
+                  "static": true,
+                  "settings": {
+                    "buy_now_text": "Acheter maintenant",
+                    "buy_now_button_font_size": 14,
+                    "buy_now_button_font_weight": 400,
+                    "buy_now_uppercase_text": false,
+                    "buy_now_text_color": "#FBFAF7",
+                    "buy_now_bg_color": "#55584A",
+                    "buy_now_border_radius": 6,
+                    "padding_top": 6,
+                    "padding_bottom": 6,
+                    "padding_top_mobile": 6,
+                    "padding_bottom_mobile": 6
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            },
+            "social_proof_t6FNkr": {
+              "type": "_a-social_proof",
+              "name": "Social Proof",
+              "settings": {
+                "purchase_text": "Sarah et 438 autres personnes ont acheté ce produit",
+                "text_color": "#21201C",
+                "font_size": 12,
+                "padding_top": 0,
+                "padding_bottom": 0,
+                "padding_top_mobile": 0,
+                "padding_bottom_mobile": 0
+              },
+              "blocks": {
+                "rating_profile_images": {
+                  "type": "_a-rating_profile_images",
+                  "static": true,
+                  "settings": {
+                    "profile_image_size": 21,
+                    "profile_image_border_width": 1,
+                    "profile_image_overlap": 8,
+                    "profile_image_border_color": "#E3DED2"
+                  },
+                  "blocks": {
+                    "profile_images_list": {
+                      "type": "_a-profile_images_list",
+                      "static": true,
+                      "settings": {},
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": []
+                }
+              },
+              "block_order": []
+            },
+            "payment_badges_mdNTxn": {
+              "type": "_a-payment_badges",
+              "name": "Payment Badges",
+              "settings": {
+                "use_shopify_dynamic_payment_icons": true,
+                "payment_items": "american_express,master,paypal,shopify_pay,visa",
+                "image_layout": "center",
+                "custom_image_size": 80,
+                "custom_image_size_mobile": 80,
+                "payment_icons_image_size": 40,
+                "payment_icons_image_size_mobile": 30,
+                "padding_top": 4,
+                "padding_bottom": 4,
+                "padding_top_mobile": 4,
+                "padding_bottom_mobile": 4
+              },
+              "blocks": {}
+            },
+            "payment_badges_yf76Lm": {
+              "type": "_a-payment_badges",
+              "name": "Payment Badges",
+              "settings": {
+                "use_shopify_dynamic_payment_icons": false,
+                "payment_items": "american_express,master,paypal,shopify_pay,visa",
+                "image_layout": "center",
+                "custom_image_size": 100,
+                "custom_image_size_mobile": 80,
+                "payment_icons_image_size": 28,
+                "payment_icons_image_size_mobile": 24,
+                "padding_top": 0,
+                "padding_bottom": 0,
+                "padding_top_mobile": 0,
+                "padding_bottom_mobile": 0
+              },
+              "blocks": {}
+            },
+            "icon_with_text_UYemba": {
+              "type": "_a-icon-with-text-r2",
+              "name": "Icon Highlights",
+              "settings": {
+                "heading_1": "Paiement 100% sécurisé",
+                "icon_1": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"M444-200h70v-50q50-9 86-39t36-89q0-42-24-77t-96-61q-60-20-83-35t-23-41q0-26 18.5-41t53.5-15q32 0 50 15.5t26 38.5l64-26q-11-35-40.5-61T516-710v-50h-70v50q-50 11-78 44t-28 74q0 47 27.5 76t86.5 50q63 23 87.5 41t24.5 47q0 33-23.5 48.5T486-314q-33 0-58.5-20.5T390-396l-66 26q14 48 43.5 77.5T444-252v52Zm36 120q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z\"></path></svg>",
+                "heading_2": "Livraison OFFERTE",
+                "icon_2": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"M852-212 732-332l56-56 120 120-56 56ZM708-692l-56-56 120-120 56 56-120 120Zm-456 0L132-812l56-56 120 120-56 56ZM108-212l-56-56 120-120 56 56-120 120Zm246-75 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-361Z\"></path></svg>",
+                "heading_3": "<strong>Livraison Rapide</strong>",
+                "icon_3": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewbox=\"0 -960 960 960\" width=\"24px\" fill=\"#21201C\"><path d=\"M280-160q-50 0-85-35t-35-85H60l18-80h113q17-19 40-29.5t49-10.5q26 0 49 10.5t40 29.5h167l84-360H182l4-17q6-28 27.5-45.5T264-800h456l-37 160h117l120 160-40 200h-80q0 50-35 85t-85 35q-50 0-85-35t-35-85H400q0 50-35 85t-85 35Zm357-280h193l4-21-74-99h-95l-28 120Zm-19-273 2-7-84 360 2-7 34-146 46-200ZM20-427l20-80h220l-20 80H20Zm80-146 20-80h260l-20 80H100Zm180 333q17 0 28.5-11.5T320-280q0-17-11.5-28.5T280-320q-17 0-28.5 11.5T240-280q0 17 11.5 28.5T280-240Zm400 0q17 0 28.5-11.5T720-280q0-17-11.5-28.5T680-320q-17 0-28.5 11.5T640-280q0 17 11.5 28.5T680-240Z\"></path></svg>",
+                "layout_direction": "horizontal",
+                "item_layout": "inline",
+                "fit_content_mobile": false,
+                "show_icon_container": false,
+                "icon_container_bg": "#F2EFE8",
+                "icon_container_border_width": 1,
+                "icon_container_border_color": "#E3DED2",
+                "icon_container_radius": 8,
+                "icon_container_size": 36,
+                "text_color": "#21201C",
+                "font_size": 12,
+                "custom_icon_color": "#55584A",
+                "icon_size": 18,
+                "padding_top": 10,
+                "padding_bottom": 10,
+                "padding_top_mobile": 10,
+                "padding_bottom_mobile": 10
+              },
+              "blocks": {}
+            },
+            "reviews_N963dq": {
+              "type": "_a-reviews",
+              "name": "Product Reviews",
+              "settings": {
+                "show_review_count": true,
+                "reviewer_name_font_size": 18,
+                "location_font_size": 15,
+                "review_text_font_size": 15,
+                "reviews_text_color": "#21201C",
+                "review_text_line_height": 23,
+                "review_count_font_size": 15,
+                "review_count_color": "#6E6A5E",
+                "review_card_background": "#FFFFFF",
+                "enable_review_card_gradient_background": false,
+                "review_card_gradient_background": "linear-gradient(180deg, rgba(251,51,164, 1) 0%, rgba(96,77,188, 1) 100%)",
+                "review_divider_color": "#E3DED2",
+                "dot_active_color": "#55584A",
+                "dot_inactive_color": "#C9C2B2",
+                "star_size": 12,
+                "mini_review_stars_color": "#55584A",
+                "review_card_border_radius": 6,
+                "review_card_padding_horizontal_desktop": 23,
+                "review_card_padding_vertical_desktop": 18,
+                "review_card_padding_horizontal_mobile": 18,
+                "review_card_padding_vertical_mobile": 12,
+                "stars_gap": 1,
+                "dots_gap": 4,
+                "review_card_gap": 18,
+                "dot_size": 8,
+                "padding_top": 10,
+                "padding_bottom": 10,
+                "padding_top_mobile": 10,
+                "padding_bottom_mobile": 10
+              },
+              "blocks": {
+                "reviews_item_list": {
+                  "type": "_a-reviews_item_list",
+                  "static": true,
+                  "settings": {
+                    "item_author_1": "Rose",
+                    "item_author_location_1": "France",
+                    "item_text_1": "Ce masque a littéralement changé mes nuits. Je suis très sensible à la lumière et l'occultation est vraiment à 100 %. Le renfoncement 3D est un pur bonheur : aucune pression sur les yeux ou les cils. Je ne peux plus m'en passer !",
+                    "item_rating_1": 5,
+                    "item_author_2": "Aliaume",
+                    "item_author_location_2": "Belgique",
+                    "item_text_2": "Travaillant de nuit, dormir le jour était un vrai calvaire. Avec ce masque, c'est la nuit noire absolue même à 14h en plein soleil. C'est le meilleur investissement que j'ai fait pour mon sommeil.",
+                    "item_rating_2": 5,
+                    "item_author_3": "Talal",
+                    "item_author_location_3": "France",
+                    "item_text_3": "Excellente qualité. Le tissu est doux, respirant et ne tient pas chaud pendant la nuit. La sangle s'ajuste parfaitement sans serrer la tête. Je me réveille enfin vraiment reposé !",
+                    "item_rating_3": 5,
+                    "item_author_4": "Eglantine",
+                    "item_author_location_4": "Suisse",
+                    "item_text_4": "J'avais peur d'avoir chaud ou d'avoir les yeux irrités, mais la matière est ultra douce et hyper respirante. On ne sent absolument pas le masque pendant la nuit et la finition est vraiment top. Reçu très rapidement, je recommande à 100% !",
+                    "item_rating_4": 5,
+                    "item_author_5": "",
+                    "item_author_location_5": "",
+                    "item_text_5": "",
+                    "item_rating_5": 5,
+                    "item_author_6": "",
+                    "item_author_location_6": "",
+                    "item_text_6": "",
+                    "item_rating_6": 5,
+                    "item_author_7": "",
+                    "item_author_location_7": "",
+                    "item_text_7": "",
+                    "item_rating_7": 5,
+                    "item_author_8": "",
+                    "item_author_location_8": "",
+                    "item_text_8": "",
+                    "item_rating_8": 5,
+                    "item_author_9": "",
+                    "item_author_location_9": "",
+                    "item_text_9": "",
+                    "item_rating_9": 5,
+                    "item_author_10": "",
+                    "item_author_location_10": "",
+                    "item_text_10": "",
+                    "item_rating_10": 5,
+                    "item_author_11": "",
+                    "item_author_location_11": "",
+                    "item_text_11": "",
+                    "item_rating_11": 5,
+                    "item_author_12": "",
+                    "item_author_location_12": "",
+                    "item_text_12": "",
+                    "item_rating_12": 5
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            },
+            "collapsible_tabs_e8Hyd8": {
+              "type": "_a-collapsible_tabs-r2",
+              "name": "Collapsible tabs",
+              "settings": {
+                "padding_top": 10,
+                "padding_bottom": 10,
+                "padding_top_mobile": 10,
+                "padding_bottom_mobile": 10
+              },
+              "blocks": {
+                "collapsible_tab_mjFUL7": {
+                  "type": "_a-collapsible_tab-r2",
+                  "name": "Collapsible Tab",
+                  "settings": {
+                    "heading": "Description",
+                    "content": "<p><strong>Masque de Sommeil Ergonomique 3D — Obscurité Totale & Confort Absolu</strong></p><p>Profitez d'un sommeil profond et réparateur où que vous soyez grâce à notre masque de nuit haut de gamme. Conçu pour garantir un <strong>blackout total</strong>, il s'adapte parfaitement à votre visage pour transformer n'importe quel endroit en un véritable cocon de repos.</p><h3>✨ Ses atouts principaux :</h3><ul><li><strong>Conception Ergonomique 3D :</strong> Épouse doucement le contour de vos yeux sans exercer aucune pression sur les paupières.</li><li><strong>Tissu Respirant & Sûr :</strong> Matériaux légers, sans produits chimiques, idéaux pour les peaux les plus sensibles.</li><li><strong>Maintien Parfait :</strong> S'ajuste en douceur pour rester bien en place tout au long de la nuit.</li><li><strong>Format Nomade :</strong> Ultra-léger et facile à emporter, parfait pour la maison comme pour vos voyages.</li></ul>",
+                    "collapsible_font_heading_size": 16,
+                    "collapsible_font_size": 12,
+                    "coll_heading_color": "#21201C",
+                    "coll_heading_highlighted_color": "#55584A",
+                    "coll_text_color": "#6E6A5E",
+                    "coll_text_highlighted_color": "#55584A",
+                    "collapsible_border_radius": 20,
+                    "padding_top": 0,
+                    "padding_bottom": 0,
+                    "border_bottom_width": 1,
+                    "border_bottom_color": ""
+                  },
+                  "blocks": {}
+                },
+                "collapsible_tab_fmGN3m": {
+                  "type": "_a-collapsible_tab-r2",
+                  "name": "Collapsible Tab",
+                  "settings": {
+                    "heading": "FAQ",
+                    "content": "<h3><strong>Question 1 : Ce masque de sommeil bloque-t-il vraiment toute la lumière, même dans un endroit très éclairé ?</strong></h3><p><strong>Réponse :</strong> Oui, absolument. Notre masque 3D haut de gamme est doté d'une coupe ergonomique unique qui épouse parfaitement les contours de vos yeux. Il élimine toute la lumière ambiante et les reflets, même en plein jour, pour vous garantir une obscurité totale et un sommeil profond.</p><h3><strong>Question 2 : Est-il confortable à porter toute la nuit, notamment pour les peaux sensibles ou avec des extensions de cils ?</strong></h3><p><strong>Réponse :</strong> Tout à fait. Conçu dans un tissu composite ultra-respirant et très doux, il est idéal pour les peaux sensibles. Sa cavité 3D préserve vos paupières et n'exerce aucune pression sur les yeux, ce qui le rend parfaitement compatible avec le port d'extensions de cils ou l'application de soins oculaires.</p><h3><strong>Question 3 : Ce masque est-il facile à transporter pour les voyages ?</strong></h3><p><strong>Réponse :</strong> Oui, il a été spécialement pensé pour le voyage. Compact et extrêmement léger, il se glisse facilement dans un sac à main ou une valise. Vous pourrez ainsi créer votre propre cocon de nuit noire n'importe où : en avion, dans le train, à l'hôtel ou à la maison.</p>",
+                    "collapsible_font_heading_size": 16,
+                    "collapsible_font_size": 12,
+                    "coll_heading_color": "#21201C",
+                    "coll_heading_highlighted_color": "#55584A",
+                    "coll_text_color": "#6E6A5E",
+                    "coll_text_highlighted_color": "#55584A",
+                    "collapsible_border_radius": 20,
+                    "padding_top": 0,
+                    "padding_bottom": 0,
+                    "border_bottom_width": 1,
+                    "border_bottom_color": ""
+                  },
+                  "blocks": {}
+                },
+                "collapsible_tab_6gizn9": {
+                  "type": "_a-collapsible_tab-r2",
+                  "name": "Collapsible Tab",
+                  "settings": {
+                    "heading": "Traitement & Livraison",
+                    "content": "<p><strong>La livraison Express est OFFERTE sur toutes vos commandes !</strong> * <strong>Temps de traitement :</strong> Veuillez prévoir <strong>1 à 2 jours ouvrés</strong> pour la préparation et l'expédition de votre commande.</p><ul><li><strong>Délai de livraison estimé :</strong> <strong>7 à 12 jours ouvrés</strong>.</li></ul>",
+                    "collapsible_font_heading_size": 16,
+                    "collapsible_font_size": 12,
+                    "coll_heading_color": "#21201C",
+                    "coll_heading_highlighted_color": "#55584A",
+                    "coll_text_color": "#6E6A5E",
+                    "coll_text_highlighted_color": "#55584A",
+                    "collapsible_border_radius": 20,
+                    "padding_top": 0,
+                    "padding_bottom": 0,
+                    "border_bottom_width": 1,
+                    "border_bottom_color": ""
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "collapsible_tab_mjFUL7",
+                "collapsible_tab_fmGN3m",
+                "collapsible_tab_6gizn9"
+              ]
+            },
+            "sticky_atc_dyxKah": {
+              "type": "_a-sticky_atc-r2",
+              "name": "Sticky Add to Cart",
+              "settings": {
+                "button_label": "Ajouter au panier",
+                "border_radius": 6,
+                "close_button_size": 10,
+                "close_button_color": "#21201C",
+                "display_when": "after_scroll",
+                "show_price_badge": true,
+                "show_variant_selector": true,
+                "show_only_atc_button_on_mobile": false,
+                "show_close_button": true,
+                "show_price": true,
+                "show_compare_at_price": true,
+                "title_size": 15,
+                "product_title_color": "#21201C",
+                "option_size": 12,
+                "product_option_color": "#6E6A5E",
+                "price_size": 18,
+                "price_color": "#21201C",
+                "comp_price_size": 14,
+                "compare_price_color": "#6E6A5E",
+                "container_bg_color": "#F2EFE8",
+                "badge_bg_color": "rgba(0,0,0,0)",
+                "badge_text_color": "rgba(0,0,0,0)",
+                "bold_sticky_atc_text": false,
+                "button_font_size": 12,
+                "button_text_color": "#FBFAF7",
+                "button_bg_color": "#55584A",
+                "button_border_radius": 6,
+                "input_font_size": 14,
+                "input_text_color": "#21201C",
+                "input_bg_color": "#ffffff",
+                "input_bg_color_opacity": 20,
+                "input_border_color": "#E3DED2",
+                "input_border_color_opacity": 100,
+                "input_border_width": 1,
+                "input_border_radius": 6,
+                "image_height": 66,
+                "image_width": 64,
+                "hide_image_on_mobile": true,
+                "image_height_mobile": 52,
+                "image_width_mobile": 40,
+                "padding_top": 0,
+                "padding_bottom": 0,
+                "padding_top_mobile": 0,
+                "padding_bottom_mobile": 0
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "rating_HYWfzY",
+            "a_heading_Xayagp",
+            "price_rNLTVV",
+            "bullet_point_benefits_L9Ekdy",
+            "divider_XjYQhi",
+            "variant_picker_cca4P7",
+            "quantity_selector_BqH8Bi",
+            "social_proof_t6FNkr",
+            "payment_badges_mdNTxn",
+            "payment_badges_yf76Lm",
+            "icon_with_text_UYemba",
+            "reviews_N963dq",
+            "collapsible_tabs_e8Hyd8",
+            "sticky_atc_dyxKah"
+          ]
+        }
+      },
+      "settings": {
+        "show_main_image_first": false,
+        "use_gradient_background": false,
+        "section_background_gradient": "linear-gradient(180deg, rgba(251, 51, 166, 1), rgba(127, 72, 176, 1) 50%, rgba(48, 145, 211, 1) 100%)",
+        "section_background_color": "#FBFAF7",
+        "padding_top_desktop": 20,
+        "padding_bottom_desktop": 20,
+        "padding_top_mobile": 8,
+        "padding_bottom_mobile": 20,
+        "atlas_font": ""
+      }
+    },
+    "custom_liquid_8xWYQ6": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.presets.name",
+      "settings": {
+        "custom_liquid": "",
+        "padding_top": 40,
+        "padding_bottom": 52
+      }
+    },
+    "custom_liquid_DHMKYb": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.presets.name",
+      "settings": {
+        "custom_liquid": "<style>\n  .onirala-360 {\n    max-width: 560px;\n    margin: 0 auto;\n    padding: 60px 20px;\n    text-align: center;\n  }\n  .onirala-360-label {\n    font-size: 13px;\n    letter-spacing: 2px;\n    text-transform: uppercase;\n    color: #55584A;\n    margin-bottom: 18px;\n    font-weight: 600;\n  }\n  .onirala-360-stage {\n    position: relative;\n    width: 100%;\n    aspect-ratio: 1 / 1;\n    cursor: grab;\n    touch-action: none;\n    user-select: none;\n  }\n  .onirala-360-stage:active { cursor: grabbing; }\n  .onirala-360-stage img {\n    position: absolute;\n    inset: 0;\n    width: 82%;\n    height: 82%;\n    margin: auto;\n    object-fit: contain;\n    pointer-events: none;\n    opacity: 0;\n    transition: opacity 0.05s linear;\n    filter: drop-shadow(0 25px 30px rgba(0,0,0,0.45));\n  }\n  .onirala-360-stage img.active {\n    opacity: 1;\n  }\n  .onirala-360-shadow {\n    position: absolute;\n    bottom: 10%;\n    left: 50%;\n    width: 45%;\n    height: 24px;\n    background: radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 70%);\n    transform: translateX(-50%);\n    filter: blur(5px);\n    pointer-events: none;\n  }\n  .onirala-360-nav {\n    position: absolute;\n    top: 50%;\n    transform: translateY(-50%);\n    width: 42px;\n    height: 42px;\n    border-radius: 50%;\n    background: rgba(255,255,255,0.05);\n    border: 1px solid rgba(198,168,108,0.3);\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    cursor: pointer;\n    z-index: 4;\n    transition: background 0.2s ease;\n  }\n  .onirala-360-nav:hover { background: rgba(198,168,108,0.2); }\n  .onirala-360-nav.prev { left: 0; }\n  .onirala-360-nav.next { right: 0; }\n  .onirala-360-nav svg {\n    width: 18px;\n    height: 18px;\n    stroke: #55584A;\n    fill: none;\n    stroke-width: 2;\n  }\n  .onirala-360-hint {\n    margin-top: 22px;\n    font-size: 13px;\n    color: rgba(255,255,255,0.45);\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 8px;\n    letter-spacing: 0.3px;\n  }\n  .onirala-360-hint svg {\n    width: 16px;\n    height: 16px;\n    stroke: #55584A;\n    fill: none;\n    stroke-width: 1.8;\n  }\n  .onirala-360-progress {\n    margin-top: 14px;\n    display: flex;\n    justify-content: center;\n    gap: 5px;\n  }\n  .onirala-360-dot {\n    width: 6px;\n    height: 6px;\n    border-radius: 50%;\n    background: rgba(198,168,108,0.25);\n    transition: background 0.15s ease;\n  }\n  .onirala-360-dot.active {\n    background: #55584A;\n  }\n  @media (max-width: 600px) {\n    .onirala-360 { padding: 36px 14px; }\n  }\n</style>\n\n<div class=\"onirala-360\">\n  <div class=\"onirala-360-label\">Explorez le masque à 360°</div>\n\n  <div class=\"onirala-360-stage\" id=\"onirala360Stage\">\n    <div class=\"onirala-360-nav prev\" id=\"onirala360Prev\">\n      <svg viewBox=\"0 0 24 24\"><path d=\"M15 6l-6 6 6 6\"/></svg>\n    </div>\n    <div class=\"onirala-360-nav next\" id=\"onirala360Next\">\n      <svg viewBox=\"0 0 24 24\"><path d=\"M9 6l6 6-6 6\"/></svg>\n    </div>\n\n    <img class=\"active\" data-frame=\"0\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260811_013713_8a1c8210-08a5-4ee5-90e4-dee9c31bbb4c_min.webp?v=1786717466\" alt=\"Masque Onirala vue 1\" draggable=\"false\">\n    <img data-frame=\"1\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260814_141702_11ceef5f-5d09-447d-90e7-011df2a999b6_min.webp?v=1786717467\" alt=\"Masque Onirala vue 2\" draggable=\"false\">\n    <img data-frame=\"2\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260811_013713_37599123-14ff-48ea-b2cb-bf38b9b513a2_min.webp?v=1786717466\" alt=\"Masque Onirala vue 3\" draggable=\"false\">\n    <img data-frame=\"3\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260814_141703_f39452a6-ad9c-4917-ae21-f966bb8ed3b3_min.webp?v=1786717466\" alt=\"Masque Onirala vue 4\" draggable=\"false\">\n    <img data-frame=\"4\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260811_013713_ff085aa9-76ac-48b6-9a6a-c6eb11b68428_min.webp?v=1786717467\" alt=\"Masque Onirala vue 5\" draggable=\"false\">\n    <img data-frame=\"5\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260814_141702_026c1804-3efe-4918-bfb9-13cdb977dc5f_min.webp?v=1786717466\" alt=\"Masque Onirala vue 6\" draggable=\"false\">\n    <img data-frame=\"6\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260811_013915_e6a664ae-9f52-478d-afcc-242fd427e71f_min.webp?v=1786717467\" alt=\"Masque Onirala vue 7\" draggable=\"false\">\n    <img data-frame=\"7\" src=\"https://cdn.shopify.com/s/files/1/0999/3817/3312/files/hf_20260814_141702_6b1faab3-ffc4-4af7-9dec-2390ba89c798_min.webp?v=1786717466\" alt=\"Masque Onirala vue 8\" draggable=\"false\">\n\n    <div class=\"onirala-360-shadow\"></div>\n  </div>\n\n  <div class=\"onirala-360-progress\" id=\"onirala360Progress\"></div>\n\n  <div class=\"onirala-360-hint\">\n    <svg viewBox=\"0 0 24 24\"><path d=\"M9 11l-4 4 4 4\"/><path d=\"M5 15h14\"/><path d=\"M15 5l4 4-4 4\"/><path d=\"M19 9H5\"/></svg>\n    Glissez ou utilisez les flèches pour faire pivoter\n  </div>\n</div>\n\n<script>\n(function() {\n  var stage = document.getElementById('onirala360Stage');\n  var progress = document.getElementById('onirala360Progress');\n  var prevBtn = document.getElementById('onirala360Prev');\n  var nextBtn = document.getElementById('onirala360Next');\n  if (!stage) return;\n\n  var frames = stage.querySelectorAll('img');\n  var totalFrames = frames.length;\n  var currentFrame = 0;\n\n  for (var i = 0; i < totalFrames; i++) {\n    var dot = document.createElement('div');\n    dot.className = 'onirala-360-dot' + (i === 0 ? ' active' : '');\n    progress.appendChild(dot);\n  }\n  var dots = progress.querySelectorAll('.onirala-360-dot');\n\n  function setFrame(idx) {\n    idx = ((idx % totalFrames) + totalFrames) % totalFrames;\n    if (idx === currentFrame) return;\n    frames[currentFrame].classList.remove('active');\n    dots[currentFrame].classList.remove('active');\n    frames[idx].classList.add('active');\n    dots[idx].classList.add('active');\n    currentFrame = idx;\n  }\n\n  if (prevBtn) prevBtn.addEventListener('click', function(e) {\n    e.stopPropagation();\n    setFrame(currentFrame - 1);\n  });\n  if (nextBtn) nextBtn.addEventListener('click', function(e) {\n    e.stopPropagation();\n    setFrame(currentFrame + 1);\n  });\n\n  var isDragging = false;\n  var startX = 0;\n  var accumulated = 0;\n  var pxPerFrame = 16;\n\n  stage.addEventListener('pointerdown', function(e) {\n    if (e.target === prevBtn || e.target === nextBtn || prevBtn.contains(e.target) || nextBtn.contains(e.target)) return;\n    isDragging = true;\n    startX = e.clientX;\n    accumulated = 0;\n    stage.style.cursor = 'grabbing';\n    stage.setPointerCapture(e.pointerId);\n  });\n\n  stage.addEventListener('pointermove', function(e) {\n    if (!isDragging) return;\n    var dx = e.clientX - startX;\n    accumulated += dx;\n    startX = e.clientX;\n    if (Math.abs(accumulated) >= pxPerFrame) {\n      var steps = Math.trunc(accumulated / pxPerFrame);\n      setFrame(currentFrame - steps);\n      accumulated -= steps * pxPerFrame;\n    }\n  });\n\n  function endDrag(e) {\n    isDragging = false;\n    stage.style.cursor = 'grab';\n  }\n  stage.addEventListener('pointerup', endDrag);\n  stage.addEventListener('pointercancel', endDrag);\n  stage.addEventListener('pointerleave', endDrag);\n})();\n</script>",
+        "padding_top": 40,
+        "padding_bottom": 52
+      }
+    },
+    "borders_3WVyHf": {
+      "type": "a-borders",
+      "settings": {
+        "shape": "curved",
+        "border_size": "60",
+        "flip_horizontal": true,
+        "flip_vertical": false,
+        "border_shape_color": "#E3DED2",
+        "section_bg_color": "#FBFAF7",
+        "use_section_bg_gradient": false,
+        "section_bg_gradient": "linear-gradient(180deg, rgba(251, 51, 164, 1), rgba(96, 77, 188, 1) 100%)",
+        "padding_top": 10,
+        "padding_bottom": 10
+      }
+    },
+    "reasons_GqYHik": {
+      "type": "a-reasons-r4",
+      "blocks": {
+        "reasons_to_buy_content_rmwz9L": {
+          "type": "_a-reasons-to-buy-content",
+          "settings": {
+            "heading": "Pourquoi des milliers de personnes nous font confiance",
+            "heading_tag": "h3",
+            "heading_size": 40,
+            "reasons_mob_heading_size": 28,
+            "heading_color": "#21201C",
+            "bolded_heading_color": "#21201C",
+            "heading_use_gradient": false,
+            "heading_gradient_color": "linear-gradient(180deg, rgba(251,51,164, 1) 0%, rgba(96,77,188, 1) 100%)",
+            "headig_padding_top": 0,
+            "headig_padding_bottom": 0,
+            "text": "<strong>Une qualité constante et irréprochable, sur laquelle vous pouvez compter nuit après nuit.</strong>",
+            "text_tag": "p",
+            "text_size": 16,
+            "text_mob_size": 16,
+            "text_color": "#21201C",
+            "bolded_text_color": "#21201C",
+            "text_use_gradient": false,
+            "text_gradient_color": "",
+            "text_padding_top": 0,
+            "text_padding_bottom": 0,
+            "content_alignment": "left",
+            "content_gap": 21,
+            "content_gap_mobile": 14
+          },
+          "blocks": {}
+        },
+        "reasons_to_buy_product_card_3LG667": {
+          "type": "_a-reasons-to-buy-product-card",
+          "settings": {
+            "product_url": "#main-product-top",
+            "product_image": "shopify://shop_images/hf_20260806_221513_0b6b721d-5cce-47b2-92a7-4113d543b301.png",
+            "product_title": "<p>Masque de nuit 3D occultant premium</p>",
+            "product_description": "",
+            "product_title_font_size": 17,
+            "product_title_color": "#21201C",
+            "product_description_font_size": 14,
+            "product_description_color": "#6E6A5E",
+            "card_background_color": "#FFFFFF",
+            "card_has_gradient": false,
+            "card_gradient": "linear-gradient(180deg, rgba(251, 51, 164, 1), rgba(96, 77, 188, 1) 100%)",
+            "product_description_opacity": 70,
+            "arrow_icon_color": "#21201C",
+            "card_border_radius": 10,
+            "thumbnail_border_radius": 4,
+            "text_content_gap": 10,
+            "text_content_gap_mobile": 11
+          },
+          "blocks": {}
+        },
+        "reasons_to_buy_stats_TQiBR8": {
+          "type": "_a-reasons-to-buy-stats-r2",
+          "settings": {
+            "content_alignment": "center",
+            "cards_vertical_spacing": 25,
+            "cards_vertical_spacing_mobile": 14,
+            "hide_stat_number": false,
+            "percentage_number_font_size": 50,
+            "percentage_number_font_size_mobile": 28,
+            "percentage_number_color": "#21201C",
+            "percentage_number_has_gradient": false,
+            "percentage_number_bg": "linear-gradient(180deg, rgba(251,51,164, 1) 0%, rgba(96,77,188, 1) 100%)",
+            "chip_shape": "none",
+            "number_chip_color": "#55584A",
+            "chip_size_mobile": 60,
+            "block_heading_size": 24,
+            "block_heading_size_mobile": 14,
+            "block_heading_color": "#21201C",
+            "bolded_block_heading_color": "#21201C",
+            "block_body_size": 12,
+            "block_body_size_mobile": 14,
+            "block_body_color": "#6E6A5E",
+            "bolded_block_body_color": "#21201C",
+            "border_color": "#E3DED2"
+          },
+          "blocks": {
+            "reasons_to_buy_stat_t96XrA": {
+              "type": "_a-reasons-to-buy-stat-r2",
+              "settings": {
+                "row_heading": "<p>Un sommeil plus profond et réparateur</p>",
+                "row_text": "<p><strong>Un sommeil profond et ininterrompu, idéal pour vos voyages comme pour vos siestes du quotidien.</strong></p>",
+                "percentage": 92,
+                "hide_percent_sign": false,
+                "value_suffix": ""
+              },
+              "blocks": {}
+            },
+            "reasons_to_buy_stat_Cpcned": {
+              "type": "_a-reasons-to-buy-stat-r2",
+              "settings": {
+                "row_heading": "<p>Un confort inégalé</p>",
+                "row_text": "<p><strong>Nos utilisateurs plébiscitent son ajustement ergonomique qui évite toute pression inutile sur les yeux.</strong></p>",
+                "percentage": 87,
+                "hide_percent_sign": false,
+                "value_suffix": ""
+              },
+              "blocks": {}
+            },
+            "reasons_to_buy_stat_nEiBpL": {
+              "type": "_a-reasons-to-buy-stat-r2",
+              "settings": {
+                "row_heading": "<p>Un repos plus réparateur</p>",
+                "row_text": "<p><strong>Des réveils sans fatigue : nos utilisateurs se sentent immédiatement rechargés et prêts pour leur journée.</strong></p>",
+                "percentage": 94,
+                "hide_percent_sign": false,
+                "value_suffix": ""
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "reasons_to_buy_stat_t96XrA",
+            "reasons_to_buy_stat_Cpcned",
+            "reasons_to_buy_stat_nEiBpL"
+          ]
+        }
+      },
+      "block_order": [
+        "reasons_to_buy_content_rmwz9L",
+        "reasons_to_buy_product_card_3LG667",
+        "reasons_to_buy_stats_TQiBR8"
+      ],
+      "name": "Reasons to buy",
+      "settings": {
+        "image": "shopify://shop_images/hf_20260806_221754_f447acfe-94ec-4611-bb8b-0867885c9e69.png",
+        "image_height": "small",
+        "image_border_radius": 6,
+        "image_position": "center",
+        "mobile_image_order": "below",
+        "border_color": "#E3DED2",
+        "border_color_opacity": 5,
+        "use_gradient_background": false,
+        "section_background_gradient": "linear-gradient(180deg, rgba(251, 51, 166, 1), rgba(127, 72, 176, 1) 50%, rgba(48, 145, 211, 1) 100%)",
+        "section_background_color": "#FBFAF7",
+        "show_content_card": false,
+        "content_card_background_color": "#ffffff",
+        "content_card_border_radius": 24,
+        "content_card_padding": 48,
+        "content_card_position": "standalone",
+        "stats_layout": "vertical",
+        "button_label": "",
+        "button_url": "",
+        "button_position": "after_stats",
+        "button_background_color": "#55584A",
+        "button_use_gradient": false,
+        "button_background_gradient": "linear-gradient(180deg, rgba(26, 122, 60, 1), rgba(14, 59, 33, 1) 100%)",
+        "button_text_color": "#FBFAF7",
+        "button_font_size": 16,
+        "button_border_radius": 40,
+        "padding_top": 24,
+        "padding_bottom": 24,
+        "atlas_font": ""
+      }
+    },
+    "a_horizontal_scrolling_text_r3_tiiKCa": {
+      "type": "a-horizontal-scrolling-text-r3",
+      "blocks": {
+        "text_a4qbHM": {
+          "type": "text",
+          "settings": {
+            "title": "Livraison gratuite dès 50 €"
+          }
+        },
+        "text_VY46Ky": {
+          "type": "text",
+          "settings": {
+            "title": "Retours sous 30 jours"
+          }
+        },
+        "text_DGzNaM": {
+          "type": "text",
+          "settings": {
+            "title": "Noté 4,8/5 par les clients"
+          }
+        },
+        "text_XRhqDC": {
+          "type": "text",
+          "settings": {
+            "title": "Paiement sécurisé"
+          }
+        }
+      },
+      "block_order": [
+        "text_a4qbHM",
+        "text_VY46Ky",
+        "text_DGzNaM",
+        "text_XRhqDC"
+      ],
+      "name": "Horizontal sliding text",
+      "settings": {
+        "speed": 1,
+        "text_size": 16,
+        "text_spacing": 3,
+        "text_color": "#21201C",
+        "highlighted_text_color": "#55584A",
+        "use_gradient_background": false,
+        "section_background_gradient": "linear-gradient(180deg, rgba(251, 51, 166, 1), rgba(127, 72, 176, 1) 50%, rgba(48, 145, 211, 1) 100%)",
+        "section_background_color": "#FBFAF7",
+        "padding_top": 24,
+        "padding_bottom": 24,
+        "atlas_font": ""
+      }
+    },
+    "product_benefits_wMbTak": {
+      "type": "product-benefits",
+      "blocks": {
+        "benefit_hcK4Fj": {
+          "type": "benefit",
+          "settings": {
+            "title": "Matériaux de haute qualité",
+            "description": "Fabriqué avec des matériaux haut de gamme, conçus pour durer et offrir des performances exceptionnelles.",
+            "benefit_color": "",
+            "benefit_description_color": "#6E6A5E",
+            "use_image": false,
+            "preset_icon": "check",
+            "use_custom_icon": false,
+            "custom_icon_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewbox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z\"></path></svg>"
+          }
+        },
+        "benefit_DW44xF": {
+          "type": "benefit",
+          "settings": {
+            "title": "Design simple et intuitif",
+            "description": "Son design intuitif le rend simple à utiliser, vous faisant gagner un temps précieux au quotidien.",
+            "benefit_color": "",
+            "benefit_description_color": "",
+            "use_image": false,
+            "preset_icon": "clock",
+            "use_custom_icon": false,
+            "custom_icon_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewbox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z\"></path></svg>"
+          }
+        },
+        "benefit_DwqJcX": {
+          "type": "benefit",
+          "settings": {
+            "title": "Ajustement sur mesure",
+            "description": "Ajustez le masque selon vos préférences pour profiter d'un confort parfaitement adapté à votre morphologie.",
+            "benefit_color": "",
+            "benefit_description_color": "",
+            "use_image": false,
+            "preset_icon": "sparkle",
+            "use_custom_icon": false,
+            "custom_icon_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewbox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z\"></path></svg>"
+          }
+        },
+        "benefit_R3Vt9Q": {
+          "type": "benefit",
+          "settings": {
+            "title": "Un investissement durable",
+            "description": "Un investissement intelligent, vite rentabilisé grâce à sa durabilité et son efficacité au quotidien.",
+            "benefit_color": "#6E6A5E",
+            "benefit_description_color": "",
+            "use_image": false,
+            "preset_icon": "heart",
+            "use_custom_icon": false,
+            "custom_icon_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewbox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z\"></path></svg>"
+          }
+        }
+      },
+      "block_order": [
+        "benefit_hcK4Fj",
+        "benefit_DW44xF",
+        "benefit_DwqJcX",
+        "benefit_R3Vt9Q"
+      ],
+      "name": "Product Benefits",
+      "settings": {
+        "padding_top": 50,
+        "padding_bottom": 50,
+        "padding_left": 25,
+        "padding_right": 25,
+        "image_position_desktop": "right",
+        "heading_size_mobile": 34,
+        "heading_size_desktop": 35,
+        "subtitle_size_mobile": 13,
+        "subtitle_size_desktop": 13,
+        "benefit_title_size_mobile": 14,
+        "benefit_title_size_desktop": 14,
+        "benefit_description_size_mobile": 12,
+        "benefit_description_size_desktop": 12,
+        "accent_color": "#55584A",
+        "use_theme_colors": true,
+        "override_global_accent": false,
+        "accent_font_family": "inherit",
+        "accent_font_style": "normal",
+        "accent_font_weight": "inherit",
+        "use_accent_gradient": true,
+        "accent_text_gradient": "radial-gradient(rgba(255, 206, 0, 1), rgba(255, 107, 157, 1) 100%)",
+        "accent_text_margin_left": 0,
+        "list_background": "linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(240, 240, 240, 1) 100%)",
+        "list_border_radius": 20,
+        "border_color": "#E3DED2",
+        "heading_accent": "Premium",
+        "heading_regular": "Caractéristiques du produit",
+        "subtitle": "Découvrez les caractéristiques d'exception qui font toute la différence.",
+        "show_image": true,
+        "media_type": "image",
+        "feature_image": "shopify://shop_images/hf_20260806_163131_7e1babca-2eb0-4537-b878-ec6e46e8e989.png",
+        "image_alt": "Feature product image",
+        "video_autoplay": true,
+        "video_muted": true,
+        "video_loop": true,
+        "video_controls": false,
+        "heading_color": "#21201C",
+        "subtitle_color": "#6E6A5E",
+        "description_color": "#6E6A5E",
+        "section_background": "linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(248, 248, 248, 1) 100%)"
+      }
+    },
+    "divider_aDEXjD": {
+      "type": "divider",
+      "name": "Divider",
+      "settings": {
+        "divider_style": "wavy",
+        "background_color": "rgba(0,0,0,0)",
+        "flip_direction": false,
+        "color": "#55584A",
+        "height": 50,
+        "show_border": false,
+        "border_color": "#E3DED2",
+        "border_width": 1,
+        "border_style": "solid",
+        "use_gradient": false,
+        "gradient_background": "linear-gradient(135deg, rgba(102, 126, 234, 1), rgba(118, 75, 162, 1) 100%)",
+        "padding_top": 20,
+        "padding_bottom": 20
+      }
+    },
+    "4_benefits_TjxYJe": {
+      "type": "4-benefits",
+      "blocks": {
+        "benefit_azxp6m": {
+          "type": "benefit",
+          "settings": {
+            "title": "Bénéfice 1",
+            "description": "Favorise la sécrétion naturelle de mélatonine pour vous endormir en quelques minutes seulement.",
+            "preset_icon": "lightning",
+            "use_custom_icon": false,
+            "custom_icon_svg": "",
+            "icon_size_mobile": 28,
+            "icon_size_desktop": 32,
+            "vertical_spacing": 20
+          }
+        },
+        "benefit_qCiGLB": {
+          "type": "benefit",
+          "settings": {
+            "title": "Bénéfice 2",
+            "description": "Bloque totalement la lumière extérieure pour garantir un sommeil profond et ininterrompu.",
+            "preset_icon": "shield",
+            "use_custom_icon": false,
+            "custom_icon_svg": "",
+            "icon_size_mobile": 28,
+            "icon_size_desktop": 32,
+            "vertical_spacing": 20
+          }
+        },
+        "benefit_H943HR": {
+          "type": "benefit",
+          "settings": {
+            "title": "Bénéfice 3",
+            "description": "Améliore la qualité de vos cycles de sommeil pour un réveil frais et parfaitement reposé.",
+            "preset_icon": "refresh",
+            "use_custom_icon": false,
+            "custom_icon_svg": "",
+            "icon_size_mobile": 28,
+            "icon_size_desktop": 32,
+            "vertical_spacing": 20
+          }
+        },
+        "benefit_Bjhe8a": {
+          "type": "benefit",
+          "settings": {
+            "title": "Bénéfice 4 ",
+            "description": "Conception 3D épousant la forme des yeux sans aucune pression sur les paupières ni le visage.",
+            "preset_icon": "check",
+            "use_custom_icon": false,
+            "custom_icon_svg": "",
+            "icon_size_mobile": 28,
+            "icon_size_desktop": 32,
+            "vertical_spacing": 20
+          }
+        }
+      },
+      "block_order": [
+        "benefit_azxp6m",
+        "benefit_qCiGLB",
+        "benefit_H943HR",
+        "benefit_Bjhe8a"
+      ],
+      "name": "4 Benefits",
+      "settings": {
+        "padding_top_mobile": 40,
+        "padding_bottom_mobile": 40,
+        "padding_left_mobile": 20,
+        "padding_right_mobile": 20,
+        "padding_top_desktop": 60,
+        "padding_bottom_desktop": 60,
+        "padding_left_desktop": 20,
+        "padding_right_desktop": 20,
+        "heading_regular": "Des nuits parfaites",
+        "heading_accent": "sans compromis",
+        "subtitle": "",
+        "use_theme_colors": true,
+        "section_background": "linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(248, 248, 248, 1) 100%)",
+        "heading_color": "#21201C",
+        "subtitle_color": "#6E6A5E",
+        "heading_size_mobile": 32,
+        "heading_size_desktop": 48,
+        "subtitle_size_mobile": 24,
+        "subtitle_size_desktop": 32,
+        "desktop_layout": "grid",
+        "benefit_alignment": "center",
+        "icon_color": "#55584A",
+        "benefit_title_color": "#21201C",
+        "benefit_description_color": "#6E6A5E",
+        "benefit_title_size_mobile": 16,
+        "benefit_title_size_desktop": 18,
+        "benefit_description_size_mobile": 14,
+        "benefit_description_size_desktop": 15,
+        "icon_background": "linear-gradient(135deg, rgba(239, 74, 101, 1), rgba(255, 107, 157, 1) 100%)",
+        "icon_border_width": 2,
+        "icon_border_style": "solid",
+        "icon_border_color": "#E3DED2",
+        "show_image": true,
+        "image_border_radius": 15,
+        "override_global_accent": false,
+        "accent_color": "#55584A",
+        "use_accent_gradient": false,
+        "accent_text_gradient": "linear-gradient(45deg, rgba(239, 74, 101, 1), rgba(255, 107, 157, 1) 100%)",
+        "accent_font_family": "inherit",
+        "accent_font_style": "normal",
+        "accent_font_weight": "inherit",
+        "accent_text_margin_left": 0
+      }
+    },
+    "borders_6ffEVj": {
+      "type": "a-borders",
+      "name": "Section border",
+      "settings": {
+        "shape": "waves",
+        "border_size": "90",
+        "flip_horizontal": true,
+        "flip_vertical": false,
+        "border_shape_color": "#E3DED2",
+        "section_bg_color": "#FBFAF7",
+        "use_section_bg_gradient": false,
+        "section_bg_gradient": "linear-gradient(180deg, rgba(251, 51, 164, 1), rgba(96, 77, 188, 1) 100%)",
+        "padding_top": 10,
+        "padding_bottom": 10
+      }
+    },
+    "custom_liquid_p8K74d": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.presets.name",
+      "settings": {
+        "custom_liquid": "<style>\n  .vs-section {\n    max-width: 900px;\n    margin: 0 auto;\n    padding: 20px 15px;\n    font-family: inherit;\n    color: #21201C;\n  }\n\n  .vs-header {\n    text-align: center;\n    margin-bottom: 30px;\n  }\n\n  .vs-header h2 {\n    font-size: 28px;\n    font-weight: 700;\n    color: #21201C;\n    margin-bottom: 8px;\n  }\n\n  .vs-header h2 span {\n    color: #55584A;\n  }\n\n  .vs-header p {\n    font-size: 15px;\n    color: #6E6A5E;\n    margin: 0;\n  }\n\n  .vs-table-wrapper {\n    overflow-x: auto;\n    border-radius: 12px;\n    border: 1px solid rgba(212, 175, 55, 0.2);\n    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);\n  }\n\n  .vs-table {\n    width: 100%;\n    border-collapse: collapse;\n    background-color: rgba(15, 23, 42, 0.6);\n    text-align: left;\n  }\n\n  .vs-table th, .vs-table td {\n    padding: 16px 20px;\n    border-bottom: 1px solid rgba(255, 255, 255, 0.08);\n  }\n\n  .vs-table th {\n    font-weight: 600;\n    font-size: 16px;\n    text-transform: uppercase;\n    letter-spacing: 0.5px;\n  }\n\n  .vs-table th.our-brand {\n    background: linear-gradient(180deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.1) 100%);\n    color: #55584A;\n    text-align: center;\n    border-top-left-radius: 8px;\n    border-top-right-radius: 8px;\n  }\n\n  .vs-table th.others {\n    text-align: center;\n    color: #6E6A5E;\n  }\n\n  .vs-table td.center {\n    text-align: center;\n  }\n\n  .vs-table td.our-brand-cell {\n    background-color: rgba(212, 175, 55, 0.05);\n    font-weight: 600;\n  }\n\n  .check-icon {\n    color: #10b981;\n    font-size: 18px;\n    font-weight: bold;\n  }\n\n  .cross-icon {\n    color: #ef4444;\n    font-size: 18px;\n    font-weight: bold;\n  }\n\n  .vs-cta-container {\n    text-align: center;\n    margin-top: 35px;\n  }\n\n  .vs-cta-button {\n    display: inline-block;\n    background: linear-gradient(135deg, #55584A 0%, #6B6E5C 50%, #43463A 100%);\n    color: #21201C;\n    font-weight: 700;\n    font-size: 16px;\n    padding: 16px 40px;\n    border-radius: 50px;\n    text-decoration: none;\n    text-transform: uppercase;\n    letter-spacing: 1px;\n    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);\n    transition: transform 0.2s ease, box-shadow 0.2s ease;\n    cursor: pointer;\n    border: none;\n  }\n\n  .vs-cta-button:hover {\n    transform: translateY(-2px);\n    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);\n  }\n\n  @media (max-width: 600px) {\n    .vs-table th, .vs-table td {\n      padding: 12px 10px;\n      font-size: 13px;\n    }\n    .vs-cta-button {\n      width: 100%;\n      box-sizing: border-box;\n    }\n  }\n</style>\n\n<div class=\"vs-section\">\n  <div class=\"vs-header\">\n    <h2>Notre Masque <span>vs Les Autres</span></h2>\n    <p>Découvrez pourquoi notre solution offre la meilleure qualité de sommeil.</p>\n  </div>\n\n  <div class=\"vs-table-wrapper\">\n    <table class=\"vs-table\">\n      <thead>\n        <tr>\n          <th>Caractéristiques</th>\n          <th class=\"our-brand\">Notre Masque 🏆</th>\n          <th class=\"others\">Masques Classiques</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td><strong>Occultation de la lumière</strong></td>\n          <td class=\"our-brand-cell center\"><span class=\"check-icon\">✓</span> 100% Totale (3D)</td>\n          <td class=\"center\"><span class=\"cross-icon\">✕</span> Partielle (Fuites)</td>\n        </tr>\n        <tr>\n          <td><strong>Pression sur les yeux</strong></td>\n          <td class=\"our-brand-cell center\"><span class=\"check-icon\">✓</span> Aucune (Cavités 3D)</td>\n          <td class=\"center\"><span class=\"cross-icon\">✕</span> Pression directe</td>\n        </tr>\n        <tr>\n          <td><strong>Matériaux respirants</strong></td>\n          <td class=\"our-brand-cell center\"><span class=\"check-icon\">✓</span> Oui (Anti-transpiration)</td>\n          <td class=\"center\"><span class=\"cross-icon\">✕</span> Tissus chauds / Synthétiques</td>\n        </tr>\n        <tr>\n          <td><strong>Sangle réglable de précision</strong></td>\n          <td class=\"our-brand-cell center\"><span class=\"check-icon\">✓</span> Sur mesure (Sans gêne)</td>\n          <td class=\"center\"><span class=\"cross-icon\">✕</span> Élastiques basiques</td>\n        </tr>\n        <tr>\n          <td><strong>Sûreté (Sans produits chimiques)</strong></td>\n          <td class=\"our-brand-cell center\"><span class=\"check-icon\">✓</span> Certifiée toxique-free</td>\n          <td class=\"center\"><span class=\"cross-icon\">✕</span> Non garantie</td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n\n  <div class=\"vs-cta-container\">\n    <button type=\"button\" class=\"vs-cta-button\" id=\"custom-scroll-btn\">\n      Obtenir le mien maintenant\n    </button>\n  </div>\n</div>\n\n<script>\n  document.getElementById('custom-scroll-btn').addEventListener('click', function(e) {\n    e.preventDefault();\n    \n    const startPosition = window.pageYOffset;\n    const duration = 1200; // Durée de la remontée en ms (1.2 secondes = très doux)\n    let startTime = null;\n\n    function easeInOutCubic(t, b, c, d) {\n      t /= d / 2;\n      if (t < 1) return c / 2 * t * t * t + b;\n      t -= 2;\n      return c / 2 * (t * t * t + 2) + b;\n    }\n\n    function animation(currentTime) {\n      if (startTime === null) startTime = currentTime;\n      const timeElapsed = currentTime - startTime;\n      const run = easeInOutCubic(timeElapsed, startPosition, -startPosition, duration);\n      window.scrollTo(0, run);\n      if (timeElapsed < duration) requestAnimationFrame(animation);\n    }\n\n    requestAnimationFrame(animation);\n  });\n</script>",
+        "padding_top": 40,
+        "padding_bottom": 52
+      }
+    },
+    "customer_reviews_carousel_d3G97R": {
+      "type": "customer-reviews-carousel",
+      "blocks": {
+        "review_hUbNEk": {
+          "type": "review",
+          "settings": {
+            "review_image": "shopify://shop_images/hf_20260807_014208_99f0c27c-a29b-4d98-9195-4de54fd07979.png",
+            "image_position": "center center",
+            "wrap_image": false,
+            "rating": 5,
+            "review_text": "Ce produit a complètement transformé ma routine. Les résultats sont incroyables et je ne pourrais pas être plus satisfait(e) de mon achat.",
+            "reviewer_name": "Sarah",
+            "reviewer_age": "28",
+            "show_verified_badge": true,
+            "show_purchased_product": true,
+            "product_reference": "",
+            "product_image": "shopify://shop_images/hf_20260806_163131_c972cad9-9058-42a9-a3a7-9d895f15606a.png",
+            "product_title": "Masque de Nuit 3D Sommeil Profond — Obscurité Absolue & Confort Soie",
+            "product_price": "€29.99",
+            "product_compare_price": "€59.99",
+            "show_purchase_date": true,
+            "purchase_date": "14 mars 2025"
+          }
+        },
+        "review_9W9FPY": {
+          "type": "review",
+          "settings": {
+            "review_image": "shopify://shop_images/hf_20260807_151320_9098ec9c-4528-46e6-a9ae-3516f48fc417.png",
+            "image_position": "center center",
+            "wrap_image": false,
+            "rating": 5,
+            "review_text": "J'étais sceptique au début, mais après un mois d'utilisation, je suis totalement convaincu(e). La qualité est exceptionnelle !",
+            "reviewer_name": "Michael",
+            "reviewer_age": "35",
+            "show_verified_badge": true,
+            "show_purchased_product": true,
+            "product_reference": "",
+            "product_image": "shopify://shop_images/hf_20260806_163131_c972cad9-9058-42a9-a3a7-9d895f15606a.png",
+            "product_title": "Masque de Nuit 3D Sommeil Profond — Obscurité Absolue & Confort Soie",
+            "product_price": "€29.99",
+            "product_compare_price": "€59.99",
+            "show_purchase_date": true,
+            "purchase_date": "14 mars 2025"
+          }
+        },
+        "review_f9mcej": {
+          "type": "review",
+          "settings": {
+            "review_image": "shopify://shop_images/hf_20260807_151313_749fc9af-aab1-4f93-94c1-34166247d3d6.png",
+            "image_position": "center center",
+            "wrap_image": false,
+            "rating": 4,
+            "review_text": "Un excellent produit qui tient ses promesses. Je le recommanderais sans hésiter à mes proches.",
+            "reviewer_name": "Jessica",
+            "reviewer_age": "42",
+            "show_verified_badge": true,
+            "show_purchased_product": true,
+            "product_reference": "",
+            "product_image": "shopify://shop_images/hf_20260806_163131_c972cad9-9058-42a9-a3a7-9d895f15606a.png",
+            "product_title": "Masque de Nuit 3D Sommeil Profond — Obscurité Absolue & Confort Soie",
+            "product_price": "€29.99",
+            "product_compare_price": "€59.99",
+            "show_purchase_date": true,
+            "purchase_date": "14 mars 2025"
+          }
+        }
+      },
+      "block_order": [
+        "review_hUbNEk",
+        "review_9W9FPY",
+        "review_f9mcej"
+      ],
+      "custom_css": [
+        ".customer_reviews_carousel_d3G97R .star,.customer_reviews_carousel_d3G97R svg[class*=\"star\"],.customer_reviews_carousel_d3G97R [class*=\"star\"] {color: #55584A !important; fill: #55584A !important;}"
+      ],
+      "name": "Customer Reviews",
+      "settings": {
+        "use_theme_colors": false,
+        "section_width": 1200,
+        "section_background": "#FBFAF7",
+        "title_text": "Avis",
+        "accent_text": "clients",
+        "title_color": "#21201C",
+        "accent_color": "#55584A",
+        "override_global_accent": false,
+        "accent_text_margin_left": 0,
+        "use_accent_gradient": false,
+        "accent_text_gradient": "linear-gradient(45deg, rgba(201, 169, 106, 1), rgba(255, 107, 157, 1) 100%)",
+        "accent_font_family": "inherit",
+        "accent_font_style": "normal",
+        "accent_font_weight": "inherit",
+        "custom_heading_styling": false,
+        "heading_font_size": 56,
+        "heading_font_size_mobile": 48,
+        "heading_line_height": 1.2,
+        "show_description": false,
+        "description_text": "Découvrez ce que nos clients disent de nos produits",
+        "description_color": "#6E6A5E",
+        "prev_button_bg": "#FFFFFF",
+        "prev_button_color": "#21201C",
+        "prev_button_border": "#E3DED2",
+        "next_button_bg": "#55584A",
+        "next_button_color": "#FBFAF7",
+        "next_button_border": "#55584A",
+        "scroll_amount": 360,
+        "card_width": 390,
+        "card_border_radius": 10,
+        "card_border_color": "#E3DED2",
+        "card_background": "#FFFFFF",
+        "card_margin_top": 0,
+        "card_margin_right": 0,
+        "card_margin_bottom": 0,
+        "card_margin_left": 0,
+        "star_filled_color": "#55584A",
+        "star_empty_color": "#D8D2C4",
+        "carousel_review_star_size": 16,
+        "review_text_color": "#21201C",
+        "review_text_size": 14,
+        "review_text_size_mobile": 12,
+        "reviewer_info_color": "#21201C",
+        "reviewer_info_bg_color": "#F2EFE8",
+        "reviewer_info_font_size": 12,
+        "verified_badge_text": "Acheteur vérifié",
+        "verified_badge_color": "#55584A",
+        "verified_icon_color": "#55584A",
+        "verified_badge_font_size": 10,
+        "enable_reviewer_info_border": false,
+        "reviewer_info_border_width": 1,
+        "reviewer_info_border_style": "solid",
+        "reviewer_info_border_color": "#E3DED2",
+        "reviewer_info_border_radius": 8,
+        "product_label": "Article acheté",
+        "product_label_color": "#6E6A5E",
+        "product_title_color": "#21201C",
+        "product_price_color": "#21201C",
+        "product_bg_color": "#F2EFE8",
+        "product_title_font_size": 12,
+        "product_price_font_size": 12,
+        "product_compare_price_font_size": 10,
+        "purchase_date_font_size": 10,
+        "product_border_color": "#E3DED2",
+        "product_border_width": 1,
+        "product_border_style": "solid",
+        "summary_star_color": "#55584A",
+        "summary_text_color": "#21201C",
+        "rating_summary_text": "<p>Noté 4,8/5 basé sur +2 140 avis au total</p>",
+        "rating_summary_font_size": 13,
+        "rating_summary_bg_color": "#F2EFE8",
+        "purchase_date_prefix": "Acheté le",
+        "purchase_date_color": "#6E6A5E",
+        "purchase_date_icon_color": "#6E6A5E",
+        "rating_summary_gradient": "",
+        "enable_rating_summary_border": false,
+        "rating_summary_border_width": 1,
+        "rating_summary_border_style": "solid",
+        "rating_summary_border_color": "#E3DED2",
+        "rating_summary_border_radius": 50
+      }
+    },
+    "custom_liquid_GPTLQ8": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.presets.name",
+      "settings": {
+        "custom_liquid": "<div class=\"onirala-guarantees\">\n  <div class=\"onirala-guarantees__grid\">\n\n    <div class=\"onirala-guarantees__item\">\n      <div class=\"onirala-guarantees__icon\">\n        <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\"/><polyline points=\"3.27 6.96 12 12.01 20.73 6.96\"/><line x1=\"12\" y1=\"22.08\" x2=\"12\" y2=\"12\"/></svg>\n      </div>\n      <h3 class=\"onirala-guarantees__title\">Livraison suivie</h3>\n      <p class=\"onirala-guarantees__text\">Expédition rapide et numéro de suivi fourni.</p>\n    </div>\n\n    <div class=\"onirala-guarantees__item\">\n      <div class=\"onirala-guarantees__icon\">\n        <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a9 9 0 0 0-9 9v4a2 2 0 0 0 2 2h1v-6H5a7 7 0 0 1 14 0h-1v6h1a2 2 0 0 0 2-2v-4a9 9 0 0 0-9-9z\"/></svg>\n      </div>\n      <h3 class=\"onirala-guarantees__title\">Support réactif</h3>\n      <p class=\"onirala-guarantees__text\">Une question ? Réponse rapide par email.</p>\n    </div>\n\n    <div class=\"onirala-guarantees__item\">\n      <div class=\"onirala-guarantees__icon\">\n        <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 12l2 2 4-4\"/><path d=\"M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z\"/></svg>\n      </div>\n      <h3 class=\"onirala-guarantees__title\">Qualité vérifiée</h3>\n      <p class=\"onirala-guarantees__text\">Chaque masque contrôlé avant l'envoi.</p>\n    </div>\n\n    <div class=\"onirala-guarantees__item\">\n      <div class=\"onirala-guarantees__icon\">\n        <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"1 4 1 10 7 10\"/><path d=\"M3.51 15a9 9 0 1 0 2.13-9.36L1 10\"/></svg>\n      </div>\n      <h3 class=\"onirala-guarantees__title\">Satisfait ou remboursé</h3>\n      <p class=\"onirala-guarantees__text\">30 jours pour changer d'avis, sans stress.</p>\n    </div>\n\n  </div>\n</div>\n\n<style>\n  .onirala-guarantees{background:#FBFAF7;padding:64px 24px;}\n  .onirala-guarantees__grid{max-width:1140px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}\n  .onirala-guarantees__item{background:#FBFAF7;border:1px solid rgba(201,169,106,0.22);border-radius:14px;padding:34px 22px;text-align:center;transition:transform .25s ease,border-color .25s ease;}\n  .onirala-guarantees__item:hover{transform:translateY(-4px);border-color:rgba(201,169,106,0.55);}\n  .onirala-guarantees__icon{width:48px;height:48px;margin:0 auto 18px;color:#55584A;}\n  .onirala-guarantees__icon svg{width:48px;height:48px;display:block;}\n  .onirala-guarantees__title{font-family:'Cormorant',serif;font-size:21px;color:#21201C;margin:0 0 8px;}\n  .onirala-guarantees__text{font-size:13.5px;line-height:1.5;color:rgba(245,241,232,0.62);margin:0;}\n  @media (max-width:900px){.onirala-guarantees__grid{grid-template-columns:repeat(2,1fr);}}\n  @media (max-width:500px){.onirala-guarantees__grid{grid-template-columns:1fr;}}\n</style>",
+        "padding_top": 40,
+        "padding_bottom": 52
+      }
+    }
+  },
+  "order": [
+    "main",
+    "custom_liquid_8xWYQ6",
+    "custom_liquid_DHMKYb",
+    "borders_3WVyHf",
+    "reasons_GqYHik",
+    "a_horizontal_scrolling_text_r3_tiiKCa",
+    "product_benefits_wMbTak",
+    "divider_aDEXjD",
+    "4_benefits_TjxYJe",
+    "borders_6ffEVj",
+    "custom_liquid_p8K74d",
+    "customer_reviews_carousel_d3G97R",
+    "custom_liquid_GPTLQ8"
+  ]
+}
