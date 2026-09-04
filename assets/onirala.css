@@ -275,3 +275,15 @@
   position:absolute;top:4px;left:0;
   font-size:12px;letter-spacing:.09em;text-transform:uppercase;
   font-weight:600;color:var(--op-muted)}
+
+
+/* =========================================================
+   MASQUE DU HEROS : planche de vues pre-rendues
+   ========================================================= */
+.ophero{position:absolute;inset:0;z-index:3;opacity:0;
+  transition:opacity .7s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.ophero.ophero-prete{opacity:1}
+.ophero-vue{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:100%;max-width:820px;aspect-ratio:600/310;
+  background-repeat:no-repeat;background-size:600% 600%;background-position:0% 0%;
+  filter:drop-shadow(0 34px 30px rgba(33,32,28,.16))}
