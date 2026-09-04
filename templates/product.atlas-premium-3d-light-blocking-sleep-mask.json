@@ -156,7 +156,8 @@
                   "blocks": {}
                 }
               },
-              "block_order": []
+              "block_order": [],
+              "disabled": true
             },
             "a_heading_Xayagp": {
               "type": "_a-heading",
@@ -465,7 +466,8 @@
                 "padding_top_mobile": 4,
                 "padding_bottom_mobile": 4
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "payment_badges_yf76Lm": {
               "type": "_a-payment_badges",
@@ -608,7 +610,8 @@
                   "blocks": {}
                 }
               },
-              "block_order": []
+              "block_order": [],
+              "disabled": true
             },
             "collapsible_tabs_e8Hyd8": {
               "type": "_a-collapsible_tabs-r2",
