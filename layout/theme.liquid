@@ -607,6 +607,17 @@
     {{ 'custom.css' | asset_url | stylesheet_tag }}
     <!-- GB! added this CSS -->
     <!-- gb code ends -->
+
+    {%- comment -%}
+      Onirala : habillage maison. Charge ici, dans la mise en page, et non
+      depuis une section : la section ne s'executait que sur l'accueil, donc
+      la page produit ne recevait ni la feuille de style ni le masque anime.
+    {%- endcomment -%}
+    <script>document.documentElement.className += ' op-js';</script>
+    {{ 'onirala.css' | asset_url | stylesheet_tag }}
+    <script>window.ONIRALA_360_URL = {{ 'onirala-360.webp' | asset_url | json }};</script>
+    <script src="{{ 'onirala.js' | asset_url }}" defer="defer"></script>
+    <script src="{{ 'onirala-hero.js' | asset_url }}" defer="defer"></script>
   </head>
   <body
     class="color-1 {% if settings.animations_hover_elements != 'none' %} animate--hover-{{ settings.animations_hover_elements }}{% endif %}{% if settings.enable_global_border_styling %} global-border-styling{% endif %}{% if settings.h1_use_heading_font %} h1-heading-font{% endif %}{% if settings.h2_use_heading_font %} h2-heading-font{% endif %}{% if settings.h3_use_heading_font %} h3-heading-font{% endif %}{% if settings.h4_use_heading_font %} h4-heading-font{% endif %}{% if settings.h5_use_heading_font %} h5-heading-font{% endif %}{% if settings.h6_use_heading_font %} h6-heading-font{% endif %}"
