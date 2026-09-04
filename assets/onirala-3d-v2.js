@@ -72,12 +72,12 @@
       var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setSize(w, h);
-      /* Aucune conversion de couleur : ni decodage sRGB, ni correction de
-         tons. Le pixel affiche vaut exactement l'octet de la texture multiplie
-         par la couleur du materiau. C'est le seul moyen d'obtenir le meme
-         rendu sur tous les navigateurs — avec le chemin sRGB, Safari rendait
-         le masque gris clair la ou le moteur de test le rendait noir. */
-      renderer.outputEncoding = THREE.LinearEncoding;
+      /* Chaine sRGB standard. La version precedente forcait LinearEncoding
+         en croyant supprimer toute conversion : Safari n'honore pas ce mode
+         en sortie et re-encodait quand meme, ce qui delavait le masque en
+         gris. Le chemin sRGB est, lui, defini de la meme facon par tous les
+         navigateurs. */
+      renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.domElement.style.cssText =
         'display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y';
@@ -146,17 +146,16 @@
              sombre que le produit reel : mesuree a 8 de mediane sans
              eclairage, contre 30 sur la photo. x6 la ramene a ~32. */
           var map = n.material.map;
-          if (map) map.encoding = THREE.LinearEncoding;
+          if (map) map.encoding = THREE.sRGBEncoding;
           n.material = new THREE.MeshBasicMaterial({
             map: map,
             side: THREE.DoubleSide
           });
-          /* Le site est repasse en fond clair (#FBFAF7, luminance ~250).
-             Le x9 servait a decoller le masque du fond nuit ; sur blanc il
-             donnerait 13 x 9 = 117, soit un gris moyen. La texture a une
-             mediane brute de 13 et le masque sur la photo d'origine une
-             mediane de 30 : x2.4 redonne 31, un vrai noir sur le blanc. */
-          n.material.color = new THREE.Color(2.4, 2.4, 2.4);
+          /* Calibre sur la chaine sRGB, mesure en rendant le vrai modele :
+             x1.0 -> mediane 8, x1.6 -> 13, x2.4 -> 18, x3.2 -> 22, sur un
+             fond a 244. x3.2 donne un noir franc tout en laissant voir le
+             tissu maille, au plus pres du masque de la photo (mediane 30). */
+          n.material.color = new THREE.Color(3.2, 3.2, 3.2);
           n.material.toneMapped = false;
           n.material.needsUpdate = true;
         });
