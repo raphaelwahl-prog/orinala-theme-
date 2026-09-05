@@ -1,21 +1,16 @@
-/* Masque Onirala : noir, en rotation continue, manipulable a la main.
+/* Masque Onirala : la couche de manipulation.
 
-   Deux couches, dans cet ordre de fiabilite.
+   Le masque lui-meme — noir, en balancement de -45 a +45 degres, sans
+   jamais passer par le profil ou il n'est qu'une tranche — est une image
+   animee posee en fond de conteneur par layout/theme.liquid. Il s'affiche
+   et tourne sans une ligne de script.
 
-   1. Une image animee de 72 vues a 24 images par seconde. C'est une
-      simple <img> : une fois chargee elle tourne sans une ligne de
-      script, et rien ne peut la faire disparaitre.
+   Ce fichier n'ajoute que la planche des 72 vues, par-dessus, pour
+   pouvoir tourner le masque a la main. Elle n'est posee qu'une fois
+   chargee et n'efface rien : si elle manque, le masque tourne quand meme.
 
-   2. La planche des memes 72 vues, posee par-dessus, invisible au repos.
-      Elle ne prend le relais que pendant la manipulation, puis rend la
-      main. Si elle ne se charge pas, le masque tourne quand meme.
-
-   La scene est un FRERE de l'image du theme, pas une enveloppe autour
-   d'elle : dans cette banniere l'image est en position absolue dans un
-   conteneur .media a hauteur calculee, donc l'envelopper la privait de
-   sa boite. Et l'image du theme n'est masquee qu'une fois la notre
-   affichee, par une classe posee sur le conteneur : tant que la notre
-   n'est pas la, celle du theme reste visible. */
+   Les trois versions precedentes faisaient l'inverse — le script portait
+   l'affichage — et a chaque echec c'est le masque entier qui manquait. */
 (function () {
   var COLS = 12, RANGEES = 6, N = COLS * RANGEES;
 
@@ -25,37 +20,28 @@
   }
 
   function creer(hote, planche) {
-    if (hote.querySelector('.ophero-scene')) return;
+    if (!planche || hote.querySelector('.ophero-scene')) return;
 
-    var scene = document.createElement('span');
-    scene.className = 'ophero-scene';
-
-    var img = document.createElement('img');
-    img.className = 'ophero-img';
-    img.alt = 'Masque de sommeil Onirala, vue rotative';
-    img.decoding = 'async';
-    /* Le conteneur du theme ne cede la place qu'une fois l'image animee
-       vraiment affichee. Sans cette condition, un echec de chargement
-       laissait la banniere vide. */
-    img.addEventListener('load', function () { hote.classList.add('ophero-en-place'); });
-    img.src = window.ONIRALA_TOUR_URL;
-    scene.appendChild(img);
-
-    var vue = document.createElement('span');
-    vue.className = 'ophero-vue';
-    scene.appendChild(vue);
-
-    var aide = document.createElement('span');
-    aide.className = 'ophero-aide';
-    aide.textContent = 'Faites glisser pour tourner';
-    scene.appendChild(aide);
-
-    hote.appendChild(scene);
-
-    if (!planche) return;
+    /* Le masque anime est deja affiche : c'est le fond du conteneur, pose
+       par la mise en page. Le script n'ajoute que de quoi le manipuler,
+       et seulement une fois la planche chargee. Il ne peut donc plus
+       faire disparaitre quoi que ce soit s'il echoue. */
     var sonde = new Image();
     sonde.onload = function () {
+      var scene = document.createElement('span');
+      scene.className = 'ophero-scene';
+
+      var vue = document.createElement('span');
+      vue.className = 'ophero-vue';
       vue.style.backgroundImage = "url('" + planche + "')";
+      scene.appendChild(vue);
+
+      var aide = document.createElement('span');
+      aide.className = 'ophero-aide';
+      aide.textContent = 'Faites glisser pour tourner';
+      scene.appendChild(aide);
+
+      hote.appendChild(scene);
       piloter(scene, vue);
     };
     sonde.src = planche;
@@ -131,11 +117,10 @@
   }
 
   pret(function () {
-    if (!window.ONIRALA_TOUR_URL) return;
     var planche = (window.ONIRALA_PLANCHE_URL || '').trim();
+    if (!planche) return;
 
-    var media = document.querySelector('[id$="image_banner_TVECWz"] .banner__media .media')
-             || document.querySelector('[id$="image_banner_TVECWz"] .banner__media');
+    var media = document.querySelector('[id$="image_banner_TVECWz"] .banner__media .media');
     if (media) creer(media, planche);
 
     var solos = document.querySelectorAll('.ophero-solo');

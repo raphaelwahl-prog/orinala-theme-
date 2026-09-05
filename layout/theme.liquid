@@ -615,8 +615,25 @@
     {%- endcomment -%}
     <script>document.documentElement.className += ' op-js';</script>
     {{ 'onirala.css' | asset_url | stylesheet_tag }}
+    {%- comment -%}
+      Le masque du heros est pose ici, en CSS, et non par un script. Les
+      trois tentatives precedentes passaient par du JavaScript qui creait
+      ou remplacait un element : a chaque fois quelque chose l'empechait
+      d'aboutir et c'est la photo d'origine, delavee, qui restait a
+      l'ecran. Une image animee en fond de conteneur ne peut pas echouer
+      a moitie : soit le fichier est la, soit il ne l'est pas.
+    {%- endcomment -%}
+    <style>
+      [id$="image_banner_TVECWz"] .banner__media .media{
+        padding-bottom:51.667% !important;height:auto !important;position:relative;
+        background-image:url({{ 'onirala-tour.webp' | asset_url }});
+        background-repeat:no-repeat;background-position:center;background-size:contain}
+      [id$="image_banner_TVECWz"] .banner__media .media > img,
+      [id$="image_banner_TVECWz"] .banner__media .media > picture{visibility:hidden}
+      .ophero-solo{background-image:url({{ 'onirala-tour.webp' | asset_url }});
+        background-repeat:no-repeat;background-position:center;background-size:contain}
+    </style>
     <script>
-      window.ONIRALA_TOUR_URL    = {{ 'onirala-tour.webp'    | asset_url | json }};
       window.ONIRALA_PLANCHE_URL = {{ 'onirala-planche.webp' | asset_url | json }};
     </script>
     <script src="{{ 'onirala.js' | asset_url }}" defer="defer"></script>
