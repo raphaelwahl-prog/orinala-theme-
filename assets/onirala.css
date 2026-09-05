@@ -251,39 +251,46 @@
 
 
 /* =========================================================
-   MASQUE DU HEROS : planche de vues pre-rendues
-   ========================================================= */
-.ophero{position:absolute;inset:0;z-index:3;opacity:0;
-  transition:opacity .7s cubic-bezier(.22,1,.36,1);
-  user-select:none;-webkit-user-select:none;
-  cursor:grab;touch-action:pan-y}
-.ophero.ophero-prete{opacity:1}
-.ophero.ophero-saisi{cursor:grabbing}
-.ophero-vue{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:100%;max-width:820px;aspect-ratio:600/310;
-  background-repeat:no-repeat;background-size:600% 600%;background-position:0% 0%}
+   MASQUE : image animee + planche de vues au glissement
+   =========================================================
+   L'element porteur est l'image du theme elle-meme : sa boite est celle
+   que le theme lui donne, donc elle ne peut pas se retrouver sans
+   hauteur. L'enveloppe et la planche se calent dessus, jamais l'inverse.
+   Une version precedente ancrait la scene sur .banner__media et effacait
+   l'image avant d'avoir la preuve que la scene occupait une surface :
+   quand ce conteneur ne donnait pas de hauteur, tout disparaissait. */
 
-/* Invitation a manipuler le masque. Elle s'efface des le premier glissement. */
-.ophero-aide{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);
-  display:flex;align-items:center;gap:8px;
-  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+.ophero-img{display:block;max-width:100%;height:auto}
+
+.ophero-boite{position:relative;display:block;line-height:0;
+  cursor:grab;touch-action:pan-y;
+  user-select:none;-webkit-user-select:none;outline:none}
+.ophero-boite.ophero-saisi{cursor:grabbing}
+.ophero-boite:focus-visible{outline:2px solid var(--op-gold);outline-offset:6px}
+
+/* La planche ne prend le relais que pendant la manipulation. Le reste du
+   temps, c'est l'image animee qui tourne, sans script. */
+.ophero-vue{position:absolute;inset:0;opacity:0;pointer-events:none;
+  background-repeat:no-repeat;background-size:600% 600%;
+  background-position:0% 0%;transition:opacity .18s ease}
+.ophero-manuel .ophero-vue{opacity:1}
+.ophero-manuel .ophero-img{visibility:hidden}
+
+/* Invitation a manipuler le masque, effacee des le premier glissement. */
+.ophero-aide{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);
+  font-size:11px;line-height:1.6;letter-spacing:.16em;text-transform:uppercase;
   color:var(--op-muted);background:rgba(251,250,247,.82);
-  padding:7px 14px;border-radius:100px;border:1px solid var(--op-border);
-  white-space:nowrap;pointer-events:none;
-  transition:opacity .5s ease}
-.ophero-aide svg{width:14px;height:14px;stroke:var(--op-gold);fill:none;stroke-width:1.7}
-.ophero-manipule .ophero-aide{opacity:0}
-@media (max-width:749px){.ophero-aide{font-size:10px;padding:6px 11px;letter-spacing:.12em}}
+  padding:6px 14px;border-radius:100px;border:1px solid var(--op-border);
+  white-space:nowrap;pointer-events:none;transition:opacity .5s ease}
+.ophero-vu .ophero-aide{opacity:0}
+@media (max-width:749px){.ophero-aide{font-size:10px;padding:5px 11px;letter-spacing:.12em}}
 
-/* ---- Meme scene, en autonome (fiche produit) ----
-   Le bloc de la fiche produit portait sa propre copie de ce style et de ce
-   script, dans un reglage Liquid. Rien ne s'affichait. Tout est desormais
-   ici et dans onirala-hero.js : le bloc n'a plus qu'un conteneur vide. */
+/* ---- La meme chose, en autonome (fiche produit) ----
+   Le bloc de la fiche produit portait sa propre copie du style et du
+   script, dans un reglage Liquid, et n'affichait rien. Tout est ici et
+   dans onirala-hero.js : le bloc n'a plus qu'un conteneur vide. */
 .op360{max-width:640px;margin:0 auto;padding:72px 20px;text-align:center}
 .op360-label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;
   color:var(--op-muted);font-weight:600;margin:0 0 22px}
 @media (max-width:600px){.op360{padding:44px 14px}}
-
-.ophero-solo{position:relative;width:100%;max-width:820px;margin:0 auto;
-  aspect-ratio:600/310;background:var(--op-bg)}
-.ophero-solo .ophero-vue{max-width:100%}
+.ophero-solo{display:block;max-width:820px;margin:0 auto}
