@@ -120,7 +120,8 @@
     var planche = (window.ONIRALA_PLANCHE_URL || '').trim();
     if (!planche) return;
 
-    var media = document.querySelector('[id$="image_banner_TVECWz"] .banner__media .media');
+    var media = document.querySelector('[id^="Banner-"] .banner__media .media')
+             || document.querySelector('[id$="image_banner_TVECWz"] .banner__media .media');
     if (media) creer(media, planche);
 
     var solos = document.querySelectorAll('.ophero-solo');

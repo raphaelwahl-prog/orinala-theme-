@@ -616,20 +616,40 @@
     <script>document.documentElement.className += ' op-js';</script>
     {{ 'onirala.css' | asset_url | stylesheet_tag }}
     {%- comment -%}
-      Le masque du heros est pose ici, en CSS, et non par un script. Les
-      trois tentatives precedentes passaient par du JavaScript qui creait
-      ou remplacait un element : a chaque fois quelque chose l'empechait
-      d'aboutir et c'est la photo d'origine, delavee, qui restait a
-      l'ecran. Une image animee en fond de conteneur ne peut pas echouer
-      a moitie : soit le fichier est la, soit il ne l'est pas.
+      Le masque du heros, pose en CSS.
+
+      On s'accroche a l'identifiant que la section met elle-meme sur sa
+      banniere, id="Banner-...", et non a celui que Shopify met autour de
+      la section. C'est la difference qui comptait : la meme feuille de
+      style servait deja le masque de la fiche produit, en noir, pendant
+      que le heros restait gris. Puisque le CSS etait donc bien lu, il ne
+      restait qu'une explication : le selecteur du heros ne correspondait
+      a aucun element. Celui-ci vient du markup de la section, il ne
+      depend plus de la facon dont Shopify nomme le conteneur.
+
+      Le second bloc annule opacite, filtre et fusion sur la banniere :
+      si quelque chose de global delavait l'image, ce n'est plus possible.
     {%- endcomment -%}
     <style>
+      [id^="Banner-"] .banner__media .media,
       [id$="image_banner_TVECWz"] .banner__media .media{
         padding-bottom:51.667% !important;height:auto !important;position:relative;
         background-image:url({{ 'onirala-tour.webp' | asset_url }});
         background-repeat:no-repeat;background-position:center;background-size:contain}
+      [id^="Banner-"] .banner__media .media > img,
+      [id^="Banner-"] .banner__media .media > picture,
       [id$="image_banner_TVECWz"] .banner__media .media > img,
       [id$="image_banner_TVECWz"] .banner__media .media > picture{visibility:hidden}
+
+      [id^="Banner-"] .banner__media,
+      [id^="Banner-"] .banner__media .media{
+        opacity:1 !important;filter:none !important;-webkit-filter:none !important;
+        mix-blend-mode:normal !important;backdrop-filter:none !important;
+        animation:none !important;transition:none !important}
+      [id^="Banner-"] .banner__media::before,
+      [id^="Banner-"] .banner__media .media::before,
+      [id^="Banner-"] .banner__media .media::after{display:none !important}
+
       .ophero-solo{background-image:url({{ 'onirala-tour.webp' | asset_url }});
         background-repeat:no-repeat;background-position:center;background-size:contain}
     </style>
