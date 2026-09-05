@@ -253,31 +253,39 @@
 /* =========================================================
    MASQUE : image animee + planche de vues au glissement
    =========================================================
-   L'element porteur est l'image du theme elle-meme : sa boite est celle
-   que le theme lui donne, donc elle ne peut pas se retrouver sans
-   hauteur. L'enveloppe et la planche se calent dessus, jamais l'inverse.
-   Une version precedente ancrait la scene sur .banner__media et effacait
-   l'image avant d'avoir la preuve que la scene occupait une surface :
-   quand ce conteneur ne donnait pas de hauteur, tout disparaissait. */
+   La scene est un frere de l'image du theme, dans le conteneur .media,
+   et non une enveloppe autour d'elle : cette banniere pose son image en
+   absolu dans un .media a hauteur calculee, donc l'envelopper la privait
+   de sa boite et tout disparaissait.
 
-.ophero-img{display:block;max-width:100%;height:auto}
+   On impose au .media le format exact des vues (600x310) : les boites de
+   l'image animee et de la planche coincident alors au pixel pres, sans
+   calcul de recadrage. */
+[id$="image_banner_TVECWz"] .banner__media .media{
+  position:relative;padding-bottom:51.667% !important;height:auto !important}
 
-.ophero-boite{position:relative;display:block;line-height:0;
-  cursor:grab;touch-action:pan-y;
-  user-select:none;-webkit-user-select:none;outline:none}
-.ophero-boite.ophero-saisi{cursor:grabbing}
-.ophero-boite:focus-visible{outline:2px solid var(--op-gold);outline-offset:6px}
+.ophero-scene{position:absolute;inset:0;display:block;z-index:2;
+  cursor:grab;touch-action:pan-y;outline:none;
+  user-select:none;-webkit-user-select:none}
+.ophero-scene.ophero-saisi{cursor:grabbing}
+.ophero-scene:focus-visible{outline:2px solid var(--op-gold);outline-offset:6px}
+
+.ophero-img{position:absolute;inset:0;display:block;
+  width:100%;height:100%;object-fit:contain}
+
+/* La photo du theme ne s'efface qu'une fois la notre affichee. */
+.ophero-en-place > img,.ophero-en-place > picture{visibility:hidden}
 
 /* La planche ne prend le relais que pendant la manipulation. Le reste du
-   temps, c'est l'image animee qui tourne, sans script. */
+   temps c'est l'image animee qui tourne, sans script. */
 .ophero-vue{position:absolute;inset:0;opacity:0;pointer-events:none;
-  background-repeat:no-repeat;background-size:600% 600%;
-  background-position:0% 0%;transition:opacity .18s ease}
+  background-repeat:no-repeat;background-size:1200% 600%;
+  background-position:0% 0%;transition:opacity .15s ease}
 .ophero-manuel .ophero-vue{opacity:1}
 .ophero-manuel .ophero-img{visibility:hidden}
 
 /* Invitation a manipuler le masque, effacee des le premier glissement. */
-.ophero-aide{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);
+.ophero-aide{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);
   font-size:11px;line-height:1.6;letter-spacing:.16em;text-transform:uppercase;
   color:var(--op-muted);background:rgba(251,250,247,.82);
   padding:6px 14px;border-radius:100px;border:1px solid var(--op-border);
@@ -285,7 +293,7 @@
 .ophero-vu .ophero-aide{opacity:0}
 @media (max-width:749px){.ophero-aide{font-size:10px;padding:5px 11px;letter-spacing:.12em}}
 
-/* ---- La meme chose, en autonome (fiche produit) ----
+/* ---- La meme scene, en autonome (fiche produit) ----
    Le bloc de la fiche produit portait sa propre copie du style et du
    script, dans un reglage Liquid, et n'affichait rien. Tout est ici et
    dans onirala-hero.js : le bloc n'a plus qu'un conteneur vide. */
@@ -293,4 +301,5 @@
 .op360-label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;
   color:var(--op-muted);font-weight:600;margin:0 0 22px}
 @media (max-width:600px){.op360{padding:44px 14px}}
-.ophero-solo{display:block;max-width:820px;margin:0 auto}
+.ophero-solo{position:relative;display:block;max-width:820px;margin:0 auto;
+  aspect-ratio:600/310}

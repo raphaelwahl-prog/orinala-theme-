@@ -1,77 +1,68 @@
-/* Masque Onirala : noir, en rotation, manipulable.
+/* Masque Onirala : noir, en rotation continue, manipulable a la main.
 
    Deux couches, dans cet ordre de fiabilite.
 
-   1. Une image animee. C'est l'element <img> du theme lui-meme dont on
-      remplace la source : il garde exactement la mise en page du theme,
-      donc il ne peut pas se retrouver sans hauteur ni passer derriere
-      autre chose. Sans JavaScript au-dela de cette ligne, le masque est
-      deja noir et il tourne.
+   1. Une image animee de 72 vues a 24 images par seconde. C'est une
+      simple <img> : une fois chargee elle tourne sans une ligne de
+      script, et rien ne peut la faire disparaitre.
 
-   2. Une planche de 36 vues posee par-dessus, activee seulement quand
-      l'utilisateur attrape le masque. Si elle ne se charge pas, la
-      couche 1 continue de tourner et rien ne disparait.
+   2. La planche des memes 72 vues, posee par-dessus, invisible au repos.
+      Elle ne prend le relais que pendant la manipulation, puis rend la
+      main. Si elle ne se charge pas, le masque tourne quand meme.
 
-   Les versions precedentes ancraient la scene sur .banner__media et
-   effacaient l'image du theme avant d'avoir la preuve que la scene
-   occupait la moindre surface. Quand ce conteneur ne donnait pas de
-   hauteur a la scene, les deux disparaissaient. */
+   La scene est un FRERE de l'image du theme, pas une enveloppe autour
+   d'elle : dans cette banniere l'image est en position absolue dans un
+   conteneur .media a hauteur calculee, donc l'envelopper la privait de
+   sa boite. Et l'image du theme n'est masquee qu'une fois la notre
+   affichee, par une classe posee sur le conteneur : tant que la notre
+   n'est pas la, celle du theme reste visible. */
 (function () {
-  var N = 36, COLS = 6, RANGEES = 6;
+  var COLS = 12, RANGEES = 6, N = COLS * RANGEES;
 
   function pret(f) {
     if (document.readyState !== 'loading') f();
     else document.addEventListener('DOMContentLoaded', f);
   }
 
-  /* Un <picture> impose sa source via ses <source> : sans cela, remplacer
-     le src de l'image ne changerait rien. Idem pour srcset et sizes. */
-  function liberer(img) {
-    var p = img.parentNode;
-    if (p && p.tagName === 'PICTURE') {
-      var s = p.querySelectorAll('source');
-      for (var i = 0; i < s.length; i++) s[i].parentNode.removeChild(s[i]);
-    }
-    img.removeAttribute('srcset');
-    img.removeAttribute('sizes');
-    img.removeAttribute('loading');
-    img.removeAttribute('width');
-    img.removeAttribute('height');
-  }
+  function creer(hote, planche) {
+    if (hote.querySelector('.ophero-scene')) return;
 
-  function monter(img, planche) {
-    liberer(img);
-    img.src = window.ONIRALA_HERO_URL;
-    img.classList.add('ophero-img');
+    var scene = document.createElement('span');
+    scene.className = 'ophero-scene';
+
+    var img = document.createElement('img');
+    img.className = 'ophero-img';
+    img.alt = 'Masque de sommeil Onirala, vue rotative';
+    img.decoding = 'async';
+    /* Le conteneur du theme ne cede la place qu'une fois l'image animee
+       vraiment affichee. Sans cette condition, un echec de chargement
+       laissait la banniere vide. */
+    img.addEventListener('load', function () { hote.classList.add('ophero-en-place'); });
+    img.src = window.ONIRALA_TOUR_URL;
+    scene.appendChild(img);
+
+    var vue = document.createElement('span');
+    vue.className = 'ophero-vue';
+    scene.appendChild(vue);
+
+    var aide = document.createElement('span');
+    aide.className = 'ophero-aide';
+    aide.textContent = 'Faites glisser pour tourner';
+    scene.appendChild(aide);
+
+    hote.appendChild(scene);
 
     if (!planche) return;
-
-    /* La planche n'est posee qu'une fois chargee, et dans une enveloppe
-       calee sur l'image : sa boite est celle de l'image, au pixel pres. */
     var sonde = new Image();
     sonde.onload = function () {
-      var boite = document.createElement('span');
-      boite.className = 'ophero-boite';
-      img.parentNode.insertBefore(boite, img);
-      boite.appendChild(img);
-
-      var vue = document.createElement('span');
-      vue.className = 'ophero-vue';
       vue.style.backgroundImage = "url('" + planche + "')";
-      boite.appendChild(vue);
-
-      var aide = document.createElement('span');
-      aide.className = 'ophero-aide';
-      aide.textContent = 'Faites glisser pour tourner';
-      boite.appendChild(aide);
-
-      piloter(boite, vue);
+      piloter(scene, vue);
     };
     sonde.src = planche;
   }
 
-  function piloter(boite, vue) {
-    var i = 0, saisi = false, x0 = 0, i0 = 0, tourne = false, retourEnCours = null;
+  function piloter(scene, vue) {
+    var i = 0, saisi = false, x0 = 0, i0 = 0, retour = null;
 
     function afficher(n) {
       i = ((n % N) + N) % N;
@@ -81,78 +72,73 @@
     }
     afficher(0);
 
-    boite.tabIndex = 0;
-    boite.setAttribute('aria-label',
+    scene.tabIndex = 0;
+    scene.setAttribute('role', 'img');
+    scene.setAttribute('aria-label',
       'Masque de sommeil Onirala en 3D — faites glisser pour le tourner');
 
-    /* On bascule sur la planche seulement le temps de la manipulation :
-       le reste du temps c'est l'image animee qui tourne toute seule. */
-    function prendreLaMain() {
-      if (retourEnCours) { clearInterval(retourEnCours); retourEnCours = null; }
-      boite.classList.add('ophero-manuel');
+    function prendre() {
+      if (retour) { clearInterval(retour); retour = null; }
+      scene.classList.add('ophero-manuel');
     }
-    function rendreLaMain() {
-      if (retourEnCours) clearInterval(retourEnCours);
-      var ecart = ((i + N + N / 2) % N) - N / 2;   /* -18..18, chemin court */
-      var pas = ecart > 0 ? -1 : 1;
-      retourEnCours = setInterval(function () {
-        if (saisi) { clearInterval(retourEnCours); retourEnCours = null; return; }
-        if (ecart === 0) {
-          clearInterval(retourEnCours); retourEnCours = null;
-          boite.classList.remove('ophero-manuel');
+    /* On revient doucement a la face avant avant de rendre la main a
+       l'image animee : un saut sec entre la vue laissee et la premiere
+       vue de l'animation se verrait. */
+    function rendre() {
+      if (retour) clearInterval(retour);
+      var ecart = ((i + N + N / 2) % N) - N / 2;
+      var pas = ecart > 0 ? -2 : 2;
+      retour = setInterval(function () {
+        if (saisi) { clearInterval(retour); retour = null; return; }
+        if (Math.abs(ecart) <= 2) {
+          clearInterval(retour); retour = null;
+          scene.classList.remove('ophero-manuel');
           return;
         }
         ecart += pas;
         afficher(ecart);
-      }, 45);
+      }, 40);
     }
 
-    boite.addEventListener('pointerdown', function (e) {
-      saisi = true; tourne = false; x0 = e.clientX; i0 = i;
-      boite.classList.add('ophero-saisi');
-      prendreLaMain();
-      boite.setPointerCapture(e.pointerId);
+    scene.addEventListener('pointerdown', function (e) {
+      saisi = true; x0 = e.clientX; i0 = i;
+      scene.classList.add('ophero-saisi', 'ophero-vu');
+      prendre();
+      scene.setPointerCapture(e.pointerId);
     });
-    boite.addEventListener('pointermove', function (e) {
+    scene.addEventListener('pointermove', function (e) {
       if (!saisi) return;
-      var pas = Math.max(8, boite.clientWidth / N * 1.4);
-      var d = Math.round((e.clientX - x0) / pas);
-      if (d !== 0 && !tourne) { tourne = true; boite.classList.add('ophero-vu'); }
-      afficher(i0 - d);
+      /* Un tour complet pour une largeur et demie de glissement. */
+      afficher(i0 - Math.round((e.clientX - x0) / (scene.clientWidth * 1.5 / N)));
     });
     function relacher() {
       if (!saisi) return;
       saisi = false;
-      boite.classList.remove('ophero-saisi');
-      rendreLaMain();
+      scene.classList.remove('ophero-saisi');
+      rendre();
     }
-    boite.addEventListener('pointerup', relacher);
-    boite.addEventListener('pointercancel', relacher);
-    boite.addEventListener('pointerleave', relacher);
+    scene.addEventListener('pointerup', relacher);
+    scene.addEventListener('pointercancel', relacher);
+    scene.addEventListener('pointerleave', relacher);
 
-    boite.addEventListener('keydown', function (e) {
+    scene.addEventListener('keydown', function (e) {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
-      prendreLaMain();
-      boite.classList.add('ophero-vu');
-      afficher(i + (e.key === 'ArrowRight' ? 1 : -1));
+      prendre();
+      scene.classList.add('ophero-vu');
+      afficher(i + (e.key === 'ArrowRight' ? 2 : -2));
     });
   }
 
   pret(function () {
-    if (!window.ONIRALA_HERO_URL) return;
-    var planche = (window.ONIRALA_360_URL || '').trim();
+    if (!window.ONIRALA_TOUR_URL) return;
+    var planche = (window.ONIRALA_PLANCHE_URL || '').trim();
 
-    var media = document.querySelector('[id$="image_banner_TVECWz"] .banner__media img');
-    if (media && !media.classList.contains('ophero-img')) monter(media, planche);
+    var media = document.querySelector('[id$="image_banner_TVECWz"] .banner__media .media')
+             || document.querySelector('[id$="image_banner_TVECWz"] .banner__media');
+    if (media) creer(media, planche);
 
     var solos = document.querySelectorAll('.ophero-solo');
-    for (var k = 0; k < solos.length; k++) {
-      if (solos[k].querySelector('.ophero-img')) continue;
-      var img = document.createElement('img');
-      img.alt = 'Masque de sommeil Onirala, vue rotative';
-      solos[k].appendChild(img);
-      monter(img, planche);
-    }
+    for (var k = 0; k < solos.length; k++) creer(solos[k], planche);
   });
 })();

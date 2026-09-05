@@ -616,8 +616,8 @@
     <script>document.documentElement.className += ' op-js';</script>
     {{ 'onirala.css' | asset_url | stylesheet_tag }}
     <script>
-      window.ONIRALA_HERO_URL = {{ 'onirala-hero-anim.webp' | asset_url | json }};
-      window.ONIRALA_360_URL  = {{ 'onirala-360.webp' | asset_url | json }};
+      window.ONIRALA_TOUR_URL    = {{ 'onirala-tour.webp'    | asset_url | json }};
+      window.ONIRALA_PLANCHE_URL = {{ 'onirala-planche.webp' | asset_url | json }};
     </script>
     <script src="{{ 'onirala.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'onirala-hero.js' | asset_url }}" defer="defer"></script>
