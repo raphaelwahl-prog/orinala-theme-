@@ -650,7 +650,9 @@
       [id^="Banner-"] .banner__media .media::before,
       [id^="Banner-"] .banner__media .media::after{display:none !important}
 
-      .ophero-solo{background-image:url({{ 'onirala-tour.webp' | asset_url }});
+      /* La fiche produit reste immobile : c'est au visiteur de tourner le
+         masque. Le heros, lui, tourne seul, lentement. */
+      .ophero-solo{background-image:url({{ 'onirala-face.webp' | asset_url }});
         background-repeat:no-repeat;background-position:center;background-size:contain}
     </style>
     <script>
