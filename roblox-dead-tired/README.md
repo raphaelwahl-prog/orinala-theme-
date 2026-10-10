@@ -1,5 +1,14 @@
 # DEAD TIRED — *Sleep For Money*
 
+> **Ce dossier est le prototype.** Le jeu se continue dans
+> [`../roblox-sleep-or-die/`](../roblox-sleep-or-die/) sous le nom **SLEEP OR DIE** :
+> sept zones au lieu d'une maison, refuges à barricader, missions, PNJ.
+> Ce qu'il y avait de mieux ici — la jauge d'éveil partagée, le relevage entre
+> joueurs, les skins — y a été porté.
+>
+> On garde ce dossier pour deux choses : les versions jouables dans le
+> navigateur (`web/`) et les documents de marketing (`docs/MARKETING.md`).
+
 Jeu d'horreur coopératif Roblox. **Tu es payé pour dormir. Plus l'endroit est
 dangereux, plus ça paie.**
 

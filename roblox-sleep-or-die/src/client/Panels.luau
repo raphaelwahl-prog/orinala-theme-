@@ -22,6 +22,7 @@ local titleLabel: TextLabel
 local current: string? = nil
 local onBuy: ((string) -> ())? = nil
 local onPlace: ((string) -> ())? = nil
+local onCosmetic: ((string, string) -> ())? = nil
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new("UICorner")
@@ -37,10 +38,12 @@ local function clear()
 	end
 end
 
-function Panels.build(screen: ScreenGui, callbacks: { buy: (string) -> (), place: (string) -> () })
+function Panels.build(screen: ScreenGui, callbacks: {
+	buy: (string) -> (), place: (string) -> (), cosmetic: (string, string) -> () })
 	gui = screen
 	onBuy = callbacks.buy
 	onPlace = callbacks.place
+	onCosmetic = callbacks.cosmetic
 
 	overlay = Instance.new("Frame")
 	overlay.Name = "Overlay"
@@ -248,6 +251,45 @@ function Panels.openZones(state)
 		text(frame, zone.Unlocked and zone.Blurb or ("Verrouillée — " .. zone.Reason),
 			10.5, zone.Unlocked and Color3.fromRGB(120, 122, 134) or DANGER,
 			UDim2.new(0, 12, 0, 48))
+	end
+	overlay.Visible = true
+end
+
+function Panels.openCosmetics(state)
+	current = "cosmetics"
+	titleLabel.Text = "Skins  ·  " .. Format.money(state.Cash)
+	clear()
+	for _, item in ipairs(state.Cosmetics or {}) do
+		local frame = row(64)
+		text(frame, item.Name, 14, item.Owned and INK or DIM,
+			UDim2.new(0, 12, 0, 8)).Font = Enum.Font.GothamBold
+		text(frame, item.Desc, 11.5, DIM, UDim2.new(0, 12, 0, 28))
+		if not item.Owned and not item.Unlockable then
+			text(frame, "Il te faut " .. item.Reason .. ".", 10.5, DANGER,
+				UDim2.new(0, 12, 0, 46))
+		end
+
+		local labelText, enabled, action
+		if item.Equipped then
+			labelText, enabled, action = "équipé", false, nil
+		elseif item.Owned then
+			labelText, enabled, action = "Équiper", true, "equip"
+		elseif not item.Unlockable then
+			labelText, enabled, action = "verrouillé", false, nil
+		elseif item.Price > 0 then
+			labelText = Format.money(item.Price)
+			enabled = state.Cash >= item.Price
+			action = "buy"
+		else
+			labelText, enabled, action = "Réclamer", true, "buy"
+		end
+
+		local b = button(frame, labelText, enabled)
+		if enabled and action and onCosmetic then
+			b.Activated:Connect(function()
+				(onCosmetic :: any)(action, item.Id)
+			end)
+		end
 	end
 	overlay.Visible = true
 end

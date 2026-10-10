@@ -102,6 +102,28 @@ print(f"À {last['rate']:,.0f} $/s, un compteur entier 32 bits saturerait en "
       f"{human(seconds_to_overflow)} — d'où le stockage en nombre à virgule "
       f"flottante (Format.luau).")
 
+# L'éveil de la maison : la jauge partagée accélère tout le monde.
+awake = (ROOT / "src/shared/AwakeningConfig.luau").read_text(encoding="utf-8")
+stages = re.findall(
+    r'Name = "([^"]+)".*?Speed = ([\d.]+), Sight = ([\d.]+), Reward = ([\d.]+)',
+    awake, re.S)
+if stages:
+    print()
+    print("Éveil de la maison (jauge partagée par tout le serveur) :")
+    print()
+    print(f"  {'stade':<10} {'vitesse':>9} {'vue':>7} {'gains':>7}")
+    for nom, speed, sight, reward in stages:
+        print(f"  {nom:<10} {'x' + speed:>9} {'x' + sight:>7} {'x' + reward:>7}")
+    nom, speed, sight, reward = stages[-1]
+    print()
+    print(f"  Au stade {nom}, la progression complète tombe à "
+          f"{total / float(reward) / 3600:.1f} h — mais les monstres vont "
+          f"{(float(speed) - 1) * 100:.0f} % plus vite et voient "
+          f"{(float(sight) - 1) * 100:.0f} % plus loin, partout, pour tout le monde.")
+    if float(reward) > 2:
+        problems.append("Le bonus d'éveil dépasse x2 : il écrase la différence "
+                        "entre les zones.")
+
 print()
 if problems:
     print("À REGARDER :")

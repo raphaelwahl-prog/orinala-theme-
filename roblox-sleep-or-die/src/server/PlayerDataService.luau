@@ -36,6 +36,7 @@ export type Profile = {
 
 	MonstersSeen: { [string]: boolean },
 	Cosmetics: { [string]: boolean },
+	Skin: string,
 	Achievements: { [string]: boolean },
 
 	SurvivalSeconds: number,
@@ -71,7 +72,8 @@ local function blank(): Profile
 		MissionsDone = {},
 		MainMissions = 0,
 		MonstersSeen = {},
-		Cosmetics = {},
+		Cosmetics = { default = true },
+		Skin = "default",
 		Achievements = {},
 		SurvivalSeconds = 0,
 		NightsSurvived = 0,

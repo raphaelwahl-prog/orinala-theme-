@@ -15,11 +15,14 @@ local MonsterConfig = require(Shared.MonsterConfig)
 local Net = require(Shared.Net)
 local ZoneConfig = require(Shared.ZoneConfig)
 
+local AwakeningService = require(script.AwakeningService)
 local BossService = require(script.BossService)
 local CombatService = require(script.CombatService)
+local CosmeticService = require(script.CosmeticService)
 local EconomyService = require(script.EconomyService)
 local EventService = require(script.EventService)
 local InventoryService = require(script.InventoryService)
+local LifeService = require(script.LifeService)
 local MissionService = require(script.MissionService)
 local MonetizationService = require(script.MonetizationService)
 local MonsterService = require(script.MonsterService)
@@ -68,6 +71,14 @@ local function pushState(player: Player)
 		ShelterId = shelter and shelter.Id or "",
 		Multiplier = EconomyService.multiplier(player),
 		Event = EventService.active(),
+		Awakening = {
+			Points = AwakeningService.points(),
+			Stage = AwakeningService.stage(),
+			Data = AwakeningService.data(),
+		},
+		Cosmetics = CosmeticService.catalogue(player),
+		Skin = profile.Skin,
+		Downed = LifeService.isDowned(player),
 		Stats = {
 			Nights = profile.NightsSurvived,
 			Deaths = profile.Deaths,
@@ -95,8 +106,36 @@ EventService.init()
 MonetizationService.init()
 ObjectiveService.init()
 BossService.init()
+AwakeningService.init()
+LifeService.init()
+EconomyService.setAwakeningBonus(AwakeningService.rewardMultiplier)
 WorldService.startPopulating()
 ZoneService.setTeleporter(WorldService.teleport)
+
+AwakeningService.onChanged(function(points, stage, data)
+	for _, player in ipairs(Players:GetPlayers()) do
+		send(player, "AwakeningChanged", points, stage, data)
+	end
+	-- On ne crie que quand le stade change vraiment, pas à chaque point.
+	for _, player in ipairs(Players:GetPlayers()) do
+		alert(player, "ÉVEIL — " .. data.Name .. " : " .. data.Text,
+			stage >= 3 and "danger" or "info")
+	end
+end)
+
+-- À terre plutôt que mort, quand il y a quelqu'un pour relever.
+LifeService.onChanged(function(player, isDown, secondsLeft)
+	for _, other in ipairs(Players:GetPlayers()) do
+		send(other, "DownedChanged", player.Name, isDown, secondsLeft)
+	end
+	if isDown and secondsLeft > 29 then
+		alert(player, "Tu es à terre. Quelqu'un peut te relever — tiens bon.", "danger")
+	end
+end)
+
+LifeService.onBleedOut(function(player)
+	alert(player, "Personne n'est venu.", "danger")
+end)
 
 EventService.onChanged(function(active)
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -273,6 +312,22 @@ local function onMission(player: Player, action: unknown, missionId: unknown)
 	pushState(player)
 end
 
+local function onCosmetic(player: Player, action: unknown, id: unknown)
+	if type(action) ~= "string" or type(id) ~= "string" then
+		return
+	end
+	local ok, message
+	if action == "buy" then
+		ok, message = CosmeticService.obtain(player, id)
+	elseif action == "equip" then
+		ok, message = CosmeticService.equip(player, id)
+	else
+		return
+	end
+	alert(player, message, ok and "cash" or "warn")
+	pushState(player)
+end
+
 local function onPurchase(player: Player, productKey: unknown)
 	if type(productKey) ~= "string" then
 		return
@@ -292,6 +347,7 @@ Net.get("RequestEnterZone").OnServerEvent:Connect(onEnterZone)
 Net.get("RequestAttack").OnServerEvent:Connect(onAttack)
 Net.get("RequestMission").OnServerEvent:Connect(onMission)
 Net.get("RequestPurchase").OnServerEvent:Connect(onPurchase)
+Net.get("RequestCosmetic").OnServerEvent:Connect(onCosmetic)
 Net.get("RequestRepair").OnServerEvent:Connect(function(player)
 	alert(player, "Les défenses se remplacent à la boutique.", "info")
 end)
@@ -309,6 +365,7 @@ Players.PlayerAdded:Connect(function(player)
 
 	player.CharacterAdded:Connect(function(character)
 		SurvivalService.onCharacterAdded(player, character)
+		CosmeticService.apply(player)
 		task.wait(0.5)
 		pushState(player)
 	end)

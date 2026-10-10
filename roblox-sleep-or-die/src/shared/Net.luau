@@ -16,6 +16,8 @@ Net.Events = {
 	"ShelterChanged",    -- état d'un refuge
 	"MonsterSignal",     -- signal visuel/sonore d'un monstre
 	"EventChanged",      -- événement serveur actif
+	"AwakeningChanged",  -- jauge d'éveil partagée
+	"DownedChanged",     -- un joueur à terre, et le temps qu'il lui reste
 	"DeathReport",       -- bilan de mort
 	-- client → serveur
 	"RequestClaim",      -- réserver un refuge
@@ -29,6 +31,7 @@ Net.Events = {
 	"RequestAttack",     -- frapper un monstre
 	"RequestMission",    -- accepter / rendre une mission
 	"RequestPurchase",   -- ouvrir une fenêtre d'achat Robux
+	"RequestCosmetic",   -- débloquer ou équiper un skin
 }
 
 local cache: { [string]: RemoteEvent } = {}

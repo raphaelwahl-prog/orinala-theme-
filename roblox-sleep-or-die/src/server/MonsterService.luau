@@ -48,6 +48,18 @@ type Agent = {
 local agents: { Agent } = {}
 local signalListeners: { (string, string, Vector3) -> () } = {}
 
+-- Multiplicateurs imposés par l'éveil de la maison. Ils s'appliquent à TOUS
+-- les monstres du serveur, y compris ceux déjà sur le terrain.
+local globalSpeed, globalSight = 1, 1
+
+function MonsterService.applyGlobal(speed: number, sight: number)
+	globalSpeed, globalSight = speed, sight
+end
+
+function MonsterService.globals(): (number, number)
+	return globalSpeed, globalSight
+end
+
 function MonsterService.onSignal(fn: (string, string, Vector3) -> ())
 	table.insert(signalListeners, fn)
 end
@@ -101,11 +113,11 @@ local function canSee(agent: Agent, player: Player): boolean
 	if agent.Def.Rule == "sound" then
 		local moving = humanoid.MoveDirection.Magnitude > 0.1
 		local loud = moving and humanoid.WalkSpeed > 17
-		local range = loud and agent.Def.HearRange or agent.Def.HearRange * 0.45
+		local range = (loud and agent.Def.HearRange or agent.Def.HearRange * 0.45) * globalSight
 		return distance <= range
 	end
 
-	if distance > agent.Def.SightRange then
+	if distance > agent.Def.SightRange * globalSight then
 		return false
 	end
 	return CombatService.hasLineOfSight(agent.Root.Position, root.Position, agent.Model)
@@ -254,7 +266,7 @@ local function move(agent: Agent, dt: number)
 		return
 	end
 
-	local speed = agent.Def.WalkSpeed
+	local speed = agent.Def.WalkSpeed * globalSpeed
 	if agent.State == S.PATROL then
 		speed *= 0.55
 	end

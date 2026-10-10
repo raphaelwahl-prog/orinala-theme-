@@ -5,8 +5,13 @@ Plus la zone est dangereuse, plus ça paie — et plus tu risques de tout perdre
 avant d'avoir pu le déposer.**
 
 Ce dépôt contient **les sept zones**, leurs sept monstres avec leurs sept
-mécaniques, le boss final en trois phases, les missions et l'économie
+mécaniques, le combat final en trois phases, les missions et l'économie
 complète. On peut aller de la rue au carnaval sans sortir du jeu.
+
+C'est la version aboutie de ce qui s'appelait **DEAD TIRED** (dossier
+`roblox-dead-tired/`, gardé comme prototype). Tout ce que le prototype avait
+de bon est ici : la jauge d'éveil partagée, le relevage entre joueurs, les
+skins.
 
 ## Ouvrir et jouer
 
@@ -23,7 +28,9 @@ le coffre, la boutique, les six PNJ, l'entrée des égouts et les rôdeurs.
 | `B` | défenses du refuge |
 | `M` | missions |
 | `N` | les sept zones |
+| `C` | skins |
 | `F` ou clic | frapper (étourdit, ne tue pas) |
+| `E` maintenu | relever un coéquipier à terre |
 | `Échap` | fermer un panneau |
 
 ## Comment ça marche
@@ -39,6 +46,38 @@ Une session de survie démarre quand tu dors dans ton refuge. Elle paie à la
 seconde, s'arrête à la mort, à la déconnexion, au réveil ou au bout de sa durée
 maximale. Des assauts arrivent à intervalle irrégulier : tes défenses les
 retardent, s'usent, et finissent par céder. **Aucun refuge n'est imprenable.**
+
+## L'éveil de la maison
+
+C'est ce qui rend le jeu multijoueur au lieu d'être du solo côte à côte.
+
+Chaque seconde passée à dormir dans une zone profonde remplit une **jauge
+partagée par tout le serveur**. Quand elle change de stade, les monstres de
+toutes les zones deviennent plus rapides et voient plus loin — **pour tout le
+monde**, y compris ceux qui dormaient tranquillement dans la rue.
+
+| Stade | Vitesse | Vue | Gains |
+|---|---|---|---|
+| CALME | ×1,00 | ×1,00 | ×1,00 |
+| AGITÉ | ×1,08 | ×1,25 | ×1,15 |
+| ÉVEILLÉ | ×1,16 | ×1,60 | ×1,35 |
+| AFFAMÉ | ×1,24 | ×2,00 | ×1,60 |
+
+Les gains montent avec le danger : sinon personne n'aurait de raison de
+remplir la jauge. La cupidité d'un seul met la partie entière en danger, et
+c'est exactement le but — c'est ce qui fait que les joueurs se parlent.
+
+La jauge redescend quand plus personne ne dort profond.
+
+## À terre, pas mort
+
+Le coup qui te tuerait te met **à terre** s'il y a au moins un autre joueur
+sur le serveur. Tu as 30 secondes ; un coéquipier qui maintient `E` à côté de
+toi pendant 4 secondes te relève à 40 % de vie. Personne ne vient : tu meurs
+normalement, avec la perte d'argent qui va avec.
+
+Seul sur le serveur, le coup tue directement — on ne laisse pas quelqu'un
+agoniser sans aucune issue.
 
 ## Les sept zones
 

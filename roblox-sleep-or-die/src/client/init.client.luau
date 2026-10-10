@@ -34,6 +34,9 @@ Panels.build(screen, {
 	place = function(itemId)
 		Net.get("RequestPlace"):FireServer(itemId)
 	end,
+	cosmetic = function(action, id)
+		Net.get("RequestCosmetic"):FireServer(action, id)
+	end,
 })
 
 local state: any = nil
@@ -52,7 +55,20 @@ Net.get("StateChanged").OnClientEvent:Connect(function(payload)
 		Panels.openMissions(state)
 	elseif kind == "zones" then
 		Panels.openZones(state)
+	elseif kind == "cosmetics" then
+		Panels.openCosmetics(state)
 	end
+end)
+
+Net.get("AwakeningChanged").OnClientEvent:Connect(function(points, stage, data)
+	Hud.setAwakening(points, stage, data)
+	if stage >= 3 then
+		Hud.flash(0.18)
+	end
+end)
+
+Net.get("DownedChanged").OnClientEvent:Connect(function(name, isDown, secondsLeft)
+	Hud.setDowned(name, isDown, secondsLeft, name == player.Name)
 end)
 
 Net.get("Alert").OnClientEvent:Connect(function(text, kind)
@@ -245,6 +261,10 @@ local function onAction(name: string, inputState: Enum.UserInputState)
 		if state then
 			Panels.openZones(state)
 		end
+	elseif name == "Skins" then
+		if state then
+			Panels.openCosmetics(state)
+		end
 	elseif name == "Attack" then
 		attack()
 	elseif name == "Close" then
@@ -260,11 +280,13 @@ ContextActionService:BindAction("Missions", onAction, true, Enum.KeyCode.M)
 ContextActionService:BindAction("Zones", onAction, true, Enum.KeyCode.N)
 ContextActionService:BindAction("Attack", onAction, true, Enum.KeyCode.F,
 	Enum.UserInputType.MouseButton1)
+ContextActionService:BindAction("Skins", onAction, true, Enum.KeyCode.C)
 ContextActionService:BindAction("Close", onAction, false, Enum.KeyCode.Escape)
 
 ContextActionService:SetTitle("Interact", "E")
 ContextActionService:SetTitle("Defenses", "DÉFENSES")
 ContextActionService:SetTitle("Missions", "MISSIONS")
 ContextActionService:SetTitle("Attack", "FRAPPER")
+ContextActionService:SetTitle("Skins", "SKINS")
 
 Hud.toast("Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.", "info")

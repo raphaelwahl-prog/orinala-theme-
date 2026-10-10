@@ -17,6 +17,7 @@ local RunService = game:GetService("RunService")
 local EconomyService = require(script.Parent.EconomyService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local PlayerDataService = require(script.Parent.PlayerDataService)
+local AwakeningService = require(script.Parent.AwakeningService)
 local ShelterService = require(script.Parent.ShelterService)
 local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
 
@@ -147,6 +148,9 @@ local function tick(dt: number)
 			session.Carry -= seconds
 			session.EligibleSeconds += seconds
 			session.Earned += EconomyService.accrue(player, session.ZoneId, seconds, session.Earned)
+			-- Chaque seconde de sommeil profond réveille un peu la maison,
+			-- pour tout le monde.
+			AwakeningService.feed(session.ZoneId, seconds)
 		end
 
 		if os.clock() >= session.NextAssault then

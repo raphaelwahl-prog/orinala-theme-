@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local ItemConfig = require(script.Parent.Parent.Shared.ItemConfig)
+local LifeService = require(script.Parent.LifeService)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
 local PlayerDataService = require(script.Parent.PlayerDataService)
 
@@ -61,6 +62,15 @@ function CombatService.monsterHit(def: MonsterConfig.Monster, origin: Vector3, p
 	end
 	if not CombatService.hasLineOfSight(origin, root.Position, character) then
 		return false
+	end
+
+	-- Le coup qui tuerait met à terre, s'il y a quelqu'un pour relever. Sinon
+	-- il tue, comme avant : on ne laisse pas un joueur seul agoniser sans
+	-- aucune issue.
+	if humanoid.Health - def.Damage <= 0 then
+		if LifeService.knockDown(player) then
+			return true
+		end
 	end
 
 	humanoid:TakeDamage(def.Damage)

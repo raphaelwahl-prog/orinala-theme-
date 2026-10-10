@@ -16,6 +16,15 @@ local EconomyService = {}
 
 local listeners: { (Player) -> () } = {}
 
+-- L'éveil de la maison augmente les gains de tout le serveur. On l'injecte
+-- depuis le bootstrap pour qu'EconomyService ne dépende pas d'AwakeningService
+-- (qui, lui, dépend de MonsterService : la boucle serait circulaire).
+local awakeningBonus: (() -> number)? = nil
+
+function EconomyService.setAwakeningBonus(fn: () -> number)
+	awakeningBonus = fn
+end
+
 function EconomyService.onChanged(fn: (Player) -> ())
 	table.insert(listeners, fn)
 end
@@ -50,6 +59,11 @@ function EconomyService.accrue(player: Player, zoneId: string, seconds: number, 
 	end
 
 	local rate = zone.Rate * EconomyService.multiplier(player)
+	if awakeningBonus then
+		-- Contrepartie du risque partagé : plus la maison est réveillée, plus
+		-- ça paie. Sans ça, personne n'aurait intérêt à remplir la jauge.
+		rate *= awakeningBonus()
+	end
 	-- Plafond souple : au-delà, le taux est divisé. Sans ça, la zone 7 à
 	-- 100 000 $/s rend toute la progression précédente sans objet.
 	if earnedThisSession >= zone.SoftCapPerSession then

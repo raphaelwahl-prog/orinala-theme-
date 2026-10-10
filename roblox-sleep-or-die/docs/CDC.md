@@ -16,7 +16,9 @@ dans le code, elle est marquée « pas fait », même si la configuration existe
 | 5 | Monstres et IA | **fait** | `MonsterService`, `BossService` | Les 8 états et **les 7 mécaniques** : `sound`, `gaze`, `relentless`, `disable` (le couvent éteint tes défenses), `fake_alerts` (l'hôpital émet de fausses alertes), `boss_phases` (3 phases qui rejouent les mécaniques apprises). |
 | 6 | Économie et équipements | **fait** | `EconomyService`, `ItemConfig`, `ShopService` | — |
 | 7 | Missions et PNJ | **fait** | `MissionService`, `ObjectiveService` | 16 missions, 6 PNJ, et **les 11 types d'objectifs branchés**. Les quatre ramassables sont des objets du monde qui réapparaissent ; `escape_chase`, `survive_extreme` et `find_secret` se déduisent du jeu, pas d'un bouton. |
-| 8 | Progression à long terme | **partiel** | `BossService` | Le boss accorde un trophée, un titre et marque le carnaval comme terminé. Les variantes de monstres, contrats rares, classements saisonniers et collections restent à faire — le CDC §14 les place après le lancement. |
+| 8 | Progression à long terme | **partiel** | `BossService`, `CosmeticService` | Six skins, dont trois qui ne s'achètent pas (dix nuits survécues, la maison des poupées débloquée, le carnaval battu). Le boss accorde un trophée et un titre. Les variantes de monstres, contrats rares et classements saisonniers restent à faire. |
+| 8 bis | Éveil partagé | **fait** | `AwakeningService` | Jauge commune à tout le serveur, quatre stades, effet sur la vitesse et la vue de **tous** les monstres, contrepartie en gains, décroissance quand personne ne dort profond. Repris du prototype DEAD TIRED. |
+| 8 ter | Entraide | **fait** | `LifeService` | Le coup fatal met à terre plutôt que de tuer quand un autre joueur est là : 30 s de saignement, 4 s de maintien pour relever. Seul sur le serveur, le coup tue. |
 | 9 | Interface | **partiel** | `Hud.luau`, `Panels.luau` | Tout est là sauf l'écran de paramètres et les classements. |
 | 10 | Architecture technique | **fait** | arborescence `src/` | Les noms de services sont exactement ceux du CDC. |
 | 11 | Sauvegarde | **fait** | `PlayerDataService` | — |

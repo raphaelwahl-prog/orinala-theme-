@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local AwakeningConfig = require(Shared.AwakeningConfig)
 local Format = require(Shared.Format)
 
 local Hud = {}
@@ -120,6 +121,35 @@ function Hud.build(screen: ScreenGui)
 	list.SortOrder = Enum.SortOrder.LayoutOrder
 	list.Parent = refs.toasts
 
+	-- Éveil de la maison : la jauge partagée par tout le serveur.
+	local awake = panel("Awake", UDim2.new(0, 210, 0, 74), UDim2.new(1, -14, 0, 108),
+		Vector2.new(1, 0))
+	refs.awakeLabel = label(awake, "ÉVEIL DE LA MAISON", 9.5, DIM, UDim2.new(0, 12, 0, 7))
+	refs.awakeStage = label(awake, "CALME", 16, CASH, UDim2.new(0, 12, 0, 22))
+	refs.awakeStage.Font = Enum.Font.GothamBold
+	local barBg = Instance.new("Frame")
+	barBg.Size = UDim2.new(1, -24, 0, 5)
+	barBg.Position = UDim2.new(0, 12, 0, 46)
+	barBg.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+	barBg.BorderSizePixel = 0
+	corner(barBg, 3)
+	barBg.Parent = awake
+	refs.awakeBar = Instance.new("Frame")
+	refs.awakeBar.Size = UDim2.new(0, 0, 1, 0)
+	refs.awakeBar.BackgroundColor3 = CASH
+	refs.awakeBar.BorderSizePixel = 0
+	corner(refs.awakeBar, 3)
+	refs.awakeBar.Parent = barBg
+	refs.awakeFoot = label(awake, "", 9.5, DIM, UDim2.new(0, 12, 0, 55))
+
+	-- Bandeau « à terre » : il doit être impossible à manquer.
+	refs.downed = panel("Downed", UDim2.new(0, 360, 0, 52), UDim2.new(0.5, 0, 0, 96),
+		Vector2.new(0.5, 0))
+	refs.downedText = label(refs.downed, "", 14, DANGER, UDim2.new(0, 12, 0, 6))
+	refs.downedText.Font = Enum.Font.GothamBold
+	refs.downedSub = label(refs.downed, "", 11.5, DIM, UDim2.new(0, 12, 0, 28))
+	refs.downed.Visible = false
+
 	-- Voile rouge de danger
 	refs.tint = Instance.new("Frame")
 	refs.tint.Size = UDim2.fromScale(1, 1)
@@ -223,6 +253,37 @@ function Hud.update(state)
 		refs.objectiveTitle.Text = "Tout est fait"
 		refs.objectiveText.Text = "Reviens demain pour les quotidiennes."
 	end
+end
+
+-- L'éveil est une information de serveur : elle arrive par son propre remote,
+-- pas avec l'état du joueur.
+function Hud.setAwakening(points: number, stage: number, data)
+	refs.awakeStage.Text = data.Name
+	refs.awakeStage.TextColor3 = data.Color
+	refs.awakeBar.BackgroundColor3 = data.Color
+	local nextThreshold = data.Next
+	if nextThreshold then
+		local previous = AwakeningConfig.Thresholds[stage] or 0
+		local span = math.max(1, nextThreshold - previous)
+		refs.awakeBar.Size = UDim2.new(math.clamp((points - previous) / span, 0, 1), 0, 1, 0)
+		refs.awakeFoot.Text = ("stade suivant dans %d pts · gains x%.2f")
+			:format(math.max(0, math.ceil(nextThreshold - points)), data.Reward)
+	else
+		refs.awakeBar.Size = UDim2.new(1, 0, 1, 0)
+		refs.awakeFoot.Text = ("maximum · gains x%.2f"):format(data.Reward)
+	end
+end
+
+function Hud.setDowned(name: string, isDown: boolean, secondsLeft: number, isMe: boolean)
+	if not isDown then
+		refs.downed.Visible = false
+		return
+	end
+	refs.downed.Visible = true
+	refs.downedText.Text = isMe and "TU ES À TERRE" or (string.upper(name) .. " EST À TERRE")
+	refs.downedSub.Text = isMe
+		and ("Un coéquipier peut te relever. %d s."):format(math.ceil(secondsLeft))
+		or ("Approche et maintiens E pour le relever. %d s."):format(math.ceil(secondsLeft))
 end
 
 function Hud.setHealth(current: number, max: number)
