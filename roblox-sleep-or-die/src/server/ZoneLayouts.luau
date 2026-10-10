@@ -67,7 +67,7 @@ function Layouts.street(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 			local pole = B.part("Pole", Vector3.new(0.8, 18, 0.8),
 				origin + Vector3.new(side * (WIDTH / 2 - 8), 9, z),
 				Color3.fromRGB(28, 28, 32), Enum.Material.Metal, folder)
-			local head = B.part("Lamp", Vector3.new(3, 0.8, 3),
+			local head = B.shaped("Lamp", Enum.PartType.Ball, Vector3.new(3, 3, 3),
 				pole.Position + Vector3.new(0, 9, 0),
 				Color3.fromRGB(255, 224, 170), Enum.Material.Neon, folder)
 			B.light(head, Color3.fromRGB(255, 220, 170), 2.2, 52)
@@ -163,6 +163,16 @@ function Layouts.sewers(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.part("Water", Vector3.new(360, 1, 10), origin + Vector3.new(0, 0.4, 0),
 		Color3.fromRGB(36, 56, 50), Enum.Material.Water, folder)
 
+	-- Tuyauterie : des cylindres le long des galeries. C'est ce qui dit
+	-- « égout » avant même qu'on lise le panneau.
+	for _, z in ipairs({ -90, 0, 90 }) do
+		for _, side in ipairs({ -1, 1 }) do
+			local pipe = B.shaped("Pipe", Enum.PartType.Cylinder,
+				Vector3.new(380, 2.4, 2.4), origin + Vector3.new(0, H - 4, z + side * 8),
+				Color3.fromRGB(70, 74, 68), Enum.Material.Metal, folder)
+		end
+	end
+
 	-- Lanternes espacées, volontairement insuffisantes.
 	for x = -170, 170, 85 do
 		for _, z in ipairs({ -90, 0, 90 }) do
@@ -233,7 +243,7 @@ function Layouts.dollhouse(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	-- Lustres : la maison est éclairée, et c'est voulu. On la voit arriver.
 	for _, point in ipairs({ Vector3.new(0, 0, 0), Vector3.new(-110, 0, -70),
 		Vector3.new(110, 0, 70) }) do
-		local lamp = B.part("Chandelier", Vector3.new(5, 1, 5),
+		local lamp = B.shaped("Chandelier", Enum.PartType.Ball, Vector3.new(4, 4, 4),
 			origin + point + Vector3.new(0, H - 3, 0),
 			Color3.fromRGB(255, 216, 170), Enum.Material.Neon, folder)
 		B.light(lamp, Color3.fromRGB(255, 210, 160), 2.4, 70)
@@ -290,6 +300,13 @@ function Layouts.slasher(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 		B.room(center, 60, 50, 20, Color3.fromRGB(70, 62, 58), Enum.Material.Brick, folder,
 			{ "south" })
 		B.shelter("slasher", center + Vector3.new(0, 1, 34), Color3.fromRGB(170, 70, 60), folder)
+		-- Toit à deux pans : deux coins dos à dos.
+		for _, dir in ipairs({ -1, 1 }) do
+			local roof = B.wedge("Roof", Vector3.new(50, 14, 30),
+				center + Vector3.new(0, 27, dir * 15),
+				Color3.fromRGB(52, 40, 38), Enum.Material.Slate, folder)
+			roof.Orientation = Vector3.new(0, dir > 0 and 180 or 0, 0)
+		end
 		table.insert(patrol, center + Vector3.new(0, 3, 40))
 		-- Haies : elles cassent la ligne de vue sans bloquer le passage.
 		for side = -1, 1, 2 do
@@ -339,8 +356,11 @@ function Layouts.convent(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 		{ "south" })
 	for z = -200, -40, 32 do
 		for side = -1, 1, 2 do
-			B.part("Column", Vector3.new(7, H, 7),
-				origin + Vector3.new(side * 24, H / 2, z), stone, Enum.Material.Marble, folder)
+			-- L'axe d'un cylindre Roblox est X : on le couche pour qu'il monte.
+			local column = B.shaped("Column", Enum.PartType.Cylinder,
+				Vector3.new(H, 7, 7), origin + Vector3.new(side * 24, H / 2, z),
+				stone, Enum.Material.Marble, folder)
+			column.Orientation = Vector3.new(0, 0, 90)
 		end
 		table.insert(patrol, origin + Vector3.new(0, 3, z))
 	end
@@ -452,9 +472,10 @@ function Layouts.carnival(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	-- Chapiteau : anneau de mâts et toit.
 	for angle = 0, 350, 30 do
 		local a = math.rad(angle)
-		local mast = B.part("Mast", Vector3.new(5, 60, 5),
+		local mast = B.shaped("Mast", Enum.PartType.Cylinder, Vector3.new(60, 5, 5),
 			origin + Vector3.new(math.cos(a) * 110, 30, math.sin(a) * 110),
 			Color3.fromRGB(140, 40, 50), Enum.Material.Fabric, folder)
+		mast.Orientation = Vector3.new(0, 0, 90)
 		if angle % 90 == 0 then
 			B.light(mast, Color3.fromRGB(255, 90, 90), 2, 70)
 			table.insert(patrol, origin + Vector3.new(math.cos(a) * 80, 3, math.sin(a) * 80))
@@ -478,7 +499,8 @@ function Layouts.carnival(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 				Color3.fromRGB(190, 70, 150), folder)
 		end
 		table.insert(patrol, center + Vector3.new(0, 3, 34))
-		local bulb = B.part("Bulb", Vector3.new(3, 3, 3), center + Vector3.new(0, 24, 0),
+		local bulb = B.shaped("Bulb", Enum.PartType.Ball, Vector3.new(3.4, 3.4, 3.4),
+			center + Vector3.new(0, 24, 0),
 			Color3.fromRGB(255, 120, 200), Enum.Material.Neon, folder)
 		B.light(bulb, Color3.fromRGB(255, 110, 190), 2.2, 60)
 	end

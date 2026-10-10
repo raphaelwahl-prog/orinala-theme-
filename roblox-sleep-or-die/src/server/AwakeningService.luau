@@ -12,6 +12,7 @@
 local AtmosphereService = require(script.Parent.AtmosphereService)
 local AwakeningConfig = require(script.Parent.Parent.Shared.AwakeningConfig)
 local MonsterService = require(script.Parent.MonsterService)
+local SoundLib = require(script.Parent.SoundService)
 local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
 
 local AwakeningService = {}
@@ -59,6 +60,9 @@ local function applyStage()
 	MonsterService.applyGlobal(data.Speed, data.Sight)
 	-- Un seul service touche à Lighting : celui-là.
 	AtmosphereService.setAwakening(stage, data)
+	-- La nappe monte avec l'éveil : c'est le seul son continu du jeu, donc
+	-- le seul qui peut porter la tension sans qu'on s'en rende compte.
+	SoundLib.setTension(stage)
 	broadcast()
 end
 

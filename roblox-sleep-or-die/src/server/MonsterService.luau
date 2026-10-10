@@ -19,6 +19,7 @@ local CombatService = require(script.Parent.CombatService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
 local MonsterRig = require(script.Parent.MonsterRig)
+local SoundLib = require(script.Parent.SoundService)
 local ShelterService = require(script.Parent.ShelterService)
 
 local MonsterService = {}
@@ -39,6 +40,7 @@ type Agent = {
 	PathIndex: number,
 	Rig: any,
 	Walk: number,
+	LastStep: number,
 	NextThink: number,
 	LostSince: number,
 	StunUntil: number,
@@ -201,6 +203,7 @@ local function decide(agent: Agent)
 			if agent.State ~= S.CHASE then
 				agent.State = S.CHASE
 				signal(agent, "spotted")
+				SoundLib.playAt("monster_spot", agent.Root)
 			end
 			computePath(agent, root.Position)
 		end
@@ -284,6 +287,13 @@ local function move(agent: Agent, dt: number)
 	agent.Walk += dt * speed * 0.42
 	MonsterRig.animate(agent.Rig, agent.Walk, moving and 0.85 or 0.06)
 
+	-- Un pas par demi-cycle de jambes : le son colle à l'animation, et c'est
+	-- ce qui permet d'entendre arriver un monstre avant de le voir.
+	if moving and agent.Walk >= agent.LastStep + math.pi then
+		agent.LastStep = agent.Walk
+		SoundLib.playAt(agent.Def.Height > 8 and "monster_heavy" or "monster_step", agent.Root)
+	end
+
 	local point = agent.Path[agent.PathIndex]
 	while point and (Vector3.new(point.X, agent.Root.Position.Y, point.Z)
 		- Vector3.new(agent.Root.Position.X, agent.Root.Position.Y, agent.Root.Position.Z)).Magnitude < 4 do
@@ -298,6 +308,7 @@ local function move(agent: Agent, dt: number)
 		agent.NextAttack = os.clock() + 1.2
 		CombatService.monsterHit(agent.Def, agent.Root.Position, agent.Target)
 		signal(agent, "attack")
+		SoundLib.playAt("monster_attack", agent.Root)
 	end
 end
 
@@ -321,7 +332,7 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		ZoneId = zoneId, Home = position,
 		State = S.PATROL, Target = nil, LastKnown = nil,
 		Path = {}, PathIndex = 1, NextThink = 0, LostSince = 0,
-		Rig = rig, Walk = 0,
+		Rig = rig, Walk = 0, LastStep = 0,
 		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
 	}
@@ -436,6 +447,11 @@ function MonsterService.assault(shelterId: string)
 	local delay = ShelterService.absorbAssault(shelter)
 	local profile = ShelterService.profileOf(shelter)
 	signal(best, "assault")
+	local pivotPart = shelter.Model.PrimaryPart
+	SoundLib.playAt("assault", pivotPart)
+	if delay > 0 then
+		SoundLib.playAt("alarm", pivotPart)
+	end
 
 	task.spawn(function()
 		if delay > 0 then

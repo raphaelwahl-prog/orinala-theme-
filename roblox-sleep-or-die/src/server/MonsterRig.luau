@@ -33,6 +33,7 @@ export type Look = {
 	Thin: boolean,
 	Hat: Color3?,
 	Lantern: boolean,
+	Face: boolean?,
 }
 
 -- Apparence par monstre. Tout est déduit du catalogue sauf ce qui est
@@ -54,8 +55,8 @@ local LOOKS: { [string]: Look } = {
 		Eye = Color3.fromRGB(255, 120, 40), Eyes = 4, ArmLength = 3.4,
 		Crawl = false, Thin = true, Hat = nil, Lantern = false },
 	mimic_voice = { Body = Color3.fromRGB(180, 186, 190), Skin = Color3.fromRGB(226, 214, 190),
-		Eye = Color3.fromRGB(140, 255, 220), Eyes = 2, ArmLength = 2.5,
-		Crawl = false, Thin = false, Hat = nil, Lantern = true },
+		Eye = Color3.fromRGB(140, 255, 220), Eyes = 0, ArmLength = 2.5,
+		Crawl = false, Thin = false, Hat = nil, Lantern = true, Face = true },
 	clown_boss = { Body = Color3.fromRGB(190, 40, 70), Skin = Color3.fromRGB(248, 244, 240),
 		Eye = Color3.fromRGB(255, 40, 40), Eyes = 6, ArmLength = 4.2,
 		Crawl = false, Thin = false, Hat = Color3.fromRGB(230, 60, 100), Lantern = false },
@@ -115,6 +116,26 @@ function MonsterRig.build(def: MonsterConfig.Monster, position: Vector3): (Model
 	local torso = part("Torso", torsoSize, look.Body, model, Enum.Material.Fabric)
 	local head = part("Head", HEAD * s, look.Skin, model)
 
+	-- Roblox fournit des formes intégrées qui ne demandent aucun fichier :
+	-- `MeshType.Head` donne la vraie tête arrondie d'un avatar. Une boîte à la
+	-- place, c'est ce qui faisait « maquette » au premier coup d'œil.
+	if not look.Crawl then
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Head
+		mesh.Scale = Vector3.new(1.25, 1.25, 1.25)
+		mesh.Parent = head
+	end
+
+	-- Le Menteur porte un visage de joueur. C'est toute la créature : de loin,
+	-- on croit voir quelqu'un. Le visage classique est livré avec Roblox.
+	if look.Face then
+		local face = Instance.new("Decal")
+		face.Name = "face"
+		face.Texture = "rbxasset://textures/face.png"
+		face.Face = Enum.NormalId.Front
+		face.Parent = head
+	end
+
 	motor("RootJoint", root, torso, CFrame.new(), CFrame.new())
 	local headOffset = look.Crawl
 		and CFrame.new(0, 0, -(torsoSize.Z / 2 + HEAD.Z * s / 2))
@@ -162,8 +183,9 @@ function MonsterRig.build(def: MonsterConfig.Monster, position: Vector3): (Model
 	-- Yeux : souvent la seule chose qu'on voit d'un monstre dans le noir.
 	if look.Eyes > 0 then
 		for i = 1, look.Eyes do
-			local eye = part("Eye", Vector3.new(0.3, 0.16, 0.1) * s, look.Eye, model,
+			local eye = part("Eye", Vector3.new(0.26, 0.26, 0.26) * s, look.Eye, model,
 				Enum.Material.Neon)
+			eye.Shape = Enum.PartType.Ball
 			local x, y = 0, 0
 			if look.Eyes == 2 then
 				x = (i == 1 and -0.38 or 0.38)
@@ -188,14 +210,19 @@ function MonsterRig.build(def: MonsterConfig.Monster, position: Vector3): (Model
 	end
 
 	if look.Hat then
-		local hat = part("Hat", Vector3.new(HEAD.X * 1.1, 0.5, HEAD.Z * 1.1) * s,
+		local hat = part("Hat", Vector3.new(HEAD.X * 1.4, 0.6, HEAD.Z * 1.4) * s,
 			look.Hat, model, Enum.Material.Fabric)
-		motor("HatJoint", head, hat, CFrame.new(0, HEAD.Y * s / 2 + 0.25 * s, 0), CFrame.new())
+		-- Un cylindre plutôt qu'une boîte : c'est une forme intégrée, gratuite,
+		-- et un chapeau carré sur une tête ronde se voit immédiatement.
+		hat.Shape = Enum.PartType.Cylinder
+		motor("HatJoint", head, hat, CFrame.new(0, HEAD.Y * s / 2 + 0.3 * s, 0),
+			CFrame.Angles(0, 0, math.rad(90)))
 	end
 
 	if look.Lantern then
-		local lamp = part("Lantern", Vector3.new(0.7, 0.9, 0.7) * s,
+		local lamp = part("Lantern", Vector3.new(0.8, 0.8, 0.8) * s,
 			Color3.fromRGB(255, 200, 120), model, Enum.Material.Neon)
+		lamp.Shape = Enum.PartType.Ball
 		motor("LanternJoint", torso, lamp,
 			CFrame.new(torsoSize.X / 2 + 0.6 * s, -0.4 * s, -0.4 * s), CFrame.new())
 		local light = Instance.new("PointLight")

@@ -1,4 +1,4 @@
-<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX44"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX45"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">4</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX11"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX10"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX45"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX46"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">4</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX11"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX10"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
 -- L'ÉVEIL DE LA MAISON — la jauge partagée par tout le serveur.
 --
 -- Reprise de la première version du jeu, parce que c'est la seule mécanique
@@ -853,7 +853,7 @@ function ZoneConfig.canEnter(zone: Zone, stats: {
 end
 
 return ZoneConfig
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX35"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX34"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX36"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX35"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
 -- Point d'entrée serveur. Tout le câblage est ici, et nulle part ailleurs :
 -- les services ne se connaissent que par appel direct, jamais par événement
 -- global, pour qu'on puisse lire le jeu de haut en bas depuis ce fichier.
@@ -886,6 +886,7 @@ local ObjectiveService = require(script.ObjectiveService)
 local PlayerDataService = require(script.PlayerDataService)
 local ShelterService = require(script.ShelterService)
 local ShopService = require(script.ShopService)
+local SoundLib = require(script.SoundService)
 local SurvivalService = require(script.SurvivalService)
 local WorldService = require(script.WorldService)
 local ZoneBuilder = require(script.ZoneBuilder)
@@ -898,8 +899,16 @@ local function send(player: Player, event: string, ...)
 	Net.get(event):FireClient(player, ...)
 end
 
+local SOUND_BY_KIND = {
+	cash = &quot;cash&quot;, unlock = &quot;unlock&quot;, warn = &quot;deny&quot;, danger = &quot;hurt&quot;,
+}
+
 local function alert(player: Player, text: string, kind: string?)
 	send(player, &quot;Alert&quot;, text, kind or &quot;info&quot;)
+	local effect = SOUND_BY_KIND[kind or &quot;info&quot;]
+	if effect then
+		SoundLib.playFor(player, effect)
+	end
 end
 
 -- ── état complet envoyé au client ─────────────────────────────────────────
@@ -954,6 +963,7 @@ end)
 -- ── construction de la ville et peuplement ────────────────────────────────
 PlayerDataService.init()
 PlayerDataService.startAutosave()
+SoundLib.init()
 AtmosphereService.init()
 WorldService.build()
 ShelterService.init()
@@ -1115,6 +1125,9 @@ local function onBuy(player: Player, itemId: unknown)
 	end
 	local ok, message = ShopService.buy(player, itemId)
 	alert(player, message, ok and &quot;cash&quot; or &quot;warn&quot;)
+	if ok then
+		SoundLib.playFor(player, &quot;buy&quot;)
+	end
 	pushState(player)
 end
 
@@ -1408,6 +1421,7 @@ return AtmosphereService
 local AtmosphereService = require(script.Parent.AtmosphereService)
 local AwakeningConfig = require(script.Parent.Parent.Shared.AwakeningConfig)
 local MonsterService = require(script.Parent.MonsterService)
+local SoundLib = require(script.Parent.SoundService)
 local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
 
 local AwakeningService = {}
@@ -1455,6 +1469,9 @@ local function applyStage()
 	MonsterService.applyGlobal(data.Speed, data.Sight)
 	-- Un seul service touche à Lighting : celui-là.
 	AtmosphereService.setAwakening(stage, data)
+	-- La nappe monte avec l'éveil : c'est le seul son continu du jeu, donc
+	-- le seul qui peut porter la tension sans qu'on s'en rende compte.
+	SoundLib.setTension(stage)
 	broadcast()
 end
 
@@ -2220,6 +2237,7 @@ return InventoryService
 local Players = game:GetService(&quot;Players&quot;)
 
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local SoundLib = require(script.Parent.SoundService)
 
 local LifeService = {}
 
@@ -2274,6 +2292,7 @@ local function standUp(player: Player, revived: boolean)
 		humanoid.JumpPower = 50
 		if revived then
 			humanoid.Health = math.max(humanoid.Health, humanoid.MaxHealth * 0.4)
+			SoundLib.playFor(player, &quot;revived&quot;)
 		end
 	end
 	fire(player, false, 0)
@@ -2334,6 +2353,7 @@ function LifeService.knockDown(player: Player): boolean
 		standUp(player, true)
 	end)
 	downed[player] = entry
+	SoundLib.playFor(player, &quot;downed&quot;)
 	fire(player, true, BLEED_SECONDS)
 	return true
 end
@@ -2646,6 +2666,7 @@ export type Look = {
 	Thin: boolean,
 	Hat: Color3?,
 	Lantern: boolean,
+	Face: boolean?,
 }
 
 -- Apparence par monstre. Tout est déduit du catalogue sauf ce qui est
@@ -2667,8 +2688,8 @@ local LOOKS: { [string]: Look } = {
 		Eye = Color3.fromRGB(255, 120, 40), Eyes = 4, ArmLength = 3.4,
 		Crawl = false, Thin = true, Hat = nil, Lantern = false },
 	mimic_voice = { Body = Color3.fromRGB(180, 186, 190), Skin = Color3.fromRGB(226, 214, 190),
-		Eye = Color3.fromRGB(140, 255, 220), Eyes = 2, ArmLength = 2.5,
-		Crawl = false, Thin = false, Hat = nil, Lantern = true },
+		Eye = Color3.fromRGB(140, 255, 220), Eyes = 0, ArmLength = 2.5,
+		Crawl = false, Thin = false, Hat = nil, Lantern = true, Face = true },
 	clown_boss = { Body = Color3.fromRGB(190, 40, 70), Skin = Color3.fromRGB(248, 244, 240),
 		Eye = Color3.fromRGB(255, 40, 40), Eyes = 6, ArmLength = 4.2,
 		Crawl = false, Thin = false, Hat = Color3.fromRGB(230, 60, 100), Lantern = false },
@@ -2728,6 +2749,26 @@ function MonsterRig.build(def: MonsterConfig.Monster, position: Vector3): (Model
 	local torso = part(&quot;Torso&quot;, torsoSize, look.Body, model, Enum.Material.Fabric)
 	local head = part(&quot;Head&quot;, HEAD * s, look.Skin, model)
 
+	-- Roblox fournit des formes intégrées qui ne demandent aucun fichier :
+	-- `MeshType.Head` donne la vraie tête arrondie d'un avatar. Une boîte à la
+	-- place, c'est ce qui faisait « maquette » au premier coup d'œil.
+	if not look.Crawl then
+		local mesh = Instance.new(&quot;SpecialMesh&quot;)
+		mesh.MeshType = Enum.MeshType.Head
+		mesh.Scale = Vector3.new(1.25, 1.25, 1.25)
+		mesh.Parent = head
+	end
+
+	-- Le Menteur porte un visage de joueur. C'est toute la créature : de loin,
+	-- on croit voir quelqu'un. Le visage classique est livré avec Roblox.
+	if look.Face then
+		local face = Instance.new(&quot;Decal&quot;)
+		face.Name = &quot;face&quot;
+		face.Texture = &quot;rbxasset://textures/face.png&quot;
+		face.Face = Enum.NormalId.Front
+		face.Parent = head
+	end
+
 	motor(&quot;RootJoint&quot;, root, torso, CFrame.new(), CFrame.new())
 	local headOffset = look.Crawl
 		and CFrame.new(0, 0, -(torsoSize.Z / 2 + HEAD.Z * s / 2))
@@ -2775,8 +2816,9 @@ function MonsterRig.build(def: MonsterConfig.Monster, position: Vector3): (Model
 	-- Yeux : souvent la seule chose qu'on voit d'un monstre dans le noir.
 	if look.Eyes &gt; 0 then
 		for i = 1, look.Eyes do
-			local eye = part(&quot;Eye&quot;, Vector3.new(0.3, 0.16, 0.1) * s, look.Eye, model,
+			local eye = part(&quot;Eye&quot;, Vector3.new(0.26, 0.26, 0.26) * s, look.Eye, model,
 				Enum.Material.Neon)
+			eye.Shape = Enum.PartType.Ball
 			local x, y = 0, 0
 			if look.Eyes == 2 then
 				x = (i == 1 and -0.38 or 0.38)
@@ -2801,14 +2843,19 @@ function MonsterRig.build(def: MonsterConfig.Monster, position: Vector3): (Model
 	end
 
 	if look.Hat then
-		local hat = part(&quot;Hat&quot;, Vector3.new(HEAD.X * 1.1, 0.5, HEAD.Z * 1.1) * s,
+		local hat = part(&quot;Hat&quot;, Vector3.new(HEAD.X * 1.4, 0.6, HEAD.Z * 1.4) * s,
 			look.Hat, model, Enum.Material.Fabric)
-		motor(&quot;HatJoint&quot;, head, hat, CFrame.new(0, HEAD.Y * s / 2 + 0.25 * s, 0), CFrame.new())
+		-- Un cylindre plutôt qu'une boîte : c'est une forme intégrée, gratuite,
+		-- et un chapeau carré sur une tête ronde se voit immédiatement.
+		hat.Shape = Enum.PartType.Cylinder
+		motor(&quot;HatJoint&quot;, head, hat, CFrame.new(0, HEAD.Y * s / 2 + 0.3 * s, 0),
+			CFrame.Angles(0, 0, math.rad(90)))
 	end
 
 	if look.Lantern then
-		local lamp = part(&quot;Lantern&quot;, Vector3.new(0.7, 0.9, 0.7) * s,
+		local lamp = part(&quot;Lantern&quot;, Vector3.new(0.8, 0.8, 0.8) * s,
 			Color3.fromRGB(255, 200, 120), model, Enum.Material.Neon)
+		lamp.Shape = Enum.PartType.Ball
 		motor(&quot;LanternJoint&quot;, torso, lamp,
 			CFrame.new(torsoSize.X / 2 + 0.6 * s, -0.4 * s, -0.4 * s), CFrame.new())
 		local light = Instance.new(&quot;PointLight&quot;)
@@ -2894,6 +2941,7 @@ local CombatService = require(script.Parent.CombatService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
 local MonsterRig = require(script.Parent.MonsterRig)
+local SoundLib = require(script.Parent.SoundService)
 local ShelterService = require(script.Parent.ShelterService)
 
 local MonsterService = {}
@@ -2914,6 +2962,7 @@ type Agent = {
 	PathIndex: number,
 	Rig: any,
 	Walk: number,
+	LastStep: number,
 	NextThink: number,
 	LostSince: number,
 	StunUntil: number,
@@ -3076,6 +3125,7 @@ local function decide(agent: Agent)
 			if agent.State ~= S.CHASE then
 				agent.State = S.CHASE
 				signal(agent, &quot;spotted&quot;)
+				SoundLib.playAt(&quot;monster_spot&quot;, agent.Root)
 			end
 			computePath(agent, root.Position)
 		end
@@ -3159,6 +3209,13 @@ local function move(agent: Agent, dt: number)
 	agent.Walk += dt * speed * 0.42
 	MonsterRig.animate(agent.Rig, agent.Walk, moving and 0.85 or 0.06)
 
+	-- Un pas par demi-cycle de jambes : le son colle à l'animation, et c'est
+	-- ce qui permet d'entendre arriver un monstre avant de le voir.
+	if moving and agent.Walk &gt;= agent.LastStep + math.pi then
+		agent.LastStep = agent.Walk
+		SoundLib.playAt(agent.Def.Height &gt; 8 and &quot;monster_heavy&quot; or &quot;monster_step&quot;, agent.Root)
+	end
+
 	local point = agent.Path[agent.PathIndex]
 	while point and (Vector3.new(point.X, agent.Root.Position.Y, point.Z)
 		- Vector3.new(agent.Root.Position.X, agent.Root.Position.Y, agent.Root.Position.Z)).Magnitude &lt; 4 do
@@ -3173,6 +3230,7 @@ local function move(agent: Agent, dt: number)
 		agent.NextAttack = os.clock() + 1.2
 		CombatService.monsterHit(agent.Def, agent.Root.Position, agent.Target)
 		signal(agent, &quot;attack&quot;)
+		SoundLib.playAt(&quot;monster_attack&quot;, agent.Root)
 	end
 end
 
@@ -3196,7 +3254,7 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		ZoneId = zoneId, Home = position,
 		State = S.PATROL, Target = nil, LastKnown = nil,
 		Path = {}, PathIndex = 1, NextThink = 0, LostSince = 0,
-		Rig = rig, Walk = 0,
+		Rig = rig, Walk = 0, LastStep = 0,
 		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
 	}
@@ -3311,6 +3369,11 @@ function MonsterService.assault(shelterId: string)
 	local delay = ShelterService.absorbAssault(shelter)
 	local profile = ShelterService.profileOf(shelter)
 	signal(best, &quot;assault&quot;)
+	local pivotPart = shelter.Model.PrimaryPart
+	SoundLib.playAt(&quot;assault&quot;, pivotPart)
+	if delay &gt; 0 then
+		SoundLib.playAt(&quot;alarm&quot;, pivotPart)
+	end
 
 	task.spawn(function()
 		if delay &gt; 0 then
@@ -4077,7 +4140,259 @@ function ShopService.buy(player: Player, itemId: string): (boolean, string)
 end
 
 return ShopService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">SoundService</string><ProtectedString name="Source">--!strict
+-- LE SON.
+--
+-- Roblox ne sait pas fabriquer un son : il lui faut des fichiers. Mais toutes
+-- les installations de Roblox embarquent une petite bibliothèque locale,
+-- accessible par `rbxasset://sounds/…`. Rien à téléverser, rien à modérer,
+-- rien qui puisse disparaître un jour.
+--
+-- Le problème : ces chemins ne sont garantis par aucune documentation. Alors
+-- au démarrage, ce service les ESSAIE un par un et écrit dans la sortie
+-- lesquels ont chargé. Tu sais donc exactement ce qui marche chez toi, au lieu
+-- de te demander pourquoi c'est silencieux.
+--
+-- Avec cinq ou six échantillons on fait tout le jeu : la hauteur (PlaybackSpeed)
+-- et les effets intégrés (réverbération, passe-bas, distorsion) suffisent à
+-- transformer un même son en pas, en coup contre une porte ou en battement de
+-- cœur. C'est ce que font tous les jeux : peu de sons, beaucoup de variantes.
+
+local ContentProvider = game:GetService(&quot;ContentProvider&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local SoundServiceRoblox = game:GetService(&quot;SoundService&quot;)
+
+local SoundLib = {}
+
+-- Plusieurs candidats par effet : on garde le premier qui charge.
+local CANDIDATES: { [string]: { string } } = {
+	step = { &quot;rbxasset://sounds/action_footsteps_plastic.mp3&quot; },
+	thud = { &quot;rbxasset://sounds/impact_water.mp3&quot;, &quot;rbxasset://sounds/snap.mp3&quot; },
+	alarm = { &quot;rbxasset://sounds/electronicpingshort.wav&quot; },
+	click = { &quot;rbxasset://sounds/switch3.wav&quot;, &quot;rbxasset://sounds/clickfast.ogg&quot; },
+	drone = { &quot;rbxasset://sounds/bass.mp3&quot; },
+	hurt = { &quot;rbxasset://sounds/uuhhh.mp3&quot; },
+	getup = { &quot;rbxasset://sounds/action_get_up.mp3&quot; },
+	fall = { &quot;rbxasset://sounds/action_falling.mp3&quot; },
+	swoosh = { &quot;rbxasset://sounds/swoosh.mp3&quot;, &quot;rbxasset://sounds/action_jump.mp3&quot; },
+}
+
+-- Comment chaque effet du jeu se fabrique à partir d'un échantillon.
+type Recipe = {
+	Sample: string,
+	Volume: number,
+	Speed: number,
+	Vary: number?,       -- variation aléatoire de hauteur
+	Looped: boolean?,
+	RollOff: number?,    -- distance d'atténuation pour un son placé dans le monde
+	Lowpass: number?,    -- fréquence de coupure, pour étouffer
+	Reverb: boolean?,
+	Distort: number?,
+}
+
+local RECIPES: { [string]: Recipe } = {
+	-- Monstres
+	monster_step = { Sample = &quot;step&quot;, Volume = 0.55, Speed = 0.7, Vary = 0.12,
+		RollOff = 70, Lowpass = 900 },
+	monster_heavy = { Sample = &quot;thud&quot;, Volume = 0.7, Speed = 0.55, Vary = 0.08,
+		RollOff = 95, Lowpass = 600, Reverb = true },
+	monster_spot = { Sample = &quot;swoosh&quot;, Volume = 0.8, Speed = 0.6, RollOff = 120,
+		Distort = 0.25 },
+	monster_attack = { Sample = &quot;thud&quot;, Volume = 0.9, Speed = 0.8, Vary = 0.1,
+		RollOff = 70, Distort = 0.4 },
+
+	-- Refuge
+	assault = { Sample = &quot;thud&quot;, Volume = 1, Speed = 0.45, RollOff = 80,
+		Lowpass = 500, Reverb = true },
+	alarm = { Sample = &quot;alarm&quot;, Volume = 0.7, Speed = 1.4, RollOff = 90 },
+	defense_break = { Sample = &quot;thud&quot;, Volume = 0.85, Speed = 1.3, RollOff = 60,
+		Distort = 0.3 },
+
+	-- Joueur
+	hurt = { Sample = &quot;hurt&quot;, Volume = 0.75, Speed = 0.95, Vary = 0.1 },
+	downed = { Sample = &quot;fall&quot;, Volume = 0.8, Speed = 0.7 },
+	revived = { Sample = &quot;getup&quot;, Volume = 0.8, Speed = 1 },
+
+	-- Interface
+	cash = { Sample = &quot;click&quot;, Volume = 0.6, Speed = 1.6 },
+	buy = { Sample = &quot;click&quot;, Volume = 0.55, Speed = 1.2 },
+	unlock = { Sample = &quot;alarm&quot;, Volume = 0.6, Speed = 1.9 },
+	deny = { Sample = &quot;click&quot;, Volume = 0.5, Speed = 0.7 },
+
+	-- Ambiance
+	drone = { Sample = &quot;drone&quot;, Volume = 0.14, Speed = 0.35, Looped = true,
+		Lowpass = 260, Reverb = true },
+}
+
+local loaded: { [string]: string } = {}   -- effet → chemin retenu
+local report: { string } = {}
+local drone: Sound? = nil
+
+local function tryLoad(name: string, paths: { string }): string?
+	for _, path in ipairs(paths) do
+		local probe = Instance.new(&quot;Sound&quot;)
+		probe.SoundId = path
+		probe.Volume = 0
+		probe.Parent = SoundServiceRoblox
+		local ok = pcall(function()
+			ContentProvider:PreloadAsync({ probe })
+		end)
+		local worked = ok and probe.IsLoaded
+		probe:Destroy()
+		if worked then
+			return path
+		end
+	end
+	return nil
+end
+
+function SoundLib.init()
+	for name, paths in pairs(CANDIDATES) do
+		local path = tryLoad(name, paths)
+		if path then
+			loaded[name] = path
+			table.insert(report, &quot;  ✓ &quot; .. name .. &quot; → &quot; .. path)
+		else
+			table.insert(report, &quot;  ✗ &quot; .. name .. &quot; — aucun candidat n'a chargé&quot;)
+		end
+	end
+	table.sort(report)
+	print(&quot;[SON] échantillons disponibles :&quot;)
+	for _, line in ipairs(report) do
+		print(line)
+	end
+	local count = 0
+	for _ in pairs(loaded) do
+		count += 1
+	end
+	if count == 0 then
+		warn(&quot;[SON] aucun échantillon local n'est disponible. Le jeu tournera &quot;
+			.. &quot;en silence. Remplace les chemins de CANDIDATES par des &quot;
+			.. &quot;rbxassetid:// de ta bibliothèque pour avoir du son.&quot;)
+	end
+	SoundLib.startAmbience()
+end
+
+-- Construit un Sound prêt à jouer. `parent` décide si le son est placé dans
+-- le monde (une BasePart → son 3D) ou global (SoundService).
+local function build(effect: string, parent: Instance): Sound?
+	local recipe = RECIPES[effect]
+	if not recipe then
+		return nil
+	end
+	local path = loaded[recipe.Sample]
+	if not path then
+		return nil
+	end
+
+	local sound = Instance.new(&quot;Sound&quot;)
+	sound.SoundId = path
+	sound.Volume = recipe.Volume
+	sound.PlaybackSpeed = recipe.Speed + (recipe.Vary and (math.random() * 2 - 1) * recipe.Vary or 0)
+	sound.Looped = recipe.Looped or false
+	if recipe.RollOff then
+		sound.RollOffMode = Enum.RollOffMode.InverseTapered
+		sound.RollOffMaxDistance = recipe.RollOff
+		sound.RollOffMinDistance = 8
+	end
+	if recipe.Lowpass then
+		local eq = Instance.new(&quot;EqualizerSoundEffect&quot;)
+		eq.HighGain = -40
+		eq.MidGain = recipe.Lowpass &lt; 700 and -12 or 0
+		eq.LowGain = 4
+		eq.Parent = sound
+	end
+	if recipe.Reverb then
+		local reverb = Instance.new(&quot;ReverbSoundEffect&quot;)
+		reverb.DecayTime = 2.4
+		reverb.Density = 0.7
+		reverb.WetLevel = -4
+		reverb.Parent = sound
+	end
+	if recipe.Distort then
+		local distort = Instance.new(&quot;DistortionSoundEffect&quot;)
+		distort.Level = recipe.Distort
+		distort.Parent = sound
+	end
+	sound.Parent = parent
+	return sound
+end
+
+-- Son placé dans le monde : tout le monde l'entend selon la distance.
+function SoundLib.playAt(effect: string, part: BasePart?)
+	if not part or not part.Parent then
+		return
+	end
+	local sound = build(effect, part)
+	if not sound then
+		return
+	end
+	sound:Play()
+	sound.Ended:Connect(function()
+		sound:Destroy()
+	end)
+	-- Filet de sécurité : si Ended ne part jamais (son coupé), on nettoie.
+	task.delay(10, function()
+		if sound and sound.Parent then
+			sound:Destroy()
+		end
+	end)
+end
+
+-- Son d'interface pour un joueur précis.
+function SoundLib.playFor(player: Player, effect: string)
+	local gui = player:FindFirstChildOfClass(&quot;PlayerGui&quot;)
+	if not gui then
+		return
+	end
+	local sound = build(effect, gui)
+	if not sound then
+		return
+	end
+	sound:Play()
+	sound.Ended:Connect(function()
+		sound:Destroy()
+	end)
+	task.delay(10, function()
+		if sound and sound.Parent then
+			sound:Destroy()
+		end
+	end)
+end
+
+function SoundLib.playForAll(effect: string)
+	for _, player in ipairs(Players:GetPlayers()) do
+		SoundLib.playFor(player, effect)
+	end
+end
+
+-- Nappe continue. Elle monte avec l'éveil de la maison : c'est le seul son
+-- qu'on entend tout le temps, donc le seul qui peut porter la tension.
+function SoundLib.startAmbience()
+	if drone then
+		return
+	end
+	drone = build(&quot;drone&quot;, SoundServiceRoblox)
+	if drone then
+		(drone :: Sound):Play()
+	end
+end
+
+function SoundLib.setTension(stage: number)
+	if not drone then
+		return
+	end
+	local d = drone :: Sound
+	d.Volume = 0.14 + (stage - 1) * 0.06
+	d.PlaybackSpeed = 0.35 + (stage - 1) * 0.07
+end
+
+function SoundLib.available(): { string }
+	return report
+end
+
+return SoundLib
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
 -- §2 et §4 — la session de survie : la boucle centrale du jeu.
 --
 -- Une session démarre quand le joueur dort dans SON refuge. Elle crédite
@@ -4275,7 +4590,7 @@ function SurvivalService.onCharacterAdded(player: Player, character: Model)
 end
 
 return SurvivalService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
 -- Construit les sept zones au démarrage et retient, pour chacune, ses points
 -- de ronde, ses points d'apparition et son point d'arrivée.
 --
@@ -4366,7 +4681,7 @@ function WorldService.startPopulating()
 end
 
 return WorldService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX32"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
 -- Primitives de construction, partagées par les sept zones.
 --
 -- Chaque zone occupe une dalle de 1600 studs sur l'axe X : la rue en 0, les
@@ -4406,6 +4721,28 @@ function ZoneBuilder.part(name: string, size: Vector3, position: Vector3, color:
 	p.Material = material
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+-- Formes intégrées de Roblox : sphère, cylindre, coin. Elles ne coûtent aucun
+-- fichier et suffisent à casser l'impression de « tout en boîtes ».
+function ZoneBuilder.shaped(name: string, shape: Enum.PartType, size: Vector3,
+	position: Vector3, color: Color3, material: Enum.Material, parent: Instance): Part
+	local p = ZoneBuilder.part(name, size, position, color, material, parent)
+	p.Shape = shape
+	return p
+end
+
+function ZoneBuilder.wedge(name: string, size: Vector3, position: Vector3,
+	color: Color3, material: Enum.Material, parent: Instance): WedgePart
+	local p = Instance.new(&quot;WedgePart&quot;)
+	p.Name = name
+	p.Size = size
+	p.Position = position
+	p.Anchored = true
+	p.Color = color
+	p.Material = material
 	p.Parent = parent
 	return p
 end
@@ -4675,7 +5012,7 @@ function ZoneBuilder.reset()
 end
 
 return ZoneBuilder
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX32"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX33"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
 -- Les sept cartes. Une fonction par zone, toutes bâties avec les primitives de
 -- ZoneBuilder, toutes renvoyant la même chose : points de ronde, points
 -- d'apparition des monstres, et le point d'arrivée quand on entre dans la zone.
@@ -4744,7 +5081,7 @@ function Layouts.street(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 			local pole = B.part(&quot;Pole&quot;, Vector3.new(0.8, 18, 0.8),
 				origin + Vector3.new(side * (WIDTH / 2 - 8), 9, z),
 				Color3.fromRGB(28, 28, 32), Enum.Material.Metal, folder)
-			local head = B.part(&quot;Lamp&quot;, Vector3.new(3, 0.8, 3),
+			local head = B.shaped(&quot;Lamp&quot;, Enum.PartType.Ball, Vector3.new(3, 3, 3),
 				pole.Position + Vector3.new(0, 9, 0),
 				Color3.fromRGB(255, 224, 170), Enum.Material.Neon, folder)
 			B.light(head, Color3.fromRGB(255, 220, 170), 2.2, 52)
@@ -4840,6 +5177,16 @@ function Layouts.sewers(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.part(&quot;Water&quot;, Vector3.new(360, 1, 10), origin + Vector3.new(0, 0.4, 0),
 		Color3.fromRGB(36, 56, 50), Enum.Material.Water, folder)
 
+	-- Tuyauterie : des cylindres le long des galeries. C'est ce qui dit
+	-- « égout » avant même qu'on lise le panneau.
+	for _, z in ipairs({ -90, 0, 90 }) do
+		for _, side in ipairs({ -1, 1 }) do
+			local pipe = B.shaped(&quot;Pipe&quot;, Enum.PartType.Cylinder,
+				Vector3.new(380, 2.4, 2.4), origin + Vector3.new(0, H - 4, z + side * 8),
+				Color3.fromRGB(70, 74, 68), Enum.Material.Metal, folder)
+		end
+	end
+
 	-- Lanternes espacées, volontairement insuffisantes.
 	for x = -170, 170, 85 do
 		for _, z in ipairs({ -90, 0, 90 }) do
@@ -4910,7 +5257,7 @@ function Layouts.dollhouse(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	-- Lustres : la maison est éclairée, et c'est voulu. On la voit arriver.
 	for _, point in ipairs({ Vector3.new(0, 0, 0), Vector3.new(-110, 0, -70),
 		Vector3.new(110, 0, 70) }) do
-		local lamp = B.part(&quot;Chandelier&quot;, Vector3.new(5, 1, 5),
+		local lamp = B.shaped(&quot;Chandelier&quot;, Enum.PartType.Ball, Vector3.new(4, 4, 4),
 			origin + point + Vector3.new(0, H - 3, 0),
 			Color3.fromRGB(255, 216, 170), Enum.Material.Neon, folder)
 		B.light(lamp, Color3.fromRGB(255, 210, 160), 2.4, 70)
@@ -4967,6 +5314,13 @@ function Layouts.slasher(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 		B.room(center, 60, 50, 20, Color3.fromRGB(70, 62, 58), Enum.Material.Brick, folder,
 			{ &quot;south&quot; })
 		B.shelter(&quot;slasher&quot;, center + Vector3.new(0, 1, 34), Color3.fromRGB(170, 70, 60), folder)
+		-- Toit à deux pans : deux coins dos à dos.
+		for _, dir in ipairs({ -1, 1 }) do
+			local roof = B.wedge(&quot;Roof&quot;, Vector3.new(50, 14, 30),
+				center + Vector3.new(0, 27, dir * 15),
+				Color3.fromRGB(52, 40, 38), Enum.Material.Slate, folder)
+			roof.Orientation = Vector3.new(0, dir &gt; 0 and 180 or 0, 0)
+		end
 		table.insert(patrol, center + Vector3.new(0, 3, 40))
 		-- Haies : elles cassent la ligne de vue sans bloquer le passage.
 		for side = -1, 1, 2 do
@@ -5016,8 +5370,11 @@ function Layouts.convent(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 		{ &quot;south&quot; })
 	for z = -200, -40, 32 do
 		for side = -1, 1, 2 do
-			B.part(&quot;Column&quot;, Vector3.new(7, H, 7),
-				origin + Vector3.new(side * 24, H / 2, z), stone, Enum.Material.Marble, folder)
+			-- L'axe d'un cylindre Roblox est X : on le couche pour qu'il monte.
+			local column = B.shaped(&quot;Column&quot;, Enum.PartType.Cylinder,
+				Vector3.new(H, 7, 7), origin + Vector3.new(side * 24, H / 2, z),
+				stone, Enum.Material.Marble, folder)
+			column.Orientation = Vector3.new(0, 0, 90)
 		end
 		table.insert(patrol, origin + Vector3.new(0, 3, z))
 	end
@@ -5129,9 +5486,10 @@ function Layouts.carnival(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	-- Chapiteau : anneau de mâts et toit.
 	for angle = 0, 350, 30 do
 		local a = math.rad(angle)
-		local mast = B.part(&quot;Mast&quot;, Vector3.new(5, 60, 5),
+		local mast = B.shaped(&quot;Mast&quot;, Enum.PartType.Cylinder, Vector3.new(60, 5, 5),
 			origin + Vector3.new(math.cos(a) * 110, 30, math.sin(a) * 110),
 			Color3.fromRGB(140, 40, 50), Enum.Material.Fabric, folder)
+		mast.Orientation = Vector3.new(0, 0, 90)
 		if angle % 90 == 0 then
 			B.light(mast, Color3.fromRGB(255, 90, 90), 2, 70)
 			table.insert(patrol, origin + Vector3.new(math.cos(a) * 80, 3, math.sin(a) * 80))
@@ -5155,7 +5513,8 @@ function Layouts.carnival(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 				Color3.fromRGB(190, 70, 150), folder)
 		end
 		table.insert(patrol, center + Vector3.new(0, 3, 34))
-		local bulb = B.part(&quot;Bulb&quot;, Vector3.new(3, 3, 3), center + Vector3.new(0, 24, 0),
+		local bulb = B.shaped(&quot;Bulb&quot;, Enum.PartType.Ball, Vector3.new(3.4, 3.4, 3.4),
+			center + Vector3.new(0, 24, 0),
 			Color3.fromRGB(255, 120, 200), Enum.Material.Neon, folder)
 		B.light(bulb, Color3.fromRGB(255, 110, 190), 2.2, 60)
 	end
@@ -5185,7 +5544,7 @@ Layouts.ById = {
 }
 
 return Layouts
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX33"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX34"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
 -- §3 — accès aux zones. Une zone ne se débloque jamais sans que ses conditions
 -- soient remplies (CDC §15), et la vérification est faite ici, côté serveur,
 -- à chaque entrée — pas seulement au moment du déblocage.
@@ -5295,7 +5654,7 @@ function ZoneService.overview(player: Player)
 end
 
 return ZoneService
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX43"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX41"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX42"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX40"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX39"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX38"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX44"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX42"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX43"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX41"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX40"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX39"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
 -- Point d'entrée client. Il ne décide de rien : il affiche ce que le serveur
 -- envoie et transmet les demandes du joueur.
 
@@ -5587,7 +5946,7 @@ ContextActionService:SetTitle(&quot;Attack&quot;, &quot;FRAPPER&quot;)
 ContextActionService:SetTitle(&quot;Skins&quot;, &quot;SKINS&quot;)
 
 Hud.toast(&quot;Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.&quot;, &quot;info&quot;)
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX36"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX37"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
 -- §9 — l'interface. Tout ce que le cahier des charges demande d'afficher :
 -- argent sécurisé et non sécurisé, zone, santé, objectifs, état du refuge,
 -- alertes, temps de survie, inventaire, carte, écran de mort, paramètres.
@@ -5881,7 +6240,7 @@ function Hud.setHealth(current: number, max: number)
 end
 
 return Hud
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX37"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX38"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
 -- Boutique, missions, carte, écran de mort et paramètres (§9).
 -- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
 

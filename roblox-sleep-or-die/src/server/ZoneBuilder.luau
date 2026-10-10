@@ -42,6 +42,28 @@ function ZoneBuilder.part(name: string, size: Vector3, position: Vector3, color:
 	return p
 end
 
+-- Formes intégrées de Roblox : sphère, cylindre, coin. Elles ne coûtent aucun
+-- fichier et suffisent à casser l'impression de « tout en boîtes ».
+function ZoneBuilder.shaped(name: string, shape: Enum.PartType, size: Vector3,
+	position: Vector3, color: Color3, material: Enum.Material, parent: Instance): Part
+	local p = ZoneBuilder.part(name, size, position, color, material, parent)
+	p.Shape = shape
+	return p
+end
+
+function ZoneBuilder.wedge(name: string, size: Vector3, position: Vector3,
+	color: Color3, material: Enum.Material, parent: Instance): WedgePart
+	local p = Instance.new("WedgePart")
+	p.Name = name
+	p.Size = size
+	p.Position = position
+	p.Anchored = true
+	p.Color = color
+	p.Material = material
+	p.Parent = parent
+	return p
+end
+
 function ZoneBuilder.light(parent: BasePart, color: Color3, brightness: number, range: number)
 	local l = Instance.new("PointLight")
 	l.Color = color

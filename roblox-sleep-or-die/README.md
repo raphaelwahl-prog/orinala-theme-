@@ -103,9 +103,47 @@ rien qui puisse être modéré un jour et casser le jeu sans prévenir.
   nappes de brume chez le slasher ; braises au couvent et au carnaval. Textures
   `rbxasset://`, livrées avec Roblox.
 
-Ce qui manque encore, honnêtement : **aucun son** (Roblox ne synthétise pas
-l'audio, il faut des assets), aucun MeshPart, et les animations sont
-procédurales plutôt que des `Animation` importées.
+- **Des formes, pas que des boîtes** : les têtes des monstres utilisent
+  `MeshType.Head` (la vraie tête arrondie d'un avatar), les colonnes du
+  couvent et les mâts du carnaval sont des cylindres, les toits du quartier
+  sont des coins, les ampoules des sphères. Toutes des formes **intégrées** à
+  Roblox — aucun fichier.
+- **LE MENTEUR porte le visage classique Roblox** (`rbxasset://textures/face.png`).
+  C'est toute la créature : de loin, on croit voir un joueur.
+
+## Le son
+
+Roblox ne sait pas fabriquer un son, il lui faut des fichiers. Mais chaque
+installation embarque une petite bibliothèque locale accessible par
+`rbxasset://sounds/…` : rien à téléverser, rien à modérer.
+
+Le problème, c'est que ces chemins ne sont garantis par aucune documentation.
+Alors **le jeu les essaie un par un au démarrage** et écrit dans la sortie
+lesquels ont chargé :
+
+```
+[SON] échantillons disponibles :
+  ✓ step → rbxasset://sounds/action_footsteps_plastic.mp3
+  ✗ swoosh — aucun candidat n'a chargé
+```
+
+Tu sais donc exactement ce qui marche chez toi, au lieu de te demander
+pourquoi c'est silencieux. Si tout échoue, un avertissement te dit quoi
+remplacer.
+
+Avec cinq échantillons on fait tout le jeu : la hauteur (`PlaybackSpeed`) et
+les effets intégrés (réverbération, égaliseur, distorsion) transforment le
+même son en pas de monstre, en coup contre une porte ou en battement sourd.
+C'est ce que font tous les jeux — peu de sons, beaucoup de variantes.
+
+Ce qui sonne : les pas des monstres (calés sur l'animation, plus lourds pour
+les gros), le moment où l'un te repère, ses attaques, les coups contre ton
+refuge, l'alarme de proximité, la mise à terre et le relevage, l'encaissement,
+les achats, les déblocages, les refus. Et une **nappe grave continue** dont le
+volume et la hauteur montent avec l'éveil de la maison.
+
+Ce qui manque encore : aucun MeshPart (il faudrait téléverser des modèles), et
+les animations sont procédurales plutôt que des `Animation` importées.
 
 ## Les sept zones
 

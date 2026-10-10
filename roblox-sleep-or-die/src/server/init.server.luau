@@ -31,6 +31,7 @@ local ObjectiveService = require(script.ObjectiveService)
 local PlayerDataService = require(script.PlayerDataService)
 local ShelterService = require(script.ShelterService)
 local ShopService = require(script.ShopService)
+local SoundLib = require(script.SoundService)
 local SurvivalService = require(script.SurvivalService)
 local WorldService = require(script.WorldService)
 local ZoneBuilder = require(script.ZoneBuilder)
@@ -43,8 +44,16 @@ local function send(player: Player, event: string, ...)
 	Net.get(event):FireClient(player, ...)
 end
 
+local SOUND_BY_KIND = {
+	cash = "cash", unlock = "unlock", warn = "deny", danger = "hurt",
+}
+
 local function alert(player: Player, text: string, kind: string?)
 	send(player, "Alert", text, kind or "info")
+	local effect = SOUND_BY_KIND[kind or "info"]
+	if effect then
+		SoundLib.playFor(player, effect)
+	end
 end
 
 -- ── état complet envoyé au client ─────────────────────────────────────────
@@ -99,6 +108,7 @@ end)
 -- ── construction de la ville et peuplement ────────────────────────────────
 PlayerDataService.init()
 PlayerDataService.startAutosave()
+SoundLib.init()
 AtmosphereService.init()
 WorldService.build()
 ShelterService.init()
@@ -260,6 +270,9 @@ local function onBuy(player: Player, itemId: unknown)
 	end
 	local ok, message = ShopService.buy(player, itemId)
 	alert(player, message, ok and "cash" or "warn")
+	if ok then
+		SoundLib.playFor(player, "buy")
+	end
 	pushState(player)
 end
 

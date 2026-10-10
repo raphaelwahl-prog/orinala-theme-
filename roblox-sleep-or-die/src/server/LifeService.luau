@@ -11,6 +11,7 @@
 local Players = game:GetService("Players")
 
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local SoundLib = require(script.Parent.SoundService)
 
 local LifeService = {}
 
@@ -65,6 +66,7 @@ local function standUp(player: Player, revived: boolean)
 		humanoid.JumpPower = 50
 		if revived then
 			humanoid.Health = math.max(humanoid.Health, humanoid.MaxHealth * 0.4)
+			SoundLib.playFor(player, "revived")
 		end
 	end
 	fire(player, false, 0)
@@ -125,6 +127,7 @@ function LifeService.knockDown(player: Player): boolean
 		standUp(player, true)
 	end)
 	downed[player] = entry
+	SoundLib.playFor(player, "downed")
 	fire(player, true, BLEED_SECONDS)
 	return true
 end
