@@ -157,7 +157,8 @@ GameConfig.Misc = {
 	AutosaveInterval = 120,
 	-- Version du format de sauvegarde. À incrémenter si tu changes la structure
 	-- des données : les anciennes sauvegardes seront alors réinitialisées.
-	DataVersion = 1,
+	-- v2 : ajout des cosmétiques.
+	DataVersion = 2,
 }
 
 return GameConfig

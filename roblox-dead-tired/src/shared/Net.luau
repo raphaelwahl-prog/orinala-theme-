@@ -24,6 +24,9 @@ Net.Events = {
 	"DangerAlert", -- réveil d'alerte : le monstre arrive
 	"SleepChanged", -- entré / sorti de sommeil (le client bloque les contrôles)
 	"ShopResult", -- retour d'un achat
+	"AwakeningUpdate", -- niveau d'éveil de la maison + créature active
+	"EntityReveal", -- première rencontre avec une créature : on affiche sa fiche
+	"CosmeticResult", -- retour d'un achat ou d'un équipement de skin
 }
 
 -- Client → serveur
@@ -35,6 +38,7 @@ Net.Requests = {
 	"RequestBank",
 	"RequestBuy", -- { itemId: string }
 	"RequestRevive", -- { target: Player }
+	"RequestCosmetic", -- { action: "buy" | "equip", id: string }
 }
 
 -- RemoteFunction (client demande, serveur répond)

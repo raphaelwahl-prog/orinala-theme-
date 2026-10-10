@@ -38,6 +38,8 @@ local function defaultProfile()
 		TotalBanked = 0,
 		-- Items = { [itemId] = niveau ou stock }
 		Items = {},
+		-- Cosmetics = { Owned = { [id] = true }, Equipped = { [slot] = id } }
+		Cosmetics = { Owned = {}, Equipped = {} },
 		NightsSurvived = 0,
 		DeepestTier = 1,
 	}

@@ -22,7 +22,9 @@ local gui: ScreenGui
 local refs = {}
 local state = { Cash = 0, Unbanked = 0, Sleep = nil, Life = nil }
 local round = { Phase = "Dawn", SecondsLeft = 0, NightNumber = 0 }
+local awakening = { Stage = 1, MaxStage = 4, StageName = "CALME", ToNext = nil }
 local dangerUntil = 0
+local revealUntil = 0
 
 -- ─── construction ───────────────────────────────────────────────────────────
 
@@ -259,6 +261,167 @@ local function buildDowned(parent: Instance)
 	}, { UiKit.corner(4) })
 end
 
+--[[ La jauge d'ÉVEIL : le joueur doit voir que SES choix de planque réveillent
+	 la maison. Sans cet affichage, l'évolution des créatures passerait pour de
+	 l'arbitraire — et un joueur qui trouve le jeu arbitraire s'en va. ]]
+local function buildAwakening(parent: Instance)
+	local panel = new("Frame", {
+		Name = "Awakening",
+		Parent = parent,
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.15,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -16, 0, 16),
+		Size = UDim2.fromOffset(212, 86),
+	}, { UiKit.corner(10), UiKit.padding(12) })
+
+	new("TextLabel", {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 14),
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = "ÉVEIL DE LA MAISON",
+	})
+
+	refs.AwakeningName = new("TextLabel", {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 16),
+		Size = UDim2.new(1, 0, 0, 22),
+		Font = Enum.Font.GothamBold,
+		TextSize = 19,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Text,
+		Text = "CALME",
+	})
+
+	-- Quatre segments : on lit le stade d'un coup d'oeil, sans chiffre.
+	local segments = new("Frame", {
+		Parent = panel,
+		Position = UDim2.fromOffset(0, 42),
+		Size = UDim2.new(1, 0, 0, 7),
+		BackgroundTransparency = 1,
+	}, {
+		new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 4),
+		}),
+	})
+
+	refs.AwakeningSegments = {}
+	for index = 1, 4 do
+		refs.AwakeningSegments[index] = new("Frame", {
+			Parent = segments,
+			LayoutOrder = index,
+			Size = UDim2.new(0.25, -3, 1, 0),
+			BackgroundColor3 = Colors.PanelLight,
+			BorderSizePixel = 0,
+		}, { UiKit.corner(3) })
+	end
+
+	refs.AwakeningHint = new("TextLabel", {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 54),
+		Size = UDim2.new(1, 0, 0, 14),
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = "dormir profond la réveille",
+	})
+end
+
+--[[ Première rencontre avec une créature : on affiche son nom ET sa
+	 contre-mesure. Un joueur qui meurt sans comprendre pourquoi ne revient
+	 pas ; un joueur qui meurt en sachant ce qu'il aurait dû faire relance. ]]
+local function buildReveal(parent: Instance)
+	refs.RevealFrame = new("Frame", {
+		Name = "Reveal",
+		Parent = parent,
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.25,
+		Size = UDim2.fromScale(1, 1),
+		Visible = false,
+		ZIndex = 8,
+	})
+
+	local card = new("Frame", {
+		Parent = refs.RevealFrame,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(520, 220),
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.02,
+	}, { UiKit.corner(14), UiKit.padding(22) })
+
+	new("TextLabel", {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 16),
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = "TU VIENS D'EN RÉVEILLER UN",
+	})
+
+	refs.RevealName = new("TextLabel", {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 20),
+		Size = UDim2.new(1, 0, 0, 42),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 36,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Danger,
+		Text = "LE VEILLEUR",
+	})
+
+	refs.RevealTagline = new("TextLabel", {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 66),
+		Size = UDim2.new(1, 0, 0, 40),
+		Font = Enum.Font.GothamMedium,
+		TextSize = 17,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+		TextColor3 = Colors.Text,
+		Text = "",
+	})
+
+	new("TextLabel", {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 118),
+		Size = UDim2.new(1, 0, 0, 14),
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = "COMMENT T'EN SORTIR",
+	})
+
+	refs.RevealCounter = new("TextLabel", {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 136),
+		Size = UDim2.new(1, 0, 0, 44),
+		Font = Enum.Font.GothamBold,
+		TextSize = 17,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+		TextColor3 = Colors.Cash,
+		Text = "",
+	})
+end
+
 local function buildToasts(parent: Instance)
 	refs.ToastList = new("Frame", {
 		Name = "Toasts",
@@ -281,6 +444,8 @@ function Hud.build(parentGui: ScreenGui)
 	buildWallet(gui)
 	buildClock(gui)
 	buildSleepPanel(gui)
+	buildAwakening(gui)
+	buildReveal(gui)
 	buildDanger(gui)
 	buildDowned(gui)
 	buildToasts(gui)
@@ -294,6 +459,19 @@ end
 
 function Hud.setRound(newRound)
 	round = newRound
+end
+
+function Hud.setAwakening(data)
+	awakening = data
+end
+
+function Hud.revealEntity(data)
+	refs.RevealName.Text = data.Name or "?"
+	refs.RevealName.TextColor3 = data.EyeColor or Colors.Danger
+	refs.RevealTagline.Text = data.Tagline or ""
+	refs.RevealCounter.Text = data.Counter or ""
+	refs.RevealFrame.Visible = true
+	revealUntil = os.clock() + 6
 end
 
 function Hud.flashDanger(window: number)
@@ -394,6 +572,27 @@ function Hud.start()
 			refs.RiskBar.Size = UDim2.fromScale(fraction, 1)
 		else
 			refs.SleepPanel.Visible = false
+		end
+
+		-- Éveil de la maison
+		refs.AwakeningName.Text = awakening.StageName or "CALME"
+		local stageColors = { Colors.Cash, Color3.fromRGB(230, 200, 90), Color3.fromRGB(240, 140, 70), Colors.Danger }
+		local stage = awakening.Stage or 1
+		refs.AwakeningName.TextColor3 = stageColors[math.clamp(stage, 1, 4)]
+		for index, segment in ipairs(refs.AwakeningSegments) do
+			segment.BackgroundColor3 = (index <= stage)
+				and stageColors[math.clamp(stage, 1, 4)]
+				or Colors.PanelLight
+		end
+		if awakening.ToNext then
+			refs.AwakeningHint.Text = ("stade suivant dans %d pts"):format(math.max(0, awakening.ToNext))
+		else
+			refs.AwakeningHint.Text = "maximum — il est dehors"
+		end
+
+		-- Fiche de créature
+		if refs.RevealFrame.Visible and os.clock() >= revealUntil then
+			refs.RevealFrame.Visible = false
 		end
 
 		-- Alerte

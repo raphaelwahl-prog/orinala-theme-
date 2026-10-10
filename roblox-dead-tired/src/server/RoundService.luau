@@ -99,6 +99,7 @@ local function beginDawn()
 	services.Sleep.stopAll("dawn")
 	services.Threat.park()
 	services.Life.reviveAll()
+	services.Awakening.reset()
 
 	-- Dépôt automatique des survivants.
 	for _, player in ipairs(Players:GetPlayers()) do

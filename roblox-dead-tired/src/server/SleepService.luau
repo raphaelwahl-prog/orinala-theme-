@@ -129,6 +129,7 @@ function SleepService.tryStart(player: Player, spot: BasePart)
 	}
 
 	anchorCharacter(player, spot, true)
+	services.Cosmetic.dressSpot(player, spot)
 
 	local profile = services.Data.get(player)
 	if profile and tier > (profile.DeepestTier or 1) then
@@ -147,6 +148,8 @@ function SleepService.stop(player: Player, reason: string)
 	end
 	state[player] = nil
 	services.Zone.release(entry.Spot)
+
+	services.Cosmetic.undressSpot(entry.Spot)
 
 	if reason ~= "left" then
 		anchorCharacter(player, entry.Spot, false)
@@ -243,6 +246,9 @@ function SleepService.start()
 				-- Tirage de risque
 				if now >= entry.NextRiskAt then
 					entry.NextRiskAt = now + GameConfig.Round.RiskTickInterval
+					-- Dormir profond réveille la maison pour TOUT LE MONDE,
+					-- que le tirage tombe ou non.
+					services.Awakening.feed(entry.Tier)
 					rollRisk(player, entry)
 				end
 			end

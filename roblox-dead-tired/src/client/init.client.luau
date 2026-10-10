@@ -6,9 +6,10 @@
 	serveur. C'est la seule architecture qui résiste aux exploits sur Roblox.
 
 	Touches :
-	  E       — interagir (dormir, déposer, ouvrir la boutique, relever) via les invites
+	  E       — interagir (dormir, déposer, ouvrir une borne, relever) via les invites
 	  Espace  — se réveiller
-	  B       — ouvrir/fermer la boutique
+	  B       — ouvrir/fermer la boutique d'équipement
+	  N       — ouvrir/fermer les skins
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -21,6 +22,7 @@ local Net = require(Shared.Net)
 
 local Hud = require(script.Hud)
 local ShopUI = require(script.ShopUI)
+local CosmeticUI = require(script.CosmeticUI)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -36,6 +38,7 @@ gui.Parent = playerGui
 
 Hud.build(gui)
 ShopUI.build(gui)
+CosmeticUI.build(gui)
 Hud.start()
 
 -- ─── réception serveur ─────────────────────────────────────────────────────
@@ -45,11 +48,30 @@ local isSleeping = false
 ;(Net.get("StateUpdate") :: RemoteEvent).OnClientEvent:Connect(function(state)
 	Hud.setState(state)
 	ShopUI.setCash(state.Cash or 0)
+	CosmeticUI.setCash(state.Cash or 0)
 end)
 
 ;(Net.get("RoundUpdate") :: RemoteEvent).OnClientEvent:Connect(function(round)
 	round.ReceivedAt = os.clock()
 	Hud.setRound(round)
+end)
+
+;(Net.get("AwakeningUpdate") :: RemoteEvent).OnClientEvent:Connect(function(data)
+	Hud.setAwakening(data)
+end)
+
+;(Net.get("EntityReveal") :: RemoteEvent).OnClientEvent:Connect(function(data)
+	Hud.revealEntity(data)
+end)
+
+;(Net.get("CosmeticResult") :: RemoteEvent).OnClientEvent:Connect(function(payload)
+	if payload.Catalog then
+		CosmeticUI.render(payload.Catalog)
+	end
+	if payload.Action == "Open" then
+		ShopUI.setVisible(false)
+		CosmeticUI.setVisible(true)
+	end
 end)
 
 ;(Net.get("Notify") :: RemoteEvent).OnClientEvent:Connect(function(message, kind)
@@ -65,6 +87,7 @@ end)
 	-- On coupe le saut pendant le sommeil pour que Espace serve au réveil.
 	if isSleeping then
 		ShopUI.setVisible(false)
+		CosmeticUI.setVisible(false)
 	end
 end)
 
@@ -73,6 +96,7 @@ end)
 		ShopUI.render(payload.Catalog)
 	end
 	if payload.Action == "Open" then
+		CosmeticUI.setVisible(false)
 		ShopUI.setVisible(true)
 	end
 end)
@@ -108,8 +132,18 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		if ShopUI.isVisible() then
 			ShopUI.setVisible(false)
 		elseif not isSleeping then
+			CosmeticUI.setVisible(false)
 			ShopUI.refreshFromServer()
 			ShopUI.setVisible(true)
+		end
+	elseif input.KeyCode == Enum.KeyCode.N then
+		if CosmeticUI.isVisible() then
+			CosmeticUI.setVisible(false)
+		elseif not isSleeping then
+			ShopUI.setVisible(false)
+			-- Le serveur renvoie le catalogue complet dans CosmeticResult.
+			;(Net.get("RequestCosmetic") :: RemoteEvent):FireServer({ action = "open", id = "" })
+			CosmeticUI.setVisible(true)
 		end
 	end
 end)

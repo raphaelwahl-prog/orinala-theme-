@@ -35,6 +35,8 @@ local services = {
 	Round = require(script.RoundService),
 	Shop = require(script.ShopService),
 	Monetization = require(script.MonetizationService),
+	Awakening = require(script.AwakeningService),
+	Cosmetic = require(script.CosmeticService),
 }
 local MapBuilder = require(script.MapBuilder)
 
@@ -61,6 +63,9 @@ local function onCharacterAdded(player: Player, character: Model)
 	character:WaitForChild("Humanoid", 5)
 	services.Zone.releaseAllFor(player)
 	services.Economy.applyWalkSpeed(player)
+	-- Les skins se réappliquent à chaque réapparition, sinon on repart nu
+	-- après chaque mort.
+	services.Cosmetic.apply(player)
 	services.Economy.push(player)
 end
 
@@ -85,6 +90,7 @@ local function onPlayerAdded(player: Player)
 
 	services.Economy.push(player)
 	services.Round.pushTo(player)
+	services.Awakening.pushTo(player)
 	services.Progression.check(player)
 
 	if not services.Data.isAvailable() then
@@ -94,6 +100,7 @@ local function onPlayerAdded(player: Player)
 end
 
 local function onPlayerRemoving(player: Player)
+	services.Threat.onPlayerRemoving(player)
 	services.Sleep.onPlayerRemoving(player)
 	services.Life.onPlayerRemoving(player)
 	services.Progression.onPlayerRemoving(player)

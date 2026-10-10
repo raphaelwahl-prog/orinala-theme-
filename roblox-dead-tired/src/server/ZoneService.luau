@@ -10,7 +10,8 @@
 	  SleepSpot     — planque. Attribut requis : Tier (nombre 1-5).
 	                  Attribut optionnel : SpotLabel (texte affiché).
 	  BankTerminal  — coffre : dépose l'argent que tu as sur toi.
-	  ShopTerminal  — ouvre la boutique.
+	  ShopTerminal  — ouvre la boutique d'équipement.
+	  SkinTerminal  — ouvre la boutique de skins.
 	  PatrolPoint   — point de passage du monstre en patrouille.
 ]]
 
@@ -24,6 +25,7 @@ local ZoneService = {}
 local TAG_SPOT = "SleepSpot"
 local TAG_BANK = "BankTerminal"
 local TAG_SHOP = "ShopTerminal"
+local TAG_SKIN = "SkinTerminal"
 local TAG_PATROL = "PatrolPoint"
 
 local services
@@ -189,6 +191,26 @@ local function attachShop(instance: Instance)
 	end)
 end
 
+local function attachSkinShop(instance: Instance)
+	if not instance:IsA("BasePart") then
+		return
+	end
+	local prompt = instance:FindFirstChildOfClass("ProximityPrompt")
+	if not prompt then
+		prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Ouvrir"
+		prompt.ObjectText = "Skins"
+		prompt.HoldDuration = 0.2
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.Parent = instance
+	end
+	prompt.Triggered:Connect(function(player)
+		services.Cosmetic.openFor(player)
+	end)
+end
+
 function ZoneService.start()
 	for _, instance in ipairs(CollectionService:GetTagged(TAG_SPOT)) do
 		attachSpot(instance)
@@ -204,6 +226,11 @@ function ZoneService.start()
 		attachShop(instance)
 	end
 	CollectionService:GetInstanceAddedSignal(TAG_SHOP):Connect(attachShop)
+
+	for _, instance in ipairs(CollectionService:GetTagged(TAG_SKIN)) do
+		attachSkinShop(instance)
+	end
+	CollectionService:GetInstanceAddedSignal(TAG_SKIN):Connect(attachSkinShop)
 
 	CollectionService:GetInstanceRemovedSignal(TAG_SPOT):Connect(function(instance)
 		local index = table.find(spots, instance)

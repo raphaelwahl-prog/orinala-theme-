@@ -160,7 +160,7 @@ local function buildLobby(folder: Folder)
 	CollectionService:AddTag(vault, "BankTerminal")
 	label(vault, "COFFRE\nE pour déposer", Color3.fromRGB(130, 230, 160))
 
-	-- Boutique.
+	-- Boutique d'équipement.
 	local shop = part({
 		Name = "ShopTerminal",
 		Size = Vector3.new(6, 7, 3),
@@ -170,7 +170,21 @@ local function buildLobby(folder: Folder)
 	})
 	shop.Parent = folder
 	CollectionService:AddTag(shop, "ShopTerminal")
-	label(shop, "BOUTIQUE\nE pour ouvrir", Color3.fromRGB(150, 180, 255))
+	label(shop, "ÉQUIPEMENT\nE pour ouvrir", Color3.fromRGB(150, 180, 255))
+
+	-- Boutique de skins. Séparée exprès : l'équipement et le cosmétique ne
+	-- s'achètent pas dans le même état d'esprit, et deux bornes distinctes
+	-- rendent les skins visibles au lieu de les cacher dans un onglet.
+	local skins = part({
+		Name = "SkinTerminal",
+		Size = Vector3.new(6, 7, 3),
+		Position = Vector3.new(14, 4.5, -14),
+		Color = Color3.fromRGB(150, 100, 190),
+		Material = Enum.Material.Metal,
+	})
+	skins.Parent = folder
+	CollectionService:AddTag(skins, "SkinTerminal")
+	label(skins, "SKINS\nE pour ouvrir", Color3.fromRGB(200, 160, 255))
 
 	-- Lumière du hall : c'est le seul endroit vraiment éclairé.
 	local ceiling = part({
@@ -225,63 +239,6 @@ local function buildCorridor(folder: Folder, from: Vector3, to: Vector3)
 	CollectionService:AddTag(patrol, "PatrolPoint")
 end
 
-local function buildMonster(folder: Folder)
-	local model = Instance.new("Model")
-	model.Name = "Monster"
-
-	local torso = part({
-		Name = "Torso",
-		Size = Vector3.new(3.5, 6, 2),
-		Position = Vector3.new(0, 4, -60),
-		Color = Color3.fromRGB(16, 12, 18),
-		Material = Enum.Material.Slate,
-		CanCollide = false,
-	})
-	torso.Parent = model
-
-	local head = part({
-		Name = "Head",
-		Size = Vector3.new(2.4, 2.4, 2.4),
-		Position = torso.Position + Vector3.new(0, 4.2, 0),
-		Color = Color3.fromRGB(26, 20, 28),
-		Material = Enum.Material.Slate,
-		CanCollide = false,
-	})
-	head.Parent = model
-
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = torso
-	weld.Part1 = head
-	weld.Parent = torso
-
-	-- Deux yeux : c'est ce qu'on voit en premier dans le noir, et ça suffit.
-	for _, side in ipairs({ -0.6, 0.6 }) do
-		local eye = part({
-			Name = "Eye",
-			Size = Vector3.new(0.45, 0.45, 0.2),
-			Position = head.Position + Vector3.new(side, 0.2, -1.25),
-			Color = Color3.fromRGB(255, 70, 60),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-		})
-		eye.Parent = model
-		local eyeWeld = Instance.new("WeldConstraint")
-		eyeWeld.Part0 = head
-		eyeWeld.Part1 = eye
-		eyeWeld.Parent = head
-	end
-
-	local glow = Instance.new("PointLight")
-	glow.Brightness = 1.1
-	glow.Range = 16
-	glow.Color = Color3.fromRGB(255, 60, 50)
-	glow.Parent = head
-
-	model.PrimaryPart = torso
-	model.Parent = folder
-	CollectionService:AddTag(model, "Monster")
-end
-
 -- ─── point d'entrée ─────────────────────────────────────────────────────────
 
 function MapBuilder.build()
@@ -322,9 +279,8 @@ function MapBuilder.build()
 		buildCorridor(folder, Vector3.new(0, 0, 0), center)
 	end
 
-	buildMonster(folder)
-
-	print("[MapBuilder] carte générée : 5 planques, coffre, boutique, 1 monstre.")
+	print("[MapBuilder] carte générée : 5 planques, coffre, boutique, skins, "
+		.. "points de patrouille. Les créatures sont créées par ThreatService.")
 end
 
 return MapBuilder

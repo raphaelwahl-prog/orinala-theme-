@@ -28,25 +28,23 @@ L'important, ce sont **les noms** : les scripts se cherchent par leur nom.
 
 ### 1. ReplicatedStorage
 
-Crée un **Folder** nommé exactement `Shared`, et dedans 4 **ModuleScript** :
+Crée un **Folder** nommé exactement `Shared`, et dedans 6 **ModuleScript**, qui
+reprennent chacun le nom du fichier correspondant dans `src/shared/` :
 
-| Nom du ModuleScript | Colle le contenu de |
-|---|---|
-| `GameConfig` | `src/shared/GameConfig.luau` |
-| `ShopCatalog` | `src/shared/ShopCatalog.luau` |
-| `Monetization` | `src/shared/Monetization.luau` |
-| `Net` | `src/shared/Net.luau` |
+`GameConfig` · `ShopCatalog` · `Monetization` · `Net` · `EntityCatalog` ·
+`CosmeticCatalog`
 
 ### 2. ServerScriptService
 
 Crée un **Script** (pas un ModuleScript) nommé `Server`, colle dedans
 `src/server/init.server.luau`.
 
-Puis crée **à l'intérieur de ce Script** 12 **ModuleScript** :
+Puis crée **à l'intérieur de ce Script** 15 **ModuleScript** :
 
 `DataService` · `NotifyService` · `EconomyService` · `ProgressionService` ·
 `ZoneService` · `SleepService` · `LifeService` · `ThreatService` ·
-`RoundService` · `ShopService` · `MonetizationService` · `MapBuilder`
+`RoundService` · `ShopService` · `MonetizationService` · `MapBuilder` ·
+`AwakeningService` · `CosmeticService` · `EntityBuilder`
 
 Chacun reçoit le fichier du même nom dans `src/server/`.
 
@@ -57,8 +55,8 @@ Chacun reçoit le fichier du même nom dans `src/server/`.
 
 Crée un **LocalScript** nommé `Client`, colle `src/client/init.client.luau`.
 
-Dedans, 3 **ModuleScript** : `UiKit`, `Hud`, `ShopUI` — contenu des fichiers du
-même nom dans `src/client/`.
+Dedans, 4 **ModuleScript** : `UiKit`, `Hud`, `ShopUI`, `CosmeticUI` — contenu
+des fichiers du même nom dans `src/client/`.
 
 ### 4. Lance
 
@@ -99,9 +97,16 @@ Pour mettre un tag : sélectionne la part → fenêtre **Tags** (View → Tags).
 |---|---|---|
 | `SleepSpot` | la part sur laquelle on dort | `Tier` (nombre, 1 à 5) — et `SpotLabel` (texte) si tu veux un nom à toi, `Vip` (booléen) pour la chambre VIP |
 | `BankTerminal` | le coffre | — |
-| `ShopTerminal` | la borne de boutique | — |
+| `ShopTerminal` | la borne d'équipement | — |
+| `SkinTerminal` | la borne de skins | — |
 | `PatrolPoint` | des parts invisibles sur le trajet du monstre | — |
-| `Monster` | le **Model** du monstre (avec un PrimaryPart) | — |
+
+
+Il n'y a **plus de tag `Monster`** : les créatures sont créées automatiquement
+par `ThreatService` à partir de `EntityCatalog.luau`. Si tu veux fournir tes
+propres modèles, mets-les dans `ServerStorage/Entities/` nommés `watchman`,
+`crawler`, `mimic`, `starved` (un PrimaryPart suffit) — ils seront utilisés
+sans aucune modification de code.
 
 Pour ajouter un attribut : sélectionne la part → panneau **Properties** →
 tout en bas, section **Attributes** → **+**.
@@ -123,7 +128,8 @@ la sensation du jeu, dans l'ordre :
 | `Round.WarningLead` | plus de temps pour fuir → beaucoup plus facile |
 | `Tiers[n].DetectChance` | le palier devient plus dangereux |
 | `Tiers[n].Rate` | le palier paie plus |
-| `Threat.HuntSpeed` | **attention** : au-delà de 16 le monstre court plus vite que le joueur, la fuite devient impossible |
+| `EntityCatalog.Entities[n].BaseSpeed` | **attention** : au-delà de 16 la créature court plus vite que le joueur et la fuite devient impossible (la Rampante est à 18 exprès : on l'arrête en ne bougeant plus) |
+| `EntityCatalog.Awakening.Thresholds` | des seuils plus hauts = l'éveil monte moins vite |
 | `Downed.BleedoutSeconds` | plus de temps pour être sauvé → multi plus pardonnant |
 
 Après chaque changement de `Rate` ou `DetectChance`, relis le tableau
