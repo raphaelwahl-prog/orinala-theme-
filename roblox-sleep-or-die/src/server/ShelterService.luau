@@ -28,6 +28,7 @@ export type Shelter = {
 	Placed: { [string]: number },
 	Wear: { [string]: number },  -- usure par objet posé
 	Occupied: boolean,           -- une session de survie est en cours
+	DisabledUntil: number?,      -- défenses neutralisées (couvent)
 }
 
 local shelters: { [string]: Shelter } = {}
@@ -60,7 +61,7 @@ function ShelterService.register(model: Model)
 	shelters[id] = {
 		Model = model, Id = id, ZoneId = zoneId,
 		Owner = nil, ClaimedAt = 0, LastSeen = 0,
-		Placed = {}, Wear = {}, Occupied = false,
+		Placed = {}, Wear = {}, Occupied = false, DisabledUntil = nil,
 	}
 	model:SetAttribute("OwnerName", "")
 end
@@ -248,6 +249,9 @@ end
 -- Appelé par MonsterService à chaque assaut : les défenses s'usent et
 -- finissent par céder. Renvoie le délai gagné, en secondes.
 function ShelterService.absorbAssault(shelter: Shelter): number
+	if ShelterService.defensesDisabled(shelter) then
+		return 0
+	end
 	local gained = 0
 	for itemId, count in pairs(shelter.Placed) do
 		if count > 0 then
@@ -277,7 +281,23 @@ function ShelterService.absorbAssault(shelter: Shelter): number
 end
 
 function ShelterService.profileOf(shelter: Shelter)
+	if shelter.DisabledUntil and os.clock() < shelter.DisabledUntil then
+		-- Défenses neutralisées : le refuge est nu, mais pas détruit.
+		return { Delay = 0, Warning = 0, Detection = 1, Slots = 0 }
+	end
 	return ItemConfig.defenseProfile(shelter.Placed)
+end
+
+-- Mécanique du couvent (CDC §3, zone 5) : l'entité éteint les défenses pendant
+-- un temps. Rien n'est consommé, mais pendant ce temps le refuge ne retarde
+-- plus rien du tout.
+function ShelterService.disableDefenses(shelter: Shelter, seconds: number)
+	shelter.DisabledUntil = os.clock() + seconds
+	fire(shelter)
+end
+
+function ShelterService.defensesDisabled(shelter: Shelter): boolean
+	return shelter.DisabledUntil ~= nil and os.clock() < shelter.DisabledUntil
 end
 
 function ShelterService.cleanup(player: Player)

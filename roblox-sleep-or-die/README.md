@@ -4,9 +4,9 @@ Jeu Roblox de survival horror multijoueur. **Tu dors pour gagner de l'argent.
 Plus la zone est dangereuse, plus ça paie — et plus tu risques de tout perdre
 avant d'avoir pu le déposer.**
 
-Ce dépôt contient la **boucle complète de la zone 1**, telle que le cahier des
-charges la demande à l'étape 5 : explorer, réserver un refuge, le barricader,
-dormir, survivre aux assauts, encaisser, acheter, débloquer les égouts.
+Ce dépôt contient **les sept zones**, leurs sept monstres avec leurs sept
+mécaniques, le boss final en trois phases, les missions et l'économie
+complète. On peut aller de la rue au carnaval sans sortir du jeu.
 
 ## Ouvrir et jouer
 
@@ -52,22 +52,29 @@ retardent, s'usent, et finissent par céder. **Aucun refuge n'est imprenable.**
 | 6 | L'hôpital des cauchemars | 12,5 k$/s | 15 M$, nuit extrême | Le Menteur |
 | 7 | Le carnaval de l'enfer | 100 k$/s | 60 M$, quête secrète, 10 h de survie | Le Clown (boss) |
 
-**Seule la rue est construite.** Les six autres sont configurées, verrouillées
-et déblocables : il leur manque leur carte. C'est l'étape 6 du cahier des
-charges, et c'est volontaire — le document dit lui-même de tester une boucle
-complète avant d'étendre.
+**Les sept sont construites.** Chacune occupe une dalle de 1600 studs et a sa
+propre identité : tunnels étroits aux égouts, grandes lignes de vue dégagées
+dans la maison des poupées (c'est ce qui rend la mécanique du regard jouable),
+haies et raccourcis chez le slasher, cloître et cellules au couvent, couloir
+interminable aux portes identiques à l'hôpital, chapiteau sans abri au
+carnaval. On passe de l'une à l'autre par une porte, qui téléporte.
+
+Le coffre et la boutique n'existent que dans la rue : c'est le camp de base,
+et c'est ce qui rend le retour obligatoire.
 
 ## Ce qui est fait, ce qui ne l'est pas
 
 Le détail honnête, section par section du cahier des charges, est dans
-**[docs/CDC.md](docs/CDC.md)**. En résumé : §2, 4, 6, 10, 11 et 12 sont faits ;
-§3, 5, 7, 9 et 13 sont partiels ; §8 n'est pas commencé.
+**[docs/CDC.md](docs/CDC.md)**. En résumé : §2, 3, 4, 5, 6, 7, 10, 11 et 12
+sont faits ; §8, 9 et 13 sont partiels. Restent les étapes 9 et 10 du §14 :
+rétention et lancement.
 
 ## Vérifier avant de publier
 
 ```sh
-node /tmp/luaucheck/check.mjs src/*/*.luau   # compile les 24 fichiers
-python3 tools/crosscheck.py                  # 312 liens entre modules
+node /tmp/luaucheck/check.mjs src/*/*.luau   # compile les 28 fichiers
+python3 tools/crosscheck.py                  # 364 liens entre modules
+python3 tools/checkzones.py                  # 68 contrôles sur les 7 cartes
 python3 tools/simulate.py                    # la courbe de progression
 python3 tools/build_place.py                 # régénère SleepOrDie.rbxlx
 ```
@@ -90,7 +97,9 @@ bootstrap n'utilise jamais.
 ```
 src/shared/   GameConfig · ZoneConfig · ItemConfig · MissionConfig
               MonsterConfig · Net · Format
-src/server/   init.server + 13 services (noms exacts du CDC §10)
+src/server/   init.server + 17 services (noms du CDC §10, plus
+              WorldService · ZoneBuilder · ZoneLayouts · BossService
+              · ObjectiveService)
 src/client/   init.client + Hud + Panels
-tools/        build_place.py · crosscheck.py · simulate.py
+tools/        build_place.py · crosscheck.py · checkzones.py · simulate.py
 ```

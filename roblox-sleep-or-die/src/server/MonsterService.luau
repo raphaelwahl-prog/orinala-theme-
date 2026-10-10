@@ -40,6 +40,7 @@ type Agent = {
 	LostSince: number,
 	StunUntil: number,
 	NextAttack: number,
+	NextTrick: number,
 	PatrolPoints: { Vector3 },
 	PatrolIndex: number,
 }
@@ -57,7 +58,7 @@ local function signal(agent: Agent, kind: string)
 	end
 end
 
-local function countInZone(zoneId: string): number
+function MonsterService.countInZone(zoneId: string): number
 	local n = 0
 	for _, agent in ipairs(agents) do
 		if agent.ZoneId == zoneId then
@@ -167,6 +168,18 @@ local function decide(agent: Agent)
 		agent.Target = target
 		agent.LastKnown = root.Position
 		agent.LostSince = 0
+
+		-- Mécanique « disable » (le couvent) : en approchant, l'entité éteint
+		-- les défenses du refuge de sa cible. Le CDC le dit : « Les défenses
+		-- peuvent être neutralisées. » C'est ce qui oblige à prévoir une fuite.
+		if agent.Def.Rule == "disable" and os.clock() >= agent.NextTrick then
+			agent.NextTrick = os.clock() + 20
+			local shelter = ShelterService.ownedBy(target)
+			if shelter and shelter.Occupied then
+				ShelterService.disableDefenses(shelter, 14)
+				signal(agent, "disable")
+			end
+		end
 		if distance <= agent.Def.AttackRange then
 			agent.State = S.ATTACK
 		else
@@ -206,6 +219,19 @@ local function decide(agent: Agent)
 			agent.State = S.PATROL
 		end
 		return
+	end
+
+	-- Mécanique « fake_alerts » (l'hôpital) : le menteur émet régulièrement un
+	-- signal d'assaut depuis un endroit où il n'est pas. Une alerte sur trois
+	-- est vraie ; les joueurs doivent apprendre à croiser deux signaux.
+	if agent.Def.Rule == "fake_alerts" and os.clock() >= agent.NextTrick then
+		agent.NextTrick = os.clock() + 9 + math.random() * 7
+		local decoy = agent.PatrolPoints[math.random(1, math.max(1, #agent.PatrolPoints))]
+		if decoy then
+			for _, fn in ipairs(signalListeners) do
+				task.spawn(fn, agent.Def.Id, "fake", decoy)
+			end
+		end
 	end
 
 	-- Patrouille : on passe au point suivant quand on est arrivé.
@@ -253,7 +279,7 @@ end
 
 function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
 	patrol: { Vector3 }): Model?
-	if countInZone(zoneId) >= def.MaxAlive then
+	if MonsterService.countInZone(zoneId) >= def.MaxAlive then
 		return nil
 	end
 
@@ -299,7 +325,7 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		ZoneId = zoneId, Home = position,
 		State = S.PATROL, Target = nil, LastKnown = nil,
 		Path = {}, PathIndex = 1, NextThink = 0, LostSince = 0,
-		StunUntil = 0, NextAttack = 0,
+		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
 	}
 	table.insert(agents, agent)
@@ -329,6 +355,36 @@ end
 
 function MonsterService.count(): number
 	return #agents
+end
+
+-- Accès contrôlé pour BossService : il pilote les phases du clown.
+function MonsterService.find(model: Model)
+	for _, agent in ipairs(agents) do
+		if agent.Model == model then
+			return agent
+		end
+	end
+	return nil
+end
+
+function MonsterService.setRule(model: Model, rule: string)
+	local agent = MonsterService.find(model)
+	if agent then
+		-- On remplace la règle de l'agent sans toucher au catalogue partagé.
+		local copy = table.clone(agent.Def)
+		copy.Rule = rule
+		agent.Def = copy
+	end
+end
+
+function MonsterService.boost(model: Model, speed: number, sight: number)
+	local agent = MonsterService.find(model)
+	if agent then
+		local copy = table.clone(agent.Def)
+		copy.WalkSpeed = speed
+		copy.SightRange = sight
+		agent.Def = copy
+	end
 end
 
 function MonsterService.init()

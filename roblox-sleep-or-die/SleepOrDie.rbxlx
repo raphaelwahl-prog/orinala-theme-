@@ -1,4 +1,4 @@
-<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX33"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX34"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">2</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX9"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX8"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">Format</string><ProtectedString name="Source">--!strict
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX37"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX38"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">2</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX9"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX8"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">Format</string><ProtectedString name="Source">--!strict
 -- Mise en forme des nombres.
 --
 -- ⚠️ POINT TECHNIQUE QUI A DES CONSÉQUENCES SUR TOUT LE JEU
@@ -694,7 +694,7 @@ function ZoneConfig.canEnter(zone: Zone, stats: {
 end
 
 return ZoneConfig
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX24"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX23"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX28"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX27"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
 -- Point d'entrée serveur. Tout le câblage est ici, et nulle part ailleurs :
 -- les services ne se connaissent que par appel direct, jamais par événement
 -- global, pour qu'on puisse lire le jeu de haut en bas depuis ce fichier.
@@ -711,7 +711,7 @@ local MonsterConfig = require(Shared.MonsterConfig)
 local Net = require(Shared.Net)
 local ZoneConfig = require(Shared.ZoneConfig)
 
-local CityBuilder = require(script.CityBuilder)
+local BossService = require(script.BossService)
 local CombatService = require(script.CombatService)
 local EconomyService = require(script.EconomyService)
 local EventService = require(script.EventService)
@@ -719,10 +719,14 @@ local InventoryService = require(script.InventoryService)
 local MissionService = require(script.MissionService)
 local MonetizationService = require(script.MonetizationService)
 local MonsterService = require(script.MonsterService)
+local ObjectiveService = require(script.ObjectiveService)
 local PlayerDataService = require(script.PlayerDataService)
 local ShelterService = require(script.ShelterService)
 local ShopService = require(script.ShopService)
 local SurvivalService = require(script.SurvivalService)
+local WorldService = require(script.WorldService)
+local ZoneBuilder = require(script.ZoneBuilder)
+local ZoneLayouts = require(script.ZoneLayouts)
 local ZoneService = require(script.ZoneService)
 
 Net.build()
@@ -779,12 +783,16 @@ end)
 -- ── construction de la ville et peuplement ────────────────────────────────
 PlayerDataService.init()
 PlayerDataService.startAutosave()
-local city = CityBuilder.build()
+WorldService.build()
 ShelterService.init()
 MonsterService.init()
 SurvivalService.init()
 EventService.init()
 MonetizationService.init()
+ObjectiveService.init()
+BossService.init()
+WorldService.startPopulating()
+ZoneService.setTeleporter(WorldService.teleport)
 
 EventService.onChanged(function(active)
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -793,25 +801,33 @@ EventService.onChanged(function(active)
 	end
 end)
 
--- Le rôdeur peuple la rue, dans la limite de MaxAlive.
-task.spawn(function()
-	local prowler = MonsterConfig.get(&quot;prowler&quot;)
-	if not prowler then
-		return
-	end
-	while true do
-		if MonsterService.count() &lt; prowler.MaxAlive then
-			local point = city.MonsterSpawns[math.random(1, #city.MonsterSpawns)]
-			MonsterService.spawn(prowler, &quot;street&quot;, point, city.Patrol)
-		end
-		task.wait(20)
-	end
-end)
-
 MonsterService.onSignal(function(monsterId, kind, position)
 	for _, player in ipairs(Players:GetPlayers()) do
 		send(player, &quot;MonsterSignal&quot;, monsterId, kind, position)
+		-- « repéré » lance le compte à rebours de la mission de poursuite.
+		if kind == &quot;spotted&quot; then
+			local character = player.Character
+			local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+			if root and (root.Position - position).Magnitude &lt; 90 then
+				ObjectiveService.noteChase(player)
+			end
+		end
 	end
+end)
+
+ObjectiveService.onFeedback(function(player, text)
+	alert(player, text, &quot;info&quot;)
+end)
+
+BossService.onPhase(function(phase, text)
+	for _, player in ipairs(Players:GetPlayers()) do
+		alert(player, text, phase == 0 and &quot;unlock&quot; or &quot;danger&quot;)
+	end
+end)
+
+BossService.onVictory(function(player)
+	alert(player, &quot;Le carnaval est tombé. Trophée et titre débloqués.&quot;, &quot;unlock&quot;)
+	pushState(player)
 end)
 
 -- ── sessions de survie ────────────────────────────────────────────────────
@@ -827,9 +843,11 @@ SurvivalService.onChanged(function(player, session, reason)
 
 	if reason == &quot;complete&quot; and session then
 		MissionService.progress(player, &quot;survive_session&quot;, 1)
+		ObjectiveService.noteSession(player, session.ZoneId, reason)
 		alert(player, (&quot;Session terminée. %s sur toi — va les déposer.&quot;)
 			:format(Format.money(session.Earned)), &quot;cash&quot;)
 	elseif reason == &quot;death&quot; and session then
+		ObjectiveService.noteCaught(player)
 		send(player, &quot;DeathReport&quot;, {
 			Zone = session.ZoneId, Earned = session.Earned,
 			Seconds = session.EligibleSeconds,
@@ -915,6 +933,9 @@ local function onEnterZone(player: Player, zoneId: unknown)
 	end
 	local ok, message = ZoneService.enter(player, zoneId)
 	alert(player, ok and (&quot;Zone : &quot; .. message) or message, ok and &quot;info&quot; or &quot;warn&quot;)
+	if ok then
+		ObjectiveService.noteZoneEntered(player, zoneId)
+	end
 	pushState(player)
 end
 
@@ -929,6 +950,9 @@ local function onAttack(player: Player, target: unknown)
 	if ok then
 		MonsterService.stun(target, stun)
 		alert(player, label .. &quot; — il recule.&quot;, &quot;info&quot;)
+		if CollectionService:HasTag(target, &quot;Boss&quot;) then
+			BossService.registerHit(player)
+		end
 	end
 end
 
@@ -994,260 +1018,178 @@ Players.PlayerRemoving:Connect(function(player)
 	PlayerDataService.release(player)
 end)
 
-print(&quot;[SLEEP OR DIE] serveur prêt — &quot; .. #ZoneConfig.List .. &quot; zones, &quot;
-	.. #MissionConfig.List .. &quot; missions.&quot;)
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX10"><Properties><string name="Name">CityBuilder</string><ProtectedString name="Source">--!strict
--- Construit « La rue » au démarrage : immeubles, ruelles, refuges, PNJ, coffre,
--- boutique, points de patrouille et l'entrée des égouts.
+local built = 0
+for _, zone in ipairs(ZoneConfig.List) do
+	if ZoneLayouts.ById[zone.Id] then
+		built += 1
+	end
+end
+print((&quot;[SLEEP OR DIE] serveur prêt — %d zones construites sur %d, %d missions, &quot;
+	.. &quot;espacement %d studs.&quot;)
+	:format(built, #ZoneConfig.List, #MissionConfig.List, ZoneBuilder.SPACING))
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX10"><Properties><string name="Name">BossService</string><ProtectedString name="Source">--!strict
+-- §3 zone 7 — le combat de boss.
 --
--- Tout est généré en code pour que la place s'ouvre et se joue sans qu'aucun
--- modèle ne soit à importer. Quand tu voudras une vraie ville modélisée, il
--- suffira de remplacer ce fichier : le reste du jeu ne connaît la carte que par
--- les tags (`Shelter`, `Npc`, `ZoneGate`) et les attributs.
+-- Le CDC demande « plusieurs phases » et « de maîtriser les mécaniques apprises
+-- dans les zones précédentes ». C'est pris au mot : chaque phase rejoue une
+-- mécanique déjà vue, dans l'ordre où le joueur les a apprises.
+--
+--   phase 1 — « sound »      : il vise le bruit, comme la Chose des égouts.
+--   phase 2 — « gaze »       : regardé, il se fige, comme la Poupée.
+--   phase 3 — « relentless » : il ne lâche plus rien, comme Le Masque.
+--
+-- Il ne meurt pas de dégâts : on le fait reculer d'une phase à chaque série de
+-- coups encaissés, et c'est tenir les trois phases qui compte comme victoire.
 
 local CollectionService = game:GetService(&quot;CollectionService&quot;)
-local Workspace = game:GetService(&quot;Workspace&quot;)
+local Players = game:GetService(&quot;Players&quot;)
 
-local MissionConfig = require(script.Parent.Parent.Shared.MissionConfig)
+local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local MonsterService = require(script.Parent.MonsterService)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local WorldService = require(script.Parent.WorldService)
 
-local CityBuilder = {}
+local BossService = {}
 
-local STREET_LENGTH = 420
-local STREET_WIDTH = 60
+local PHASES = {
+	{ Rule = &quot;sound&quot;, Hits = 6, Speed = 18, Sight = 70,
+		Text = &quot;Phase 1 — il suit le bruit. Marche, ne cours pas.&quot; },
+	{ Rule = &quot;gaze&quot;, Hits = 8, Speed = 24, Sight = 95,
+		Text = &quot;Phase 2 — regardé, il se fige. Ne le quitte pas des yeux.&quot; },
+	{ Rule = &quot;relentless&quot;, Hits = 10, Speed = 26, Sight = 120,
+		Text = &quot;Phase 3 — il ne lâche plus. Tiens, c'est tout ce qu'il reste.&quot; },
+}
 
-local function part(name: string, size: Vector3, position: Vector3, color: Color3,
-	material: Enum.Material?, parent: Instance): Part
-	local p = Instance.new(&quot;Part&quot;)
-	p.Name = name
-	p.Size = size
-	p.Position = position
-	p.Anchored = true
-	p.Color = color
-	p.Material = material or Enum.Material.Concrete
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.Parent = parent
-	return p
+local active: { Model: Model, Phase: number, Hits: number, Players: { Player } }? = nil
+local listeners: { (number, string) -&gt; () } = {}
+local victoryHandlers: { (Player) -&gt; () } = {}
+
+function BossService.onPhase(fn: (number, string) -&gt; ())
+	table.insert(listeners, fn)
 end
 
-local function light(parent: BasePart, color: Color3, brightness: number, range: number)
-	local l = Instance.new(&quot;PointLight&quot;)
-	l.Color = color
-	l.Brightness = brightness
-	l.Range = range
-	l.Parent = parent
+function BossService.onVictory(fn: (Player) -&gt; ())
+	table.insert(victoryHandlers, fn)
 end
 
-local function sign(text: string, parent: BasePart, color: Color3)
-	local gui = Instance.new(&quot;BillboardGui&quot;)
-	gui.Size = UDim2.fromScale(10, 2.4)
-	gui.StudsOffset = Vector3.new(0, 4, 0)
-	gui.AlwaysOnTop = false
-	gui.MaxDistance = 120
-	gui.Parent = parent
-	local label = Instance.new(&quot;TextLabel&quot;)
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = color
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.Parent = gui
-end
-
-local function buildShelter(index: number, position: Vector3, parent: Instance): Model
-	local model = Instance.new(&quot;Model&quot;)
-	model.Name = &quot;Shelter_&quot; .. index
-
-	local floor = part(&quot;Floor&quot;, Vector3.new(16, 1, 16), position, Color3.fromRGB(58, 54, 50),
-		Enum.Material.WoodPlanks, model)
-	part(&quot;WallBack&quot;, Vector3.new(16, 12, 1), position + Vector3.new(0, 6, -7.5),
-		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
-	part(&quot;WallLeft&quot;, Vector3.new(1, 12, 16), position + Vector3.new(-7.5, 6, 0),
-		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
-	part(&quot;WallRight&quot;, Vector3.new(1, 12, 16), position + Vector3.new(7.5, 6, 0),
-		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
-	part(&quot;Roof&quot;, Vector3.new(16, 1, 16), position + Vector3.new(0, 12, 0),
-		Color3.fromRGB(36, 34, 36), Enum.Material.Metal, model)
-
-	local bed = part(&quot;Bed&quot;, Vector3.new(6, 1.6, 10), position + Vector3.new(0, 1.3, 1),
-		Color3.fromRGB(92, 62, 58), Enum.Material.Fabric, model)
-	sign(&quot;REFUGE &quot; .. index, bed, Color3.fromRGB(230, 226, 220))
-	light(bed, Color3.fromRGB(255, 196, 120), 1.4, 22)
-
-	model.PrimaryPart = floor
-	model:SetAttribute(&quot;ShelterId&quot;, &quot;street_&quot; .. index)
-	model:SetAttribute(&quot;Zone&quot;, &quot;street&quot;)
-	model:SetAttribute(&quot;OwnerName&quot;, &quot;&quot;)
-	CollectionService:AddTag(model, &quot;Shelter&quot;)
-	model.Parent = parent
-	return model
-end
-
-local function buildNpc(def, position: Vector3, parent: Instance): Model
-	local model = Instance.new(&quot;Model&quot;)
-	model.Name = &quot;Npc_&quot; .. def.Id
-
-	local body = part(&quot;Torso&quot;, Vector3.new(2, 3, 1.2), position + Vector3.new(0, 3.5, 0),
-		Color3.fromRGB(58, 70, 98), Enum.Material.Fabric, model)
-	part(&quot;Head&quot;, Vector3.new(1.6, 1.6, 1.6), position + Vector3.new(0, 5.9, 0),
-		Color3.fromRGB(214, 176, 132), Enum.Material.SmoothPlastic, model)
-	part(&quot;Legs&quot;, Vector3.new(2, 2, 1.2), position + Vector3.new(0, 1, 0),
-		Color3.fromRGB(38, 40, 48), Enum.Material.Fabric, model)
-	sign(def.Name, body, Color3.fromRGB(255, 214, 140))
-	light(body, Color3.fromRGB(255, 214, 140), 0.8, 16)
-
-	local prompt = Instance.new(&quot;ProximityPrompt&quot;)
-	prompt.ActionText = &quot;Parler&quot;
-	prompt.ObjectText = def.Name
-	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = 12
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = body
-
-	model.PrimaryPart = body
-	model:SetAttribute(&quot;NpcId&quot;, def.Id)
-	CollectionService:AddTag(model, &quot;Npc&quot;)
-	model.Parent = parent
-	return model
-end
-
-function CityBuilder.build(): { Patrol: { Vector3 }, MonsterSpawns: { Vector3 } }
-	local existing = Workspace:FindFirstChild(&quot;City&quot;)
-	if existing then
-		existing:Destroy()
+local function announce(phase: number, text: string)
+	for _, fn in ipairs(listeners) do
+		task.spawn(fn, phase, text)
 	end
+end
 
-	local city = Instance.new(&quot;Folder&quot;)
-	city.Name = &quot;City&quot;
-	city.Parent = Workspace
-
-	-- Chaussée et trottoirs
-	part(&quot;Road&quot;, Vector3.new(STREET_WIDTH, 1, STREET_LENGTH), Vector3.new(0, 0, 0),
-		Color3.fromRGB(34, 34, 38), Enum.Material.Asphalt, city)
-	for _, side in ipairs({ -1, 1 }) do
-		part(&quot;Sidewalk&quot; .. side, Vector3.new(10, 1.6, STREET_LENGTH),
-			Vector3.new(side * (STREET_WIDTH / 2 - 5), 0.3, 0),
-			Color3.fromRGB(62, 62, 66), Enum.Material.Concrete, city)
+local function applyPhase(index: number)
+	if not active then
+		return
 	end
+	local phase = PHASES[index]
+	MonsterService.setRule(active.Model, phase.Rule)
+	MonsterService.boost(active.Model, phase.Speed, phase.Sight)
+	active.Phase = index
+	active.Hits = 0
+	announce(index, phase.Text)
+end
 
-	-- Immeubles des deux côtés, avec des ruelles régulières
-	local buildings = Instance.new(&quot;Folder&quot;)
-	buildings.Name = &quot;Buildings&quot;
-	buildings.Parent = city
-	for _, side in ipairs({ -1, 1 }) do
-		local z = -STREET_LENGTH / 2 + 30
-		while z &lt; STREET_LENGTH / 2 - 30 do
-			local depth = 46 + (z % 7) * 3
-			local height = 60 + ((z + side * 13) % 11) * 9
-			local x = side * (STREET_WIDTH / 2 + depth / 2 - 2)
-			local tint = 38 + ((z + side * 5) % 9) * 3
-			part(&quot;Block&quot;, Vector3.new(depth, height, 56),
-				Vector3.new(x, height / 2, z),
-				Color3.fromRGB(tint, tint - 2, tint + 4), Enum.Material.Brick, buildings)
-			z += 56 + 24   -- 24 studs de ruelle entre deux immeubles
+function BossService.isActive(): boolean
+	return active ~= nil and active.Model.Parent ~= nil
+end
+
+function BossService.start(): boolean
+	if BossService.isActive() then
+		return false
+	end
+	local def = MonsterConfig.get(&quot;clown_boss&quot;)
+	local layout = WorldService.layout(&quot;carnival&quot;)
+	if not def or not layout then
+		return false
+	end
+	local model = MonsterService.spawn(def, &quot;carnival&quot;, layout.Spawns[1], layout.Patrol)
+	if not model then
+		return false
+	end
+	CollectionService:AddTag(model, &quot;Boss&quot;)
+	active = { Model = model, Phase = 0, Hits = 0, Players = {} }
+	applyPhase(1)
+	return true
+end
+
+-- Appelé par CombatService à chaque coup porté au boss.
+function BossService.registerHit(player: Player)
+	if not active or not active.Model.Parent then
+		return
+	end
+	local known = false
+	for _, existing in ipairs(active.Players) do
+		if existing == player then
+			known = true
+			break
 		end
 	end
-
-	-- Lampadaires
-	for z = -STREET_LENGTH / 2 + 40, STREET_LENGTH / 2 - 40, 70 do
-		for _, side in ipairs({ -1, 1 }) do
-			local pole = part(&quot;Pole&quot;, Vector3.new(0.8, 18, 0.8),
-				Vector3.new(side * (STREET_WIDTH / 2 - 8), 9, z),
-				Color3.fromRGB(28, 28, 32), Enum.Material.Metal, city)
-			local head = part(&quot;Lamp&quot;, Vector3.new(3, 0.8, 3),
-				pole.Position + Vector3.new(0, 9, 0),
-				Color3.fromRGB(255, 224, 170), Enum.Material.Neon, city)
-			light(head, Color3.fromRGB(255, 220, 170), 2.2, 52)
-		end
+	if not known then
+		table.insert(active.Players, player)
 	end
 
-	-- Refuges, dans les ruelles
-	local shelters = Instance.new(&quot;Folder&quot;)
-	shelters.Name = &quot;Shelters&quot;
-	shelters.Parent = city
-	local index = 0
-	for _, side in ipairs({ -1, 1 }) do
-		for step = 0, 2 do
-			index += 1
-			local z = -STREET_LENGTH / 2 + 95 + step * 110
-			buildShelter(index, Vector3.new(side * (STREET_WIDTH / 2 + 12), 1, z), shelters)
-		end
+	active.Hits += 1
+	local phase = PHASES[active.Phase]
+	if active.Hits &lt; phase.Hits then
+		return
 	end
 
-	-- Coffre (dépôt) et boutique, au centre de la rue
-	local vault = part(&quot;Vault&quot;, Vector3.new(10, 10, 6), Vector3.new(-18, 5, 0),
-		Color3.fromRGB(46, 108, 70), Enum.Material.DiamondPlate, city)
-	sign(&quot;COFFRE — E pour déposer&quot;, vault, Color3.fromRGB(120, 230, 160))
-	light(vault, Color3.fromRGB(110, 230, 160), 2, 34)
-	CollectionService:AddTag(vault, &quot;Vault&quot;)
-	local vaultPrompt = Instance.new(&quot;ProximityPrompt&quot;)
-	vaultPrompt.ActionText = &quot;Déposer&quot;
-	vaultPrompt.ObjectText = &quot;Coffre&quot;
-	vaultPrompt.MaxActivationDistance = 14
-	vaultPrompt.RequiresLineOfSight = false
-	vaultPrompt.Parent = vault
-
-	local shop = part(&quot;Shop&quot;, Vector3.new(10, 10, 6), Vector3.new(18, 5, 0),
-		Color3.fromRGB(58, 70, 126), Enum.Material.Metal, city)
-	sign(&quot;BOUTIQUE — E pour ouvrir&quot;, shop, Color3.fromRGB(150, 180, 255))
-	light(shop, Color3.fromRGB(140, 170, 255), 2, 34)
-	CollectionService:AddTag(shop, &quot;Shop&quot;)
-	local shopPrompt = Instance.new(&quot;ProximityPrompt&quot;)
-	shopPrompt.ActionText = &quot;Ouvrir&quot;
-	shopPrompt.ObjectText = &quot;Boutique&quot;
-	shopPrompt.MaxActivationDistance = 14
-	shopPrompt.RequiresLineOfSight = false
-	shopPrompt.Parent = shop
-
-	-- PNJ
-	local npcs = Instance.new(&quot;Folder&quot;)
-	npcs.Name = &quot;Npcs&quot;
-	npcs.Parent = city
-	for i, def in ipairs(MissionConfig.Npcs) do
-		local z = -60 + (i - 1) * 24
-		buildNpc(def, Vector3.new((i % 2 == 0) and 22 or -22, 1, z), npcs)
+	if active.Phase &lt; #PHASES then
+		applyPhase(active.Phase + 1)
+	else
+		BossService.finish()
 	end
-
-	-- Entrée des égouts : la porte vers la zone 2
-	local gate = part(&quot;SewerGate&quot;, Vector3.new(12, 1.2, 12), Vector3.new(0, 0.8, STREET_LENGTH / 2 - 50),
-		Color3.fromRGB(70, 66, 58), Enum.Material.Metal, city)
-	sign(&quot;ÉGOUTS — zone 2&quot;, gate, Color3.fromRGB(180, 230, 180))
-	CollectionService:AddTag(gate, &quot;ZoneGate&quot;)
-	gate:SetAttribute(&quot;Zone&quot;, &quot;sewers&quot;)
-	local gatePrompt = Instance.new(&quot;ProximityPrompt&quot;)
-	gatePrompt.ActionText = &quot;Descendre&quot;
-	gatePrompt.ObjectText = &quot;Les égouts&quot;
-	gatePrompt.MaxActivationDistance = 12
-	gatePrompt.RequiresLineOfSight = false
-	gatePrompt.Parent = gate
-
-	-- Apparition des joueurs
-	local spawn = Instance.new(&quot;SpawnLocation&quot;)
-	spawn.Name = &quot;StreetSpawn&quot;
-	spawn.Size = Vector3.new(14, 1, 14)
-	spawn.Position = Vector3.new(0, 1, -STREET_LENGTH / 2 + 30)
-	spawn.Anchored = true
-	spawn.Color = Color3.fromRGB(70, 70, 78)
-	spawn.Material = Enum.Material.Concrete
-	spawn.Parent = city
-
-	-- Points de ronde et d'apparition des monstres
-	local patrol: { Vector3 } = {}
-	for z = -STREET_LENGTH / 2 + 50, STREET_LENGTH / 2 - 50, 52 do
-		table.insert(patrol, Vector3.new(-14, 3, z))
-		table.insert(patrol, Vector3.new(14, 3, z + 26))
-	end
-	local spawns: { Vector3 } = {
-		Vector3.new(0, 3, STREET_LENGTH / 2 - 70),
-		Vector3.new(-20, 3, 40),
-		Vector3.new(20, 3, -40),
-	}
-
-	return { Patrol = patrol, MonsterSpawns = spawns }
 end
 
-return CityBuilder
+function BossService.finish()
+	if not active then
+		return
+	end
+	local participants = active.Players
+	MonsterService.despawn(active.Model)
+	active = nil
+	announce(0, &quot;Le clown est tombé. Le carnaval se tait.&quot;)
+
+	for _, player in ipairs(participants) do
+		local profile = PlayerDataService.get(player)
+		if profile then
+			profile.BossesBeaten += 1
+			profile.Achievements.carnival_cleared = true
+			profile.Cosmetics.clown_trophy = true
+			PlayerDataService.markDirty(player)
+		end
+		for _, fn in ipairs(victoryHandlers) do
+			task.spawn(fn, player)
+		end
+	end
+end
+
+-- Le boss n'apparaît que lorsqu'un joueur entre dans l'arène.
+function BossService.init()
+	task.spawn(function()
+		while true do
+			task.wait(3)
+			if not BossService.isActive() then
+				for _, arena in ipairs(CollectionService:GetTagged(&quot;BossArena&quot;)) do
+					if arena:IsA(&quot;BasePart&quot;) then
+						for _, player in ipairs(Players:GetPlayers()) do
+							local character = player.Character
+							local root = character
+								and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+							if root and (root.Position - arena.Position).Magnitude &lt; 95 then
+								BossService.start()
+								break
+							end
+						end
+					end
+				end
+			end
+		end
+	end)
+end
+
+return BossService
 </ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX11"><Properties><string name="Name">CombatService</string><ProtectedString name="Source">--!strict
 -- §5 et §15 — tous les dégâts passent ici, et tous sont validés côté serveur.
 --
@@ -1955,6 +1897,7 @@ type Agent = {
 	LostSince: number,
 	StunUntil: number,
 	NextAttack: number,
+	NextTrick: number,
 	PatrolPoints: { Vector3 },
 	PatrolIndex: number,
 }
@@ -1972,7 +1915,7 @@ local function signal(agent: Agent, kind: string)
 	end
 end
 
-local function countInZone(zoneId: string): number
+function MonsterService.countInZone(zoneId: string): number
 	local n = 0
 	for _, agent in ipairs(agents) do
 		if agent.ZoneId == zoneId then
@@ -2082,6 +2025,18 @@ local function decide(agent: Agent)
 		agent.Target = target
 		agent.LastKnown = root.Position
 		agent.LostSince = 0
+
+		-- Mécanique « disable » (le couvent) : en approchant, l'entité éteint
+		-- les défenses du refuge de sa cible. Le CDC le dit : « Les défenses
+		-- peuvent être neutralisées. » C'est ce qui oblige à prévoir une fuite.
+		if agent.Def.Rule == &quot;disable&quot; and os.clock() &gt;= agent.NextTrick then
+			agent.NextTrick = os.clock() + 20
+			local shelter = ShelterService.ownedBy(target)
+			if shelter and shelter.Occupied then
+				ShelterService.disableDefenses(shelter, 14)
+				signal(agent, &quot;disable&quot;)
+			end
+		end
 		if distance &lt;= agent.Def.AttackRange then
 			agent.State = S.ATTACK
 		else
@@ -2121,6 +2076,19 @@ local function decide(agent: Agent)
 			agent.State = S.PATROL
 		end
 		return
+	end
+
+	-- Mécanique « fake_alerts » (l'hôpital) : le menteur émet régulièrement un
+	-- signal d'assaut depuis un endroit où il n'est pas. Une alerte sur trois
+	-- est vraie ; les joueurs doivent apprendre à croiser deux signaux.
+	if agent.Def.Rule == &quot;fake_alerts&quot; and os.clock() &gt;= agent.NextTrick then
+		agent.NextTrick = os.clock() + 9 + math.random() * 7
+		local decoy = agent.PatrolPoints[math.random(1, math.max(1, #agent.PatrolPoints))]
+		if decoy then
+			for _, fn in ipairs(signalListeners) do
+				task.spawn(fn, agent.Def.Id, &quot;fake&quot;, decoy)
+			end
+		end
 	end
 
 	-- Patrouille : on passe au point suivant quand on est arrivé.
@@ -2168,7 +2136,7 @@ end
 
 function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
 	patrol: { Vector3 }): Model?
-	if countInZone(zoneId) &gt;= def.MaxAlive then
+	if MonsterService.countInZone(zoneId) &gt;= def.MaxAlive then
 		return nil
 	end
 
@@ -2214,7 +2182,7 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		ZoneId = zoneId, Home = position,
 		State = S.PATROL, Target = nil, LastKnown = nil,
 		Path = {}, PathIndex = 1, NextThink = 0, LostSince = 0,
-		StunUntil = 0, NextAttack = 0,
+		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
 	}
 	table.insert(agents, agent)
@@ -2244,6 +2212,36 @@ end
 
 function MonsterService.count(): number
 	return #agents
+end
+
+-- Accès contrôlé pour BossService : il pilote les phases du clown.
+function MonsterService.find(model: Model)
+	for _, agent in ipairs(agents) do
+		if agent.Model == model then
+			return agent
+		end
+	end
+	return nil
+end
+
+function MonsterService.setRule(model: Model, rule: string)
+	local agent = MonsterService.find(model)
+	if agent then
+		-- On remplace la règle de l'agent sans toucher au catalogue partagé.
+		local copy = table.clone(agent.Def)
+		copy.Rule = rule
+		agent.Def = copy
+	end
+end
+
+function MonsterService.boost(model: Model, speed: number, sight: number)
+	local agent = MonsterService.find(model)
+	if agent then
+		local copy = table.clone(agent.Def)
+		copy.WalkSpeed = speed
+		copy.SightRange = sight
+		agent.Def = copy
+	end
 end
 
 function MonsterService.init()
@@ -2316,7 +2314,139 @@ function MonsterService.assault(shelterId: string)
 end
 
 return MonsterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">ObjectiveService</string><ProtectedString name="Source">--!strict
+-- §7 — les objectifs de mission qui ont besoin d'objets dans le monde.
+--
+-- Les quatre types ramassables (`collect`, `repair`, `rescue`, `deliver`) sont
+-- des Part taguées `Objective` posées par ZoneLayouts. Elles réapparaissent
+-- après un délai, sinon la zone se vide et les missions répétables deviennent
+-- impossibles.
+--
+-- Les trois objectifs particuliers sont déduits du jeu, pas d'un bouton :
+--   · `escape_chase`    — avoir été poursuivi, puis avoir semé le monstre ;
+--   · `survive_extreme` — une session complète au couvent, aucune défense ;
+--   · `find_secret`     — avoir trouvé et franchi la porte du carnaval.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+
+local MissionService = require(script.Parent.MissionService)
+local ShelterService = require(script.Parent.ShelterService)
+
+local ObjectiveService = {}
+
+local RESPAWN = 45
+
+local chased: { [Player]: number } = {}
+local alertHandlers: { (Player, string) -&gt; () } = {}
+
+function ObjectiveService.onFeedback(fn: (Player, string) -&gt; ())
+	table.insert(alertHandlers, fn)
+end
+
+local function tell(player: Player, text: string)
+	for _, fn in ipairs(alertHandlers) do
+		task.spawn(fn, player, text)
+	end
+end
+
+local function bind(part: BasePart)
+	if part:GetAttribute(&quot;Bound&quot;) then
+		return
+	end
+	part:SetAttribute(&quot;Bound&quot;, true)
+	local prompt = part:FindFirstChildOfClass(&quot;ProximityPrompt&quot;)
+	if not prompt then
+		return
+	end
+	prompt.Triggered:Connect(function(player)
+		local goal = part:GetAttribute(&quot;Goal&quot;)
+		if type(goal) ~= &quot;string&quot; or not part.Parent then
+			return
+		end
+		MissionService.progress(player, goal, 1)
+		tell(player, &quot;Objectif : +1 (&quot; .. goal .. &quot;)&quot;)
+
+		-- On cache l'objet plutôt que de le détruire : il revient tout seul.
+		part.Transparency = 1
+		part.CanCollide = false
+		prompt.Enabled = false
+		task.delay(RESPAWN, function()
+			if part.Parent then
+				part.Transparency = 0
+				part.CanCollide = true
+				prompt.Enabled = true
+			end
+		end)
+	end)
+end
+
+function ObjectiveService.init()
+	for _, part in ipairs(CollectionService:GetTagged(&quot;Objective&quot;)) do
+		if part:IsA(&quot;BasePart&quot;) then
+			bind(part)
+		end
+	end
+	CollectionService:GetInstanceAddedSignal(&quot;Objective&quot;):Connect(function(instance)
+		if instance:IsA(&quot;BasePart&quot;) then
+			bind(instance)
+		end
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		chased[player] = nil
+	end)
+end
+
+-- Branché sur les signaux de MonsterService : « repéré » marque le début d'une
+-- poursuite, et tenir 25 secondes sans se faire reprendre vaut l'objectif.
+function ObjectiveService.noteChase(player: Player)
+	chased[player] = os.clock()
+	task.delay(25, function()
+		local started = chased[player]
+		if started and os.clock() - started &gt;= 25 then
+			chased[player] = nil
+			MissionService.progress(player, &quot;escape_chase&quot;, 1)
+			tell(player, &quot;Tu l'as semé.&quot;)
+		end
+	end)
+end
+
+function ObjectiveService.noteCaught(player: Player)
+	chased[player] = nil
+end
+
+-- Une session terminée : on regarde si elle vaut « nuit extrême ».
+function ObjectiveService.noteSession(player: Player, zoneId: string, reason: string)
+	if reason ~= &quot;complete&quot; then
+		return
+	end
+	if zoneId ~= &quot;convent&quot; then
+		return
+	end
+	local shelter = ShelterService.ownedBy(player)
+	if not shelter then
+		return
+	end
+	local placed = 0
+	for _, count in pairs(shelter.Placed) do
+		placed += count
+	end
+	if placed == 0 then
+		MissionService.progress(player, &quot;survive_extreme&quot;, 1)
+		tell(player, &quot;Une nuit entière au couvent, sans rien poser. Noté.&quot;)
+	end
+end
+
+-- Franchir la porte cachée de l'hôpital vaut la quête secrète.
+function ObjectiveService.noteZoneEntered(player: Player, zoneId: string)
+	if zoneId == &quot;carnival&quot; then
+		MissionService.progress(player, &quot;find_secret&quot;, 1)
+	end
+end
+
+return ObjectiveService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
 -- §11 — profils joueurs et DataStore.
 --
 -- Règle qui compte le plus (CDC §11) : « Si les données ne peuvent pas être
@@ -2556,7 +2686,7 @@ function PlayerDataService.startAutosave()
 end
 
 return PlayerDataService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
 -- §4 — refuges : réservation, défenses, contestation.
 --
 -- Les refuges sont des modèles du Workspace marqués par l'attribut `Zone` et
@@ -2586,6 +2716,7 @@ export type Shelter = {
 	Placed: { [string]: number },
 	Wear: { [string]: number },  -- usure par objet posé
 	Occupied: boolean,           -- une session de survie est en cours
+	DisabledUntil: number?,      -- défenses neutralisées (couvent)
 }
 
 local shelters: { [string]: Shelter } = {}
@@ -2618,7 +2749,7 @@ function ShelterService.register(model: Model)
 	shelters[id] = {
 		Model = model, Id = id, ZoneId = zoneId,
 		Owner = nil, ClaimedAt = 0, LastSeen = 0,
-		Placed = {}, Wear = {}, Occupied = false,
+		Placed = {}, Wear = {}, Occupied = false, DisabledUntil = nil,
 	}
 	model:SetAttribute(&quot;OwnerName&quot;, &quot;&quot;)
 end
@@ -2806,6 +2937,9 @@ end
 -- Appelé par MonsterService à chaque assaut : les défenses s'usent et
 -- finissent par céder. Renvoie le délai gagné, en secondes.
 function ShelterService.absorbAssault(shelter: Shelter): number
+	if ShelterService.defensesDisabled(shelter) then
+		return 0
+	end
 	local gained = 0
 	for itemId, count in pairs(shelter.Placed) do
 		if count &gt; 0 then
@@ -2835,7 +2969,23 @@ function ShelterService.absorbAssault(shelter: Shelter): number
 end
 
 function ShelterService.profileOf(shelter: Shelter)
+	if shelter.DisabledUntil and os.clock() &lt; shelter.DisabledUntil then
+		-- Défenses neutralisées : le refuge est nu, mais pas détruit.
+		return { Delay = 0, Warning = 0, Detection = 1, Slots = 0 }
+	end
 	return ItemConfig.defenseProfile(shelter.Placed)
+end
+
+-- Mécanique du couvent (CDC §3, zone 5) : l'entité éteint les défenses pendant
+-- un temps. Rien n'est consommé, mais pendant ce temps le refuge ne retarde
+-- plus rien du tout.
+function ShelterService.disableDefenses(shelter: Shelter, seconds: number)
+	shelter.DisabledUntil = os.clock() + seconds
+	fire(shelter)
+end
+
+function ShelterService.defensesDisabled(shelter: Shelter): boolean
+	return shelter.DisabledUntil ~= nil and os.clock() &lt; shelter.DisabledUntil
 end
 
 function ShelterService.cleanup(player: Player)
@@ -2855,7 +3005,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 return ShelterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
 -- §6 — la boutique. Le client envoie un identifiant d'objet, rien d'autre :
 -- le prix vient toujours du serveur.
 
@@ -2910,7 +3060,7 @@ function ShopService.buy(player: Player, itemId: string): (boolean, string)
 end
 
 return ShopService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
 -- §2 et §4 — la session de survie : la boucle centrale du jeu.
 --
 -- Une session démarre quand le joueur dort dans SON refuge. Elle crédite
@@ -3104,7 +3254,839 @@ function SurvivalService.onCharacterAdded(player: Player, character: Model)
 end
 
 return SurvivalService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
+-- Construit les sept zones au démarrage et retient, pour chacune, ses points
+-- de ronde, ses points d'apparition et son point d'arrivée.
+--
+-- C'est le seul endroit qui connaît la géométrie. Les autres services ne
+-- parlent qu'en identifiants de zone.
+
+local Players = game:GetService(&quot;Players&quot;)
+
+local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local MonsterService = require(script.Parent.MonsterService)
+local ZoneBuilder = require(script.Parent.ZoneBuilder)
+local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
+local ZoneLayouts = require(script.Parent.ZoneLayouts)
+
+local WorldService = {}
+
+local layouts: { [string]: ZoneBuilder.Layout } = {}
+
+function WorldService.build()
+	ZoneBuilder.reset()
+	for _, zone in ipairs(ZoneConfig.List) do
+		local build = ZoneLayouts.ById[zone.Id]
+		if build then
+			local folder = ZoneBuilder.folder(zone.Id)
+			layouts[zone.Id] = build(ZoneBuilder.origin(zone.Order), folder)
+		end
+	end
+	return layouts
+end
+
+function WorldService.layout(zoneId: string): ZoneBuilder.Layout?
+	return layouts[zoneId]
+end
+
+function WorldService.anchor(zoneId: string): Vector3?
+	local layout = layouts[zoneId]
+	return layout and layout.Anchor or nil
+end
+
+-- Téléporte le joueur au point d'arrivée d'une zone. Les zones sont à
+-- 1600 studs les unes des autres : on ne s'y rend pas à pied.
+function WorldService.teleport(player: Player, zoneId: string): boolean
+	local anchor = WorldService.anchor(zoneId)
+	local character = player.Character
+	if not anchor or not character then
+		return false
+	end
+	local root = character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	if not root then
+		return false
+	end
+	character:PivotTo(CFrame.new(anchor))
+	return true
+end
+
+-- Peuple chaque zone de son monstre, dans la limite de MaxAlive, et seulement
+-- s'il y a quelqu'un dedans : inutile de faire tourner une IA dans une zone
+-- vide, c'est du temps serveur gâché.
+local function occupied(zoneId: string): boolean
+	local origin = ZoneBuilder.origin((ZoneConfig.get(zoneId) :: any).Order)
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+		if root and math.abs(root.Position.X - origin.X) &lt; ZoneBuilder.SPACING / 2 then
+			return true
+		end
+	end
+	return false
+end
+
+function WorldService.startPopulating()
+	task.spawn(function()
+		while true do
+			for _, zone in ipairs(ZoneConfig.List) do
+				local layout = layouts[zone.Id]
+				local def = MonsterConfig.get(zone.Monster)
+				-- Le boss n'apparaît pas tout seul : BossService s'en charge.
+				if layout and def and def.Rule ~= &quot;boss_phases&quot; and occupied(zone.Id) then
+					if MonsterService.countInZone(zone.Id) &lt; def.MaxAlive then
+						local point = layout.Spawns[math.random(1, #layout.Spawns)]
+						MonsterService.spawn(def, zone.Id, point, layout.Patrol)
+					end
+				end
+			end
+			task.wait(15)
+		end
+	end)
+end
+
+return WorldService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
+-- Primitives de construction, partagées par les sept zones.
+--
+-- Chaque zone occupe une dalle de 1600 studs sur l'axe X : la rue en 0, les
+-- égouts en 1600, et ainsi de suite. Elles ne se voient pas, ne s'entendent pas
+-- et ne se gênent pas. On passe de l'une à l'autre par une porte (`ZoneGate`)
+-- qui téléporte — personne ne traverse 1600 studs à pied.
+--
+-- Le reste du jeu ne connaît les zones que par trois tags (`Shelter`, `Npc`,
+-- `ZoneGate`) et des attributs. Remplacer une de ces fonctions par une vraie
+-- carte modélisée ne demande de toucher à aucun service.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local ZoneBuilder = {}
+
+ZoneBuilder.SPACING = 1600
+
+export type Layout = {
+	Patrol: { Vector3 },
+	Spawns: { Vector3 },
+	Anchor: Vector3,
+}
+
+function ZoneBuilder.origin(order: number): Vector3
+	return Vector3.new((order - 1) * ZoneBuilder.SPACING, 0, 0)
+end
+
+function ZoneBuilder.part(name: string, size: Vector3, position: Vector3, color: Color3,
+	material: Enum.Material, parent: Instance): Part
+	local p = Instance.new(&quot;Part&quot;)
+	p.Name = name
+	p.Size = size
+	p.Position = position
+	p.Anchored = true
+	p.Color = color
+	p.Material = material
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+function ZoneBuilder.light(parent: BasePart, color: Color3, brightness: number, range: number)
+	local l = Instance.new(&quot;PointLight&quot;)
+	l.Color = color
+	l.Brightness = brightness
+	l.Range = range
+	l.Parent = parent
+end
+
+function ZoneBuilder.sign(text: string, parent: BasePart, color: Color3, distance: number?)
+	local gui = Instance.new(&quot;BillboardGui&quot;)
+	gui.Size = UDim2.fromScale(11, 2.6)
+	gui.StudsOffset = Vector3.new(0, 4, 0)
+	gui.MaxDistance = distance or 130
+	gui.Parent = parent
+	local label = Instance.new(&quot;TextLabel&quot;)
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = color
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.Parent = gui
+end
+
+-- Un sol plat avec quatre murs et un plafond. `gaps` liste les ouvertures :
+-- &quot;north&quot;, &quot;south&quot;, &quot;east&quot;, &quot;west&quot;.
+function ZoneBuilder.room(center: Vector3, width: number, depth: number, height: number,
+	color: Color3, material: Enum.Material, parent: Instance, gaps: { string }?)
+	local open: { [string]: boolean } = {}
+	for _, side in ipairs(gaps or {}) do
+		open[side] = true
+	end
+	local T = 2
+	ZoneBuilder.part(&quot;Floor&quot;, Vector3.new(width, 1, depth), center, color, material, parent)
+	ZoneBuilder.part(&quot;Ceiling&quot;, Vector3.new(width, 1, depth),
+		center + Vector3.new(0, height, 0), color, material, parent)
+
+	local function wall(name: string, size: Vector3, offset: Vector3, side: string)
+		if open[side] then
+			-- Une ouverture de 16 studs au milieu : deux pans au lieu d'un mur.
+			local along = size.X &gt; size.Z
+			local span = along and size.X or size.Z
+			local piece = (span - 16) / 2
+			if piece &lt;= 0 then
+				return
+			end
+			for _, sign in ipairs({ -1, 1 }) do
+				local shift = along and Vector3.new(sign * (span - piece) / 2, 0, 0)
+					or Vector3.new(0, 0, sign * (span - piece) / 2)
+				local newSize = along and Vector3.new(piece, size.Y, size.Z)
+					or Vector3.new(size.X, size.Y, piece)
+				ZoneBuilder.part(name, newSize, center + offset + shift, color, material, parent)
+			end
+		else
+			ZoneBuilder.part(name, size, center + offset, color, material, parent)
+		end
+	end
+
+	wall(&quot;WallN&quot;, Vector3.new(width, height, T), Vector3.new(0, height / 2, -depth / 2), &quot;north&quot;)
+	wall(&quot;WallS&quot;, Vector3.new(width, height, T), Vector3.new(0, height / 2, depth / 2), &quot;south&quot;)
+	wall(&quot;WallW&quot;, Vector3.new(T, height, depth), Vector3.new(-width / 2, height / 2, 0), &quot;west&quot;)
+	wall(&quot;WallE&quot;, Vector3.new(T, height, depth), Vector3.new(width / 2, height / 2, 0), &quot;east&quot;)
+end
+
+function ZoneBuilder.corridor(from: Vector3, to: Vector3, width: number, height: number,
+	color: Color3, material: Enum.Material, parent: Instance)
+	local delta = to - from
+	local length = delta.Magnitude
+	local center = from + delta / 2
+	local along = math.abs(delta.X) &gt; math.abs(delta.Z)
+	local size = along and Vector3.new(length, 1, width) or Vector3.new(width, 1, length)
+	ZoneBuilder.part(&quot;Floor&quot;, size, center, color, material, parent)
+	ZoneBuilder.part(&quot;Ceiling&quot;, size, center + Vector3.new(0, height, 0), color, material, parent)
+	local wallSize = along and Vector3.new(length, height, 2) or Vector3.new(2, height, length)
+	local side = along and Vector3.new(0, 0, width / 2) or Vector3.new(width / 2, 0, 0)
+	local up = Vector3.new(0, height / 2, 0)
+	ZoneBuilder.part(&quot;WallA&quot;, wallSize, center + side + up, color, material, parent)
+	ZoneBuilder.part(&quot;WallB&quot;, wallSize, center - side + up, color, material, parent)
+end
+
+local shelterCount = 0
+
+-- Un refuge : plateforme, trois murs, un lit. C'est le seul objet que
+-- ShelterService regarde, via son tag et ses attributs.
+function ZoneBuilder.shelter(zoneId: string, position: Vector3, bedColor: Color3,
+	parent: Instance): Model
+	shelterCount += 1
+	local index = shelterCount
+	local model = Instance.new(&quot;Model&quot;)
+	model.Name = &quot;Shelter_&quot; .. zoneId .. &quot;_&quot; .. index
+
+	local floor = ZoneBuilder.part(&quot;Floor&quot;, Vector3.new(16, 1, 16), position,
+		Color3.fromRGB(58, 54, 50), Enum.Material.WoodPlanks, model)
+	ZoneBuilder.part(&quot;WallBack&quot;, Vector3.new(16, 11, 1), position + Vector3.new(0, 5.5, -7.5),
+		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
+	ZoneBuilder.part(&quot;WallLeft&quot;, Vector3.new(1, 11, 16), position + Vector3.new(-7.5, 5.5, 0),
+		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
+	ZoneBuilder.part(&quot;WallRight&quot;, Vector3.new(1, 11, 16), position + Vector3.new(7.5, 5.5, 0),
+		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
+	ZoneBuilder.part(&quot;Roof&quot;, Vector3.new(16, 1, 16), position + Vector3.new(0, 11, 0),
+		Color3.fromRGB(36, 34, 36), Enum.Material.Metal, model)
+
+	local bed = ZoneBuilder.part(&quot;Bed&quot;, Vector3.new(6, 1.6, 10),
+		position + Vector3.new(0, 1.3, 1), bedColor, Enum.Material.Fabric, model)
+	ZoneBuilder.sign(&quot;REFUGE &quot; .. index, bed, Color3.fromRGB(230, 226, 220))
+	ZoneBuilder.light(bed, bedColor, 1.3, 22)
+
+	model.PrimaryPart = floor
+	model:SetAttribute(&quot;ShelterId&quot;, zoneId .. &quot;_&quot; .. index)
+	model:SetAttribute(&quot;Zone&quot;, zoneId)
+	model:SetAttribute(&quot;OwnerName&quot;, &quot;&quot;)
+	CollectionService:AddTag(model, &quot;Shelter&quot;)
+	model.Parent = parent
+	return model
+end
+
+function ZoneBuilder.gate(targetZone: string, label: string, position: Vector3,
+	color: Color3, parent: Instance): Part
+	local gate = ZoneBuilder.part(&quot;Gate_&quot; .. targetZone, Vector3.new(14, 1.4, 14), position,
+		color, Enum.Material.Metal, parent)
+	ZoneBuilder.sign(label, gate, Color3.fromRGB(220, 230, 220))
+	ZoneBuilder.light(gate, color, 2, 30)
+	CollectionService:AddTag(gate, &quot;ZoneGate&quot;)
+	gate:SetAttribute(&quot;Zone&quot;, targetZone)
+	local prompt = Instance.new(&quot;ProximityPrompt&quot;)
+	prompt.ActionText = &quot;Passer&quot;
+	prompt.ObjectText = label
+	prompt.MaxActivationDistance = 13
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = gate
+	return gate
+end
+
+-- Objets de mission : caisse à ramasser, pièce à réparer, survivant à aider,
+-- colis à livrer. Tous marqués par un tag ; MissionService écoute leurs
+-- ProximityPrompt côté serveur.
+function ZoneBuilder.objective(kind: string, zoneId: string, position: Vector3,
+	parent: Instance): Part
+	local palette = {
+		collect = Color3.fromRGB(190, 150, 70),
+		repair = Color3.fromRGB(90, 150, 200),
+		rescue = Color3.fromRGB(200, 120, 120),
+		deliver = Color3.fromRGB(150, 190, 120),
+	}
+	local labels = {
+		collect = &quot;Ressources&quot;, repair = &quot;Pièce de générateur&quot;,
+		rescue = &quot;Survivant&quot;, deliver = &quot;Colis&quot;,
+	}
+	local color = palette[kind] or Color3.fromRGB(160, 160, 160)
+	local part = ZoneBuilder.part(&quot;Objective_&quot; .. kind, Vector3.new(3.5, 4, 3.5), position,
+		color, Enum.Material.WoodPlanks, parent)
+	ZoneBuilder.sign(labels[kind] or kind, part, color, 70)
+	ZoneBuilder.light(part, color, 1, 14)
+	CollectionService:AddTag(part, &quot;Objective&quot;)
+	part:SetAttribute(&quot;Goal&quot;, kind)
+	part:SetAttribute(&quot;Zone&quot;, zoneId)
+	local prompt = Instance.new(&quot;ProximityPrompt&quot;)
+	prompt.ActionText = &quot;Prendre&quot;
+	prompt.ObjectText = labels[kind] or kind
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = part
+	return part
+end
+
+function ZoneBuilder.spawnPoint(position: Vector3, parent: Instance): SpawnLocation
+	local spawn = Instance.new(&quot;SpawnLocation&quot;)
+	spawn.Name = &quot;Spawn&quot;
+	spawn.Size = Vector3.new(14, 1, 14)
+	spawn.Position = position
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Enabled = false   -- une seule apparition active : celle de la rue
+	spawn.Color = Color3.fromRGB(70, 70, 78)
+	spawn.Material = Enum.Material.Concrete
+	spawn.Parent = parent
+	return spawn
+end
+
+function ZoneBuilder.folder(zoneId: string): Folder
+	local root = Workspace:FindFirstChild(&quot;Zones&quot;)
+	if not root then
+		root = Instance.new(&quot;Folder&quot;)
+		root.Name = &quot;Zones&quot;
+		root.Parent = Workspace
+	end
+	local existing = root:FindFirstChild(zoneId)
+	if existing then
+		existing:Destroy()
+	end
+	local folder = Instance.new(&quot;Folder&quot;)
+	folder.Name = zoneId
+	folder.Parent = root
+	return folder
+end
+
+function ZoneBuilder.reset()
+	shelterCount = 0
+	local root = Workspace:FindFirstChild(&quot;Zones&quot;)
+	if root then
+		root:Destroy()
+	end
+end
+
+return ZoneBuilder
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
+-- Les sept cartes. Une fonction par zone, toutes bâties avec les primitives de
+-- ZoneBuilder, toutes renvoyant la même chose : points de ronde, points
+-- d'apparition des monstres, et le point d'arrivée quand on entre dans la zone.
+--
+-- Chaque zone a son identité visuelle (couleur, matière, densité) parce que
+-- c'est ce qui fait qu'on sait où on est sans lire le HUD.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+
+local MissionConfig = require(script.Parent.Parent.Shared.MissionConfig)
+local ZoneBuilder = require(script.Parent.ZoneBuilder)
+
+local B = ZoneBuilder
+local Layouts = {}
+
+local function npc(def, position: Vector3, parent: Instance)
+	local model = Instance.new(&quot;Model&quot;)
+	model.Name = &quot;Npc_&quot; .. def.Id
+	local body = B.part(&quot;Torso&quot;, Vector3.new(2, 3, 1.2), position + Vector3.new(0, 3.5, 0),
+		Color3.fromRGB(58, 70, 98), Enum.Material.Fabric, model)
+	B.part(&quot;Head&quot;, Vector3.new(1.6, 1.6, 1.6), position + Vector3.new(0, 5.9, 0),
+		Color3.fromRGB(214, 176, 132), Enum.Material.SmoothPlastic, model)
+	B.part(&quot;Legs&quot;, Vector3.new(2, 2, 1.2), position + Vector3.new(0, 1, 0),
+		Color3.fromRGB(38, 40, 48), Enum.Material.Fabric, model)
+	B.sign(def.Name, body, Color3.fromRGB(255, 214, 140))
+	B.light(body, Color3.fromRGB(255, 214, 140), 0.8, 16)
+	local prompt = Instance.new(&quot;ProximityPrompt&quot;)
+	prompt.ActionText = &quot;Parler&quot;
+	prompt.ObjectText = def.Name
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = body
+	model.PrimaryPart = body
+	model:SetAttribute(&quot;NpcId&quot;, def.Id)
+	CollectionService:AddTag(model, &quot;Npc&quot;)
+	model.Parent = parent
+	return model
+end
+
+-- ═══ 1. LA RUE ════════════════════════════════════════════════════════════
+-- Ville ouverte, immeubles hauts, ruelles. C'est ici que vivent le coffre, la
+-- boutique et les six PNJ : on y revient entre chaque session.
+function Layouts.street(origin: Vector3, folder: Folder): ZoneBuilder.Layout
+	local LENGTH, WIDTH = 420, 60
+	local asphalt = Color3.fromRGB(34, 34, 38)
+
+	B.part(&quot;Road&quot;, Vector3.new(WIDTH, 1, LENGTH), origin, asphalt, Enum.Material.Asphalt, folder)
+	for _, side in ipairs({ -1, 1 }) do
+		B.part(&quot;Sidewalk&quot;, Vector3.new(10, 1.6, LENGTH),
+			origin + Vector3.new(side * (WIDTH / 2 - 5), 0.3, 0),
+			Color3.fromRGB(62, 62, 66), Enum.Material.Concrete, folder)
+		local z = -LENGTH / 2 + 30
+		while z &lt; LENGTH / 2 - 30 do
+			local depth = 46 + (z % 7) * 3
+			local height = 60 + ((z + side * 13) % 11) * 9
+			local tint = 38 + ((z + side * 5) % 9) * 3
+			B.part(&quot;Block&quot;, Vector3.new(depth, height, 56),
+				origin + Vector3.new(side * (WIDTH / 2 + depth / 2 - 2), height / 2, z),
+				Color3.fromRGB(tint, tint - 2, tint + 4), Enum.Material.Brick, folder)
+			z += 80
+		end
+	end
+
+	for z = -LENGTH / 2 + 40, LENGTH / 2 - 40, 70 do
+		for _, side in ipairs({ -1, 1 }) do
+			local pole = B.part(&quot;Pole&quot;, Vector3.new(0.8, 18, 0.8),
+				origin + Vector3.new(side * (WIDTH / 2 - 8), 9, z),
+				Color3.fromRGB(28, 28, 32), Enum.Material.Metal, folder)
+			local head = B.part(&quot;Lamp&quot;, Vector3.new(3, 0.8, 3),
+				pole.Position + Vector3.new(0, 9, 0),
+				Color3.fromRGB(255, 224, 170), Enum.Material.Neon, folder)
+			B.light(head, Color3.fromRGB(255, 220, 170), 2.2, 52)
+		end
+	end
+
+	for _, side in ipairs({ -1, 1 }) do
+		for step = 0, 2 do
+			B.shelter(&quot;street&quot;, origin + Vector3.new(side * (WIDTH / 2 + 12), 1,
+				-LENGTH / 2 + 95 + step * 110), Color3.fromRGB(92, 62, 58), folder)
+		end
+	end
+
+	-- Coffre et boutique : ils n'existent que dans la rue, c'est le camp de base.
+	local vault = B.part(&quot;Vault&quot;, Vector3.new(10, 10, 6), origin + Vector3.new(-18, 5, 0),
+		Color3.fromRGB(46, 108, 70), Enum.Material.DiamondPlate, folder)
+	B.sign(&quot;COFFRE — déposer&quot;, vault, Color3.fromRGB(120, 230, 160))
+	B.light(vault, Color3.fromRGB(110, 230, 160), 2, 34)
+	CollectionService:AddTag(vault, &quot;Vault&quot;)
+	local vp = Instance.new(&quot;ProximityPrompt&quot;)
+	vp.ActionText = &quot;Déposer&quot;; vp.ObjectText = &quot;Coffre&quot;
+	vp.MaxActivationDistance = 14; vp.RequiresLineOfSight = false
+	vp.Parent = vault
+
+	local shop = B.part(&quot;Shop&quot;, Vector3.new(10, 10, 6), origin + Vector3.new(18, 5, 0),
+		Color3.fromRGB(58, 70, 126), Enum.Material.Metal, folder)
+	B.sign(&quot;BOUTIQUE&quot;, shop, Color3.fromRGB(150, 180, 255))
+	B.light(shop, Color3.fromRGB(140, 170, 255), 2, 34)
+	CollectionService:AddTag(shop, &quot;Shop&quot;)
+	local sp = Instance.new(&quot;ProximityPrompt&quot;)
+	sp.ActionText = &quot;Ouvrir&quot;; sp.ObjectText = &quot;Boutique&quot;
+	sp.MaxActivationDistance = 14; sp.RequiresLineOfSight = false
+	sp.Parent = shop
+
+	for i, def in ipairs(MissionConfig.Npcs) do
+		npc(def, origin + Vector3.new((i % 2 == 0) and 22 or -22, 1, -60 + (i - 1) * 24), folder)
+	end
+
+	for i = 1, 5 do
+		B.objective(&quot;collect&quot;, &quot;street&quot;, origin + Vector3.new(
+			(i % 2 == 0) and 24 or -24, 3, -150 + i * 60), folder)
+	end
+	B.objective(&quot;deliver&quot;, &quot;street&quot;, origin + Vector3.new(0, 3, -120), folder)
+
+	B.gate(&quot;sewers&quot;, &quot;ÉGOUTS — zone 2&quot;, origin + Vector3.new(0, 0.8, LENGTH / 2 - 50),
+		Color3.fromRGB(70, 90, 70), folder)
+
+	local spawn = B.spawnPoint(origin + Vector3.new(0, 1, -LENGTH / 2 + 30), folder)
+	spawn.Enabled = true
+
+	local patrol = {}
+	for z = -LENGTH / 2 + 50, LENGTH / 2 - 50, 52 do
+		table.insert(patrol, origin + Vector3.new(-14, 3, z))
+		table.insert(patrol, origin + Vector3.new(14, 3, z + 26))
+	end
+	return {
+		Patrol = patrol,
+		Spawns = {
+			origin + Vector3.new(0, 3, LENGTH / 2 - 70),
+			origin + Vector3.new(-20, 3, 40),
+			origin + Vector3.new(20, 3, -40),
+		},
+		Anchor = origin + Vector3.new(0, 4, -LENGTH / 2 + 30),
+	}
+end
+
+-- ═══ 2. LES ÉGOUTS ════════════════════════════════════════════════════════
+-- Tunnels étroits en grille. Peu de lumière, beaucoup d'angles morts : c'est la
+-- zone où le son compte plus que la vue, et le monstre est fait pour ça.
+function Layouts.sewers(origin: Vector3, folder: Folder): ZoneBuilder.Layout
+	local stone = Color3.fromRGB(46, 50, 46)
+	local H = 16
+	local patrol, spawns = {}, {}
+
+	-- Trois galeries est-ouest reliées par trois puits nord-sud.
+	for row = -1, 1 do
+		local z = row * 90
+		B.corridor(origin + Vector3.new(-200, 0, z), origin + Vector3.new(200, 0, z),
+			22, H, stone, Enum.Material.Slate, folder)
+		for x = -160, 160, 80 do
+			table.insert(patrol, origin + Vector3.new(x, 3, z))
+		end
+	end
+	for col = -1, 1 do
+		local x = col * 150
+		B.corridor(origin + Vector3.new(x, 0, -90), origin + Vector3.new(x, 0, 90),
+			20, H, stone, Enum.Material.Slate, folder)
+		table.insert(patrol, origin + Vector3.new(x, 3, 0))
+	end
+
+	-- Canal central : l'eau empêche de couper droit.
+	B.part(&quot;Water&quot;, Vector3.new(360, 1, 10), origin + Vector3.new(0, 0.4, 0),
+		Color3.fromRGB(36, 56, 50), Enum.Material.Water, folder)
+
+	-- Lanternes espacées, volontairement insuffisantes.
+	for x = -170, 170, 85 do
+		for _, z in ipairs({ -90, 0, 90 }) do
+			local lamp = B.part(&quot;Lamp&quot;, Vector3.new(2, 0.6, 2),
+				origin + Vector3.new(x, H - 2, z), Color3.fromRGB(150, 200, 160),
+				Enum.Material.Neon, folder)
+			B.light(lamp, Color3.fromRGB(130, 200, 160), 1.4, 36)
+		end
+	end
+
+	-- Alcôves : cinq refuges au bout de niches, un seul accès chacun.
+	for i, spot in ipairs({
+		Vector3.new(-190, 1, -90), Vector3.new(190, 1, -90),
+		Vector3.new(-190, 1, 90), Vector3.new(190, 1, 90),
+		Vector3.new(0, 1, 90),
+	}) do
+		B.shelter(&quot;sewers&quot;, origin + spot, Color3.fromRGB(64, 92, 74), folder)
+	end
+
+	for i = 1, 3 do
+		B.objective(&quot;repair&quot;, &quot;sewers&quot;, origin + Vector3.new(-120 + i * 120, 3, -90), folder)
+	end
+	B.objective(&quot;rescue&quot;, &quot;sewers&quot;, origin + Vector3.new(0, 3, -90), folder)
+
+	B.gate(&quot;street&quot;, &quot;RETOUR — la rue&quot;, origin + Vector3.new(-200, 0.8, 0),
+		Color3.fromRGB(90, 90, 70), folder)
+	B.gate(&quot;dollhouse&quot;, &quot;MAISON DES POUPÉES — zone 3&quot;, origin + Vector3.new(200, 0.8, 0),
+		Color3.fromRGB(120, 80, 110), folder)
+	B.spawnPoint(origin + Vector3.new(-170, 1, 0), folder)
+
+	spawns = {
+		origin + Vector3.new(120, 3, 90),
+		origin + Vector3.new(-120, 3, -90),
+		origin + Vector3.new(0, 3, 60),
+	}
+	return { Patrol = patrol, Spawns = spawns, Anchor = origin + Vector3.new(-170, 4, 0) }
+end
+
+-- ═══ 3. LA MAISON DES POUPÉES ═════════════════════════════════════════════
+-- Une maison bourgeoise : hall central, six chambres autour. Les lignes de vue
+-- sont longues et dégagées — c'est ce qui rend la mécanique du regard jouable.
+function Layouts.dollhouse(origin: Vector3, folder: Folder): ZoneBuilder.Layout
+	local wood = Color3.fromRGB(78, 58, 46)
+	local H = 22
+	local patrol = {}
+
+	B.room(origin, 120, 90, H, wood, Enum.Material.WoodPlanks, folder,
+		{ &quot;north&quot;, &quot;south&quot;, &quot;east&quot;, &quot;west&quot; })
+	table.insert(patrol, origin + Vector3.new(0, 3, 0))
+
+	local rooms = {
+		{ Vector3.new(-110, 0, -70), &quot;east&quot; }, { Vector3.new(110, 0, -70), &quot;west&quot; },
+		{ Vector3.new(-110, 0, 70), &quot;east&quot; }, { Vector3.new(110, 0, 70), &quot;west&quot; },
+		{ Vector3.new(0, 0, -110), &quot;south&quot; }, { Vector3.new(0, 0, 110), &quot;north&quot; },
+	}
+	for i, entry in ipairs(rooms) do
+		local center = origin + entry[1]
+		B.room(center, 70, 60, H, wood, Enum.Material.WoodPlanks, folder, { entry[2] })
+		B.corridor(center, origin, 16, H, wood, Enum.Material.WoodPlanks, folder)
+		B.shelter(&quot;dollhouse&quot;, center + Vector3.new(0, 1, 0), Color3.fromRGB(150, 96, 120), folder)
+		table.insert(patrol, center + Vector3.new(14, 3, 0))
+		table.insert(patrol, center + Vector3.new(-14, 3, 0))
+	end
+
+	-- Lustres : la maison est éclairée, et c'est voulu. On la voit arriver.
+	for _, point in ipairs({ Vector3.new(0, 0, 0), Vector3.new(-110, 0, -70),
+		Vector3.new(110, 0, 70) }) do
+		local lamp = B.part(&quot;Chandelier&quot;, Vector3.new(5, 1, 5),
+			origin + point + Vector3.new(0, H - 3, 0),
+			Color3.fromRGB(255, 216, 170), Enum.Material.Neon, folder)
+		B.light(lamp, Color3.fromRGB(255, 210, 160), 2.4, 70)
+	end
+
+	for i = 1, 5 do
+		B.objective(&quot;collect&quot;, &quot;dollhouse&quot;,
+			origin + rooms[i][1] + Vector3.new(20, 3, 18), folder)
+	end
+
+	B.gate(&quot;sewers&quot;, &quot;RETOUR — les égouts&quot;, origin + Vector3.new(-55, 1.4, 0),
+		Color3.fromRGB(70, 90, 70), folder)
+	B.gate(&quot;slasher&quot;, &quot;QUARTIER DU SLASHER — zone 4&quot;, origin + Vector3.new(55, 1.4, 0),
+		Color3.fromRGB(130, 60, 60), folder)
+	B.spawnPoint(origin + Vector3.new(0, 1, 30), folder)
+
+	return {
+		Patrol = patrol,
+		Spawns = { origin + Vector3.new(0, 3, -110), origin + Vector3.new(110, 3, 70) },
+		Anchor = origin + Vector3.new(0, 4, 30),
+	}
+end
+
+-- ═══ 4. LE QUARTIER DU SLASHER ════════════════════════════════════════════
+-- Pavillons autour d'une boucle, haies, raccourcis entre les jardins. Le
+-- monstre est lent : toute la zone est dessinée pour qu'on puisse le semer en
+-- connaissant les passages.
+function Layouts.slasher(origin: Vector3, folder: Folder): ZoneBuilder.Layout
+	local road = Color3.fromRGB(42, 40, 44)
+	local patrol = {}
+	local R = 170
+
+	-- Boucle de bitume
+	for angle = 0, 350, 10 do
+		local a = math.rad(angle)
+		local next_a = math.rad(angle + 10)
+		local from = origin + Vector3.new(math.cos(a) * R, 0, math.sin(a) * R)
+		local to = origin + Vector3.new(math.cos(next_a) * R, 0, math.sin(next_a) * R)
+		local mid = (from + to) / 2
+		local seg = (to - from).Magnitude + 4
+		local piece = B.part(&quot;Road&quot;, Vector3.new(seg, 1, 26), mid, road,
+			Enum.Material.Asphalt, folder)
+		piece.Orientation = Vector3.new(0, -angle - 5, 0)
+		if angle % 40 == 0 then
+			table.insert(patrol, mid + Vector3.new(0, 3, 0))
+		end
+	end
+
+	-- Six pavillons, chacun avec son garage-refuge
+	for i = 0, 5 do
+		local a = math.rad(i * 60 + 20)
+		local center = origin + Vector3.new(math.cos(a) * (R + 55), 0, math.sin(a) * (R + 55))
+		B.room(center, 60, 50, 20, Color3.fromRGB(70, 62, 58), Enum.Material.Brick, folder,
+			{ &quot;south&quot; })
+		B.shelter(&quot;slasher&quot;, center + Vector3.new(0, 1, 34), Color3.fromRGB(170, 70, 60), folder)
+		table.insert(patrol, center + Vector3.new(0, 3, 40))
+		-- Haies : elles cassent la ligne de vue sans bloquer le passage.
+		for side = -1, 1, 2 do
+			B.part(&quot;Hedge&quot;, Vector3.new(4, 9, 40), center + Vector3.new(side * 34, 4.5, 20),
+				Color3.fromRGB(34, 56, 38), Enum.Material.Grass, folder)
+		end
+	end
+
+	-- Brume : un plafond bas et sombre au-dessus de la boucle.
+	B.part(&quot;Fog&quot;, Vector3.new(R * 2.6, 1, R * 2.6), origin + Vector3.new(0, 40, 0),
+		Color3.fromRGB(24, 24, 28), Enum.Material.SmoothPlastic, folder)
+
+	for i = 1, 3 do
+		B.objective(&quot;deliver&quot;, &quot;slasher&quot;,
+			origin + Vector3.new(math.cos(i * 2) * R, 3, math.sin(i * 2) * R), folder)
+	end
+
+	B.gate(&quot;dollhouse&quot;, &quot;RETOUR — la maison&quot;, origin + Vector3.new(0, 1.4, -R + 10),
+		Color3.fromRGB(120, 80, 110), folder)
+	B.gate(&quot;convent&quot;, &quot;COUVENT MAUDIT — zone 5&quot;, origin + Vector3.new(0, 1.4, R - 10),
+		Color3.fromRGB(90, 80, 130), folder)
+	B.spawnPoint(origin + Vector3.new(0, 1, 0), folder)
+
+	return {
+		Patrol = patrol,
+		Spawns = { origin + Vector3.new(R, 3, 0) },
+		Anchor = origin + Vector3.new(0, 4, 0),
+	}
+end
+
+-- ═══ 5. LE COUVENT MAUDIT ═════════════════════════════════════════════════
+-- Nef, cloître carré, cellules. L'entité neutralise les défenses : la zone
+-- donne donc beaucoup de portes et de sorties, parce qu'il faut pouvoir fuir.
+function Layouts.convent(origin: Vector3, folder: Folder): ZoneBuilder.Layout
+	local stone = Color3.fromRGB(62, 60, 66)
+	local H = 34
+	local patrol = {}
+
+	B.room(origin + Vector3.new(0, 0, -120), 70, 200, H, stone, Enum.Material.Marble, folder,
+		{ &quot;south&quot; })
+	for z = -200, -40, 32 do
+		for side = -1, 1, 2 do
+			B.part(&quot;Column&quot;, Vector3.new(7, H, 7),
+				origin + Vector3.new(side * 24, H / 2, z), stone, Enum.Material.Marble, folder)
+		end
+		table.insert(patrol, origin + Vector3.new(0, 3, z))
+	end
+
+	-- Cloître : un carré ouvert au centre, six cellules autour.
+	local C = 110
+	B.part(&quot;CloisterFloor&quot;, Vector3.new(C * 2, 1, C * 2), origin + Vector3.new(0, 0, 60),
+		Color3.fromRGB(48, 52, 44), Enum.Material.Grass, folder)
+	for i = 0, 5 do
+		local a = math.rad(i * 60 + 30)
+		local center = origin + Vector3.new(math.cos(a) * C, 0, 60 + math.sin(a) * C)
+		B.room(center, 44, 40, 22, stone, Enum.Material.Marble, folder, { &quot;north&quot; })
+		B.shelter(&quot;convent&quot;, center + Vector3.new(0, 1, 0), Color3.fromRGB(120, 100, 180), folder)
+		table.insert(patrol, center + Vector3.new(0, 3, 26))
+	end
+
+	for _, point in ipairs({ Vector3.new(0, 0, -120), Vector3.new(0, 0, 60) }) do
+		local brazier = B.part(&quot;Brazier&quot;, Vector3.new(6, 2, 6),
+			origin + point + Vector3.new(0, 4, 0),
+			Color3.fromRGB(255, 140, 70), Enum.Material.Neon, folder)
+		B.light(brazier, Color3.fromRGB(255, 130, 60), 3, 90)
+	end
+
+	B.objective(&quot;collect&quot;, &quot;convent&quot;, origin + Vector3.new(0, 3, -200), folder)
+
+	B.gate(&quot;slasher&quot;, &quot;RETOUR — le quartier&quot;, origin + Vector3.new(-40, 1.4, 60),
+		Color3.fromRGB(130, 60, 60), folder)
+	B.gate(&quot;hospital&quot;, &quot;HÔPITAL DES CAUCHEMARS — zone 6&quot;, origin + Vector3.new(40, 1.4, 60),
+		Color3.fromRGB(80, 120, 130), folder)
+	B.spawnPoint(origin + Vector3.new(0, 1, 0), folder)
+
+	return {
+		Patrol = patrol,
+		Spawns = { origin + Vector3.new(0, 3, -180), origin + Vector3.new(C, 3, 60) },
+		Anchor = origin + Vector3.new(0, 4, 0),
+	}
+end
+
+-- ═══ 6. L'HÔPITAL DES CAUCHEMARS ══════════════════════════════════════════
+-- Un couloir central très long, huit chambres de chaque côté. Les portes se
+-- ressemblent toutes : c'est le décor qui rend les fausses alertes efficaces.
+function Layouts.hospital(origin: Vector3, folder: Folder): ZoneBuilder.Layout
+	local tile = Color3.fromRGB(78, 84, 86)
+	local H = 20
+	local patrol = {}
+
+	B.corridor(origin + Vector3.new(0, 0, -200), origin + Vector3.new(0, 0, 200),
+		26, H, tile, Enum.Material.Concrete, folder)
+	for z = -180, 180, 45 do
+		table.insert(patrol, origin + Vector3.new(0, 3, z))
+	end
+
+	for i = 0, 7 do
+		local side = (i % 2 == 0) and -1 or 1
+		local z = -170 + math.floor(i / 2) * 110
+		local center = origin + Vector3.new(side * 60, 0, z)
+		B.room(center, 70, 70, H, tile, Enum.Material.Concrete, folder,
+			{ side &lt; 0 and &quot;east&quot; or &quot;west&quot; })
+		B.corridor(center, origin + Vector3.new(0, 0, z), 14, H, tile,
+			Enum.Material.Concrete, folder)
+		if i &lt; 6 then
+			B.shelter(&quot;hospital&quot;, center + Vector3.new(0, 1, 0),
+				Color3.fromRGB(90, 150, 160), folder)
+		end
+		table.insert(patrol, center + Vector3.new(0, 3, 0))
+	end
+
+	for z = -160, 160, 80 do
+		local tube = B.part(&quot;Tube&quot;, Vector3.new(8, 0.6, 2),
+			origin + Vector3.new(0, H - 2, z), Color3.fromRGB(200, 240, 245),
+			Enum.Material.Neon, folder)
+		B.light(tube, Color3.fromRGB(190, 235, 245), 1.8, 46)
+	end
+
+	for i = 1, 3 do
+		B.objective(&quot;repair&quot;, &quot;hospital&quot;, origin + Vector3.new(0, 3, -120 + i * 110), folder)
+	end
+
+	B.gate(&quot;convent&quot;, &quot;RETOUR — le couvent&quot;, origin + Vector3.new(0, 1.4, -200),
+		Color3.fromRGB(90, 80, 130), folder)
+	-- L'entrée du carnaval n'est pas sur le couloir : elle est au fond d'une
+	-- chambre, comme le demande la mission « La porte derrière l'hôpital ».
+	B.gate(&quot;carnival&quot;, &quot;??? — une porte qui ne devrait pas être là&quot;,
+		origin + Vector3.new(60, 1.4, 160), Color3.fromRGB(180, 60, 110), folder)
+	B.spawnPoint(origin + Vector3.new(0, 1, -190), folder)
+
+	return {
+		Patrol = patrol,
+		Spawns = { origin + Vector3.new(0, 3, 150), origin + Vector3.new(-60, 3, -60) },
+		Anchor = origin + Vector3.new(0, 4, -190),
+	}
+end
+
+-- ═══ 7. LE CARNAVAL DE L'ENFER ════════════════════════════════════════════
+-- Six tentes autour d'un chapiteau. Le chapiteau est l'arène du boss : un
+-- cercle dégagé, sans mur pour se cacher, avec seulement des mâts.
+function Layouts.carnival(origin: Vector3, folder: Folder): ZoneBuilder.Layout
+	local ground = Color3.fromRGB(48, 36, 40)
+	local patrol = {}
+	local R = 150
+
+	B.part(&quot;Ground&quot;, Vector3.new(560, 1, 560), origin, ground, Enum.Material.Ground, folder)
+
+	-- Chapiteau : anneau de mâts et toit.
+	for angle = 0, 350, 30 do
+		local a = math.rad(angle)
+		local mast = B.part(&quot;Mast&quot;, Vector3.new(5, 60, 5),
+			origin + Vector3.new(math.cos(a) * 110, 30, math.sin(a) * 110),
+			Color3.fromRGB(140, 40, 50), Enum.Material.Fabric, folder)
+		if angle % 90 == 0 then
+			B.light(mast, Color3.fromRGB(255, 90, 90), 2, 70)
+			table.insert(patrol, origin + Vector3.new(math.cos(a) * 80, 3, math.sin(a) * 80))
+		end
+	end
+	B.part(&quot;BigTop&quot;, Vector3.new(250, 2, 250), origin + Vector3.new(0, 60, 0),
+		Color3.fromRGB(120, 32, 44), Enum.Material.Fabric, folder)
+	local ring = B.part(&quot;Ring&quot;, Vector3.new(180, 0.6, 180), origin + Vector3.new(0, 0.8, 0),
+		Color3.fromRGB(90, 30, 36), Enum.Material.Sand, folder)
+	CollectionService:AddTag(ring, &quot;BossArena&quot;)
+	ring:SetAttribute(&quot;Zone&quot;, &quot;carnival&quot;)
+
+	-- Six tentes de forains, quatre abritent un refuge.
+	for i = 0, 5 do
+		local a = math.rad(i * 60)
+		local center = origin + Vector3.new(math.cos(a) * (R + 90), 0, math.sin(a) * (R + 90))
+		B.room(center, 56, 56, 26, Color3.fromRGB(96, 44, 70), Enum.Material.Fabric, folder,
+			{ &quot;north&quot; })
+		if i &lt; 4 then
+			B.shelter(&quot;carnival&quot;, center + Vector3.new(0, 1, 0),
+				Color3.fromRGB(190, 70, 150), folder)
+		end
+		table.insert(patrol, center + Vector3.new(0, 3, 34))
+		local bulb = B.part(&quot;Bulb&quot;, Vector3.new(3, 3, 3), center + Vector3.new(0, 24, 0),
+			Color3.fromRGB(255, 120, 200), Enum.Material.Neon, folder)
+		B.light(bulb, Color3.fromRGB(255, 110, 190), 2.2, 60)
+	end
+
+	B.objective(&quot;collect&quot;, &quot;carnival&quot;, origin + Vector3.new(0, 3, R + 40), folder)
+
+	B.gate(&quot;hospital&quot;, &quot;RETOUR — l'hôpital&quot;, origin + Vector3.new(0, 1.4, -(R + 150)),
+		Color3.fromRGB(80, 120, 130), folder)
+	B.spawnPoint(origin + Vector3.new(0, 1, -(R + 120)), folder)
+
+	return {
+		Patrol = patrol,
+		Spawns = { origin + Vector3.new(0, 3, 0) },
+		Anchor = origin + Vector3.new(0, 4, -(R + 120)),
+	}
+end
+
+Layouts.ById = {
+	street = Layouts.street,
+	sewers = Layouts.sewers,
+	dollhouse = Layouts.dollhouse,
+	slasher = Layouts.slasher,
+	convent = Layouts.convent,
+	hospital = Layouts.hospital,
+	carnival = Layouts.carnival,
+}
+
+return Layouts
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
 -- §3 — accès aux zones. Une zone ne se débloque jamais sans que ses conditions
 -- soient remplies (CDC §15), et la vérification est faite ici, côté serveur,
 -- à chaque entrée — pas seulement au moment du déblocage.
@@ -3113,6 +4095,15 @@ local PlayerDataService = require(script.Parent.PlayerDataService)
 local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
 
 local ZoneService = {}
+
+-- WorldService fournit la téléportation : les zones sont à 1600 studs les unes
+-- des autres. On l'injecte depuis le bootstrap pour que ZoneService n'ait pas
+-- besoin de connaître la géométrie.
+local teleport: ((Player, string) -&gt; boolean)? = nil
+
+function ZoneService.setTeleporter(fn: (Player, string) -&gt; boolean)
+	teleport = fn
+end
 
 local function statsOf(profile): {
 	LifetimeBanked: number, MainMissions: number, NightsSurvived: number,
@@ -3179,6 +4170,9 @@ function ZoneService.enter(player: Player, zoneId: string): (boolean, string)
 		PlayerDataService.markDirty(player)
 	end
 	local zone = ZoneConfig.get(zoneId) :: ZoneConfig.Zone
+	if teleport then
+		teleport(player, zoneId)
+	end
 	return true, zone.Name
 end
 
@@ -3202,7 +4196,7 @@ function ZoneService.overview(player: Player)
 end
 
 return ZoneService
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX32"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX30"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX31"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX29"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX28"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX27"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX36"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX34"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX35"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX33"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX32"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX31"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
 -- Point d'entrée client. Il ne décide de rien : il affiche ce que le serveur
 -- envoie et transmet les demandes du joueur.
 
@@ -3472,7 +4466,7 @@ ContextActionService:SetTitle(&quot;Missions&quot;, &quot;MISSIONS&quot;)
 ContextActionService:SetTitle(&quot;Attack&quot;, &quot;FRAPPER&quot;)
 
 Hud.toast(&quot;Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.&quot;, &quot;info&quot;)
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
 -- §9 — l'interface. Tout ce que le cahier des charges demande d'afficher :
 -- argent sécurisé et non sécurisé, zone, santé, objectifs, état du refuge,
 -- alertes, temps de survie, inventaire, carte, écran de mort, paramètres.
@@ -3705,7 +4699,7 @@ function Hud.setHealth(current: number, max: number)
 end
 
 return Hud
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
 -- Boutique, missions, carte, écran de mort et paramètres (§9).
 -- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
 

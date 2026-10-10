@@ -8,6 +8,15 @@ local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
 
 local ZoneService = {}
 
+-- WorldService fournit la téléportation : les zones sont à 1600 studs les unes
+-- des autres. On l'injecte depuis le bootstrap pour que ZoneService n'ait pas
+-- besoin de connaître la géométrie.
+local teleport: ((Player, string) -> boolean)? = nil
+
+function ZoneService.setTeleporter(fn: (Player, string) -> boolean)
+	teleport = fn
+end
+
 local function statsOf(profile): {
 	LifetimeBanked: number, MainMissions: number, NightsSurvived: number,
 	SurvivalSeconds: number, Quests: { [string]: boolean },
@@ -73,6 +82,9 @@ function ZoneService.enter(player: Player, zoneId: string): (boolean, string)
 		PlayerDataService.markDirty(player)
 	end
 	local zone = ZoneConfig.get(zoneId) :: ZoneConfig.Zone
+	if teleport then
+		teleport(player, zoneId)
+	end
 	return true, zone.Name
 end
 

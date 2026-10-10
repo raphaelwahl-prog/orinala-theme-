@@ -11,18 +11,19 @@ dans le code, elle est marquée « pas fait », même si la configuration existe
 |---|---|---|---|---|
 | 1 | Présentation | — | — | — |
 | 2 | Boucle de jeu | **fait** | `SurvivalService`, `EconomyService` | — |
-| 3 | Les 7 zones | **partiel** | `ZoneConfig.luau` | Les 7 zones sont configurées, verrouillées et déblocables. **Seule la rue est construite.** Les 6 autres n'ont pas de carte. |
+| 3 | Les 7 zones | **fait** | `ZoneConfig.luau`, `ZoneLayouts.luau` | Les sept cartes existent, chacune avec son identité, ses refuges et ses portes. Elles occupent des dalles de 1600 studs et se rejoignent par téléportation. |
 | 4 | Sommeil et refuges | **fait** | `ShelterService`, `SurvivalService` | — |
-| 5 | Monstres et IA | **partiel** | `MonsterService` | Les 8 états sont là. Sur les 7 mécaniques de zone, 3 sont codées (`sound`, `gaze`, `relentless`). `disable`, `fake_alerts` et `boss_phases` attendent leurs zones. |
+| 5 | Monstres et IA | **fait** | `MonsterService`, `BossService` | Les 8 états et **les 7 mécaniques** : `sound`, `gaze`, `relentless`, `disable` (le couvent éteint tes défenses), `fake_alerts` (l'hôpital émet de fausses alertes), `boss_phases` (3 phases qui rejouent les mécaniques apprises). |
 | 6 | Économie et équipements | **fait** | `EconomyService`, `ItemConfig`, `ShopService` | — |
-| 7 | Missions et PNJ | **partiel** | `MissionService`, `CityBuilder` | 16 missions et 6 PNJ existent. Sur 11 types d'objectifs, **3 sont branchés** : `survive_session`, `repel`, `bank`. Les autres (`collect`, `deliver`, `repair`, `rescue`, `escape_chase`, `survive_extreme`, `find_secret`) ont besoin d'objets de monde qui n'existent que dans les zones suivantes. |
-| 8 | Progression à long terme | **pas fait** | — | Volontaire : le CDC §14 la place après le lancement. |
+| 7 | Missions et PNJ | **fait** | `MissionService`, `ObjectiveService` | 16 missions, 6 PNJ, et **les 11 types d'objectifs branchés**. Les quatre ramassables sont des objets du monde qui réapparaissent ; `escape_chase`, `survive_extreme` et `find_secret` se déduisent du jeu, pas d'un bouton. |
+| 8 | Progression à long terme | **partiel** | `BossService` | Le boss accorde un trophée, un titre et marque le carnaval comme terminé. Les variantes de monstres, contrats rares, classements saisonniers et collections restent à faire — le CDC §14 les place après le lancement. |
 | 9 | Interface | **partiel** | `Hud.luau`, `Panels.luau` | Tout est là sauf l'écran de paramètres et les classements. |
 | 10 | Architecture technique | **fait** | arborescence `src/` | Les noms de services sont exactement ceux du CDC. |
 | 11 | Sauvegarde | **fait** | `PlayerDataService` | — |
 | 12 | Monétisation | **fait, à configurer** | `MonetizationService` | Le code est complet. **Les identifiants de produits sont à 0** : il faut créer les Developer Products et les Game Passes sur le tableau de bord Roblox et recopier leurs identifiants dans `GameConfig.Monetization`. |
 | 13 | Événements | **partiel** | `EventService` | La rotation, l'événement actif et l'anti-double-réclamation fonctionnent. Seul le multiplicateur de récompense agit ; le nombre et la vitesse des monstres ne sont pas encore modifiés. |
-| 14 | Ordre de développement | **étapes 1 à 5** | — | Étapes 6 à 10 à faire : deuxième zone, multijoueur à l'épreuve, zones 3-7, rétention, lancement. |
+| 14 bis | Zones construites | **7 sur 7** | `ZoneLayouts.luau` | Rue, égouts, maison des poupées, quartier du slasher, couvent, hôpital, carnaval. |
+| 14 | Ordre de développement | **étapes 1 à 8** | — | Restent les étapes 9 et 10 : rétention (événements complets, classements) et lancement (mesures de performances, tests téléphone, équilibrage d'après les retours). |
 | 15 | Critères de validation | **9 sur 10 tenus dans le code** | voir ci-dessous | — |
 
 ## §15 — les critères, un par un
@@ -41,7 +42,8 @@ dans le code, elle est marquée « pas fait », même si la configuration existe
 | Les performances restent acceptables en multijoueur | `MaxAlive` par monstre, pathfinding à 2 Hz hors du Heartbeat. **À mesurer avec de vrais joueurs.** |
 
 Les deux derniers ne peuvent pas être « tenus par du code » : ils se mesurent.
-Le reste est vérifié à chaque build par `tools/crosscheck.py`.
+Le reste est vérifié à chaque build par `tools/crosscheck.py` (364 liens entre
+modules) et `tools/checkzones.py` (68 contrôles sur les sept cartes).
 
 ## Deux écarts assumés par rapport au document
 

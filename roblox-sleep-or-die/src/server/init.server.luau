@@ -15,7 +15,7 @@ local MonsterConfig = require(Shared.MonsterConfig)
 local Net = require(Shared.Net)
 local ZoneConfig = require(Shared.ZoneConfig)
 
-local CityBuilder = require(script.CityBuilder)
+local BossService = require(script.BossService)
 local CombatService = require(script.CombatService)
 local EconomyService = require(script.EconomyService)
 local EventService = require(script.EventService)
@@ -23,10 +23,14 @@ local InventoryService = require(script.InventoryService)
 local MissionService = require(script.MissionService)
 local MonetizationService = require(script.MonetizationService)
 local MonsterService = require(script.MonsterService)
+local ObjectiveService = require(script.ObjectiveService)
 local PlayerDataService = require(script.PlayerDataService)
 local ShelterService = require(script.ShelterService)
 local ShopService = require(script.ShopService)
 local SurvivalService = require(script.SurvivalService)
+local WorldService = require(script.WorldService)
+local ZoneBuilder = require(script.ZoneBuilder)
+local ZoneLayouts = require(script.ZoneLayouts)
 local ZoneService = require(script.ZoneService)
 
 Net.build()
@@ -83,12 +87,16 @@ end)
 -- ── construction de la ville et peuplement ────────────────────────────────
 PlayerDataService.init()
 PlayerDataService.startAutosave()
-local city = CityBuilder.build()
+WorldService.build()
 ShelterService.init()
 MonsterService.init()
 SurvivalService.init()
 EventService.init()
 MonetizationService.init()
+ObjectiveService.init()
+BossService.init()
+WorldService.startPopulating()
+ZoneService.setTeleporter(WorldService.teleport)
 
 EventService.onChanged(function(active)
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -97,25 +105,33 @@ EventService.onChanged(function(active)
 	end
 end)
 
--- Le rôdeur peuple la rue, dans la limite de MaxAlive.
-task.spawn(function()
-	local prowler = MonsterConfig.get("prowler")
-	if not prowler then
-		return
-	end
-	while true do
-		if MonsterService.count() < prowler.MaxAlive then
-			local point = city.MonsterSpawns[math.random(1, #city.MonsterSpawns)]
-			MonsterService.spawn(prowler, "street", point, city.Patrol)
-		end
-		task.wait(20)
-	end
-end)
-
 MonsterService.onSignal(function(monsterId, kind, position)
 	for _, player in ipairs(Players:GetPlayers()) do
 		send(player, "MonsterSignal", monsterId, kind, position)
+		-- « repéré » lance le compte à rebours de la mission de poursuite.
+		if kind == "spotted" then
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if root and (root.Position - position).Magnitude < 90 then
+				ObjectiveService.noteChase(player)
+			end
+		end
 	end
+end)
+
+ObjectiveService.onFeedback(function(player, text)
+	alert(player, text, "info")
+end)
+
+BossService.onPhase(function(phase, text)
+	for _, player in ipairs(Players:GetPlayers()) do
+		alert(player, text, phase == 0 and "unlock" or "danger")
+	end
+end)
+
+BossService.onVictory(function(player)
+	alert(player, "Le carnaval est tombé. Trophée et titre débloqués.", "unlock")
+	pushState(player)
 end)
 
 -- ── sessions de survie ────────────────────────────────────────────────────
@@ -131,9 +147,11 @@ SurvivalService.onChanged(function(player, session, reason)
 
 	if reason == "complete" and session then
 		MissionService.progress(player, "survive_session", 1)
+		ObjectiveService.noteSession(player, session.ZoneId, reason)
 		alert(player, ("Session terminée. %s sur toi — va les déposer.")
 			:format(Format.money(session.Earned)), "cash")
 	elseif reason == "death" and session then
+		ObjectiveService.noteCaught(player)
 		send(player, "DeathReport", {
 			Zone = session.ZoneId, Earned = session.Earned,
 			Seconds = session.EligibleSeconds,
@@ -219,6 +237,9 @@ local function onEnterZone(player: Player, zoneId: unknown)
 	end
 	local ok, message = ZoneService.enter(player, zoneId)
 	alert(player, ok and ("Zone : " .. message) or message, ok and "info" or "warn")
+	if ok then
+		ObjectiveService.noteZoneEntered(player, zoneId)
+	end
 	pushState(player)
 end
 
@@ -233,6 +254,9 @@ local function onAttack(player: Player, target: unknown)
 	if ok then
 		MonsterService.stun(target, stun)
 		alert(player, label .. " — il recule.", "info")
+		if CollectionService:HasTag(target, "Boss") then
+			BossService.registerHit(player)
+		end
 	end
 end
 
@@ -298,5 +322,12 @@ Players.PlayerRemoving:Connect(function(player)
 	PlayerDataService.release(player)
 end)
 
-print("[SLEEP OR DIE] serveur prêt — " .. #ZoneConfig.List .. " zones, "
-	.. #MissionConfig.List .. " missions.")
+local built = 0
+for _, zone in ipairs(ZoneConfig.List) do
+	if ZoneLayouts.ById[zone.Id] then
+		built += 1
+	end
+end
+print(("[SLEEP OR DIE] serveur prêt — %d zones construites sur %d, %d missions, "
+	.. "espacement %d studs.")
+	:format(built, #ZoneConfig.List, #MissionConfig.List, ZoneBuilder.SPACING))
