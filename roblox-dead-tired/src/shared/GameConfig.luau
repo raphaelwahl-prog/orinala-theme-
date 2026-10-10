@@ -44,6 +44,18 @@ GameConfig.Economy = {
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- LES PLANQUES — le coeur du jeu
+--
+-- Note sur les couleurs : elles sont visibles sur les lits dans une pièce
+-- sombre, donc elles doivent être distinguables les unes des autres, y compris
+-- par un joueur daltonien (8 % des garçons). La première version allait du vert
+-- au rouge comme un feu tricolore : le Dortoir et le Couloir étaient
+-- indiscernables (ΔE 11,7 en vision normale, seuil 15 ; 7,2 en protanopie).
+-- La palette actuelle abandonne le dégradé vert→rouge au profit de cinq
+-- teintes écartées sur le cercle chromatique (cyan, vert, ambre, rouge,
+-- violet), toutes dans la bande de luminosité lisible sur fond noir. Si tu les
+-- changes, garde cette contrainte : l'ordre du risque est déjà porté par
+-- l'étiquette au-dessus du lit et par l'éloignement de la salle, pas par la
+-- couleur.
 -- Rate         = $ par seconde de sommeil
 -- DetectChance = probabilité, à CHAQUE tick de risque, que le monstre te repère
 -- UnlockTotal  = total déposé (cumulé, persistant) nécessaire pour y dormir
@@ -55,7 +67,7 @@ GameConfig.Tiers = {
 		Rate = 1,
 		DetectChance = 0.00,
 		UnlockTotal = 0,
-		Color = Color3.fromRGB(104, 190, 132),
+		Color = Color3.fromRGB(0, 141, 184),
 	},
 	[2] = {
 		Name = "Couloir de service",
@@ -63,7 +75,7 @@ GameConfig.Tiers = {
 		Rate = 3,
 		DetectChance = 0.015,
 		UnlockTotal = 0,
-		Color = Color3.fromRGB(196, 202, 108),
+		Color = Color3.fromRGB(34, 165, 106),
 	},
 	[3] = {
 		Name = "Cave",
@@ -71,7 +83,7 @@ GameConfig.Tiers = {
 		Rate = 8,
 		DetectChance = 0.045,
 		UnlockTotal = 2500,
-		Color = Color3.fromRGB(216, 150, 84),
+		Color = Color3.fromRGB(173, 135, 0),
 	},
 	[4] = {
 		Name = "Chambre froide",
@@ -79,7 +91,7 @@ GameConfig.Tiers = {
 		Rate = 18,
 		DetectChance = 0.10,
 		UnlockTotal = 12000,
-		Color = Color3.fromRGB(214, 98, 84),
+		Color = Color3.fromRGB(196, 57, 34),
 	},
 	[5] = {
 		Name = "Le Nid",
@@ -87,7 +99,7 @@ GameConfig.Tiers = {
 		Rate = 45,
 		DetectChance = 0.22,
 		UnlockTotal = 40000,
-		Color = Color3.fromRGB(168, 70, 180),
+		Color = Color3.fromRGB(159, 61, 174),
 	},
 }
 
