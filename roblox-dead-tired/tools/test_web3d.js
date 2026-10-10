@@ -1,4 +1,3 @@
-// Tests du prototype 3D : on joue vraiment dans Chromium, on ne lit pas le code.
 // Mode d'emploi : web/README.md
 const { chromium } = require("playwright");
 const path = require("path");
@@ -52,6 +51,35 @@ const ok = (c, m) => { n++; console.log((c ? "  OK    " : "  ÉCHEC ") + m); if 
   ok(moved > 4, "Z/W avance : " + moved.toFixed(1) + " studs parcourus");
   ok(await page.evaluate(() => !solid(G.px, G.pz)), "le joueur n'est pas dans un mur");
   ok(await page.evaluate(() => G.walk > 0), "le cycle de marche des membres tourne");
+
+  console.log("— les commandes suivent la caméra, quel que soit l'angle —");
+  const dirs = await page.evaluate(() => {
+    const out = [];
+    for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2, 0.7]) {
+      G.yaw = yaw; G.sleeping = null; G.dead = 0;
+      const b = beds.find(x => x.tier === 1);
+      G.px = b.x; G.pz = b.z;
+      keys["z"] = true;
+      const x0 = G.px, z0 = G.pz;
+      for (let i = 0; i < 20; i++) movePlayer(1 / 60);
+      keys["z"] = false;
+      const mx = G.px - x0, mz = G.pz - z0, len = Math.hypot(mx, mz) || 1;
+      // l'avant de la caméra : yaw 0 regarde vers −Z
+      const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      out.push({ yaw: yaw.toFixed(2), dot: ((mx / len) * fx + (mz / len) * fz).toFixed(2), len: len.toFixed(1) });
+    }
+    return out;
+  });
+  for (const d of dirs)
+    ok(+d.dot > 0.9 || +d.len < 0.5,
+       "vue à " + d.yaw + " rad : avancer part bien vers l'avant (produit scalaire " + d.dot + ", " + d.len + " studs)");
+  const facing = await page.evaluate(async () => {
+    G.yaw = 1.1; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const f = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+    const toCam = new THREE.Vector3().subVectors(camera.position, player.position).setY(0).normalize();
+    return f.dot(toCam);
+  });
+  ok(facing < -0.9, "le personnage tourne le dos à la caméra, il ne la regarde pas (" + facing.toFixed(2) + ")");
 
   console.log("— collision des murs —");
   const stuck = await page.evaluate(async () => {
@@ -148,6 +176,117 @@ const ok = (c, m) => { n++; console.log((c ? "  OK    " : "  ÉCHEC ") + m); if 
     if (tier === 2) { ok(res.hasLamp && res.lampInScene, res.name + " : sa lanterne éclaire depuis la scène, pas depuis le corps"); }
   }
 
+  console.log("— le son —");
+  const au = await page.evaluate(() => ({
+    ctx: SFX.ctx ? SFX.ctx.state : "aucun",
+    drone: !!SFX.drone, gain: SFX.master ? SFX.master.gain.value : -1,
+  }));
+  ok(au.ctx === "running", "le contexte audio démarre au clic sur Jouer (" + au.ctx + ")");
+  ok(au.drone, "la nappe d'ambiance tourne");
+  ok(au.gain > 0.5, "le son est audible (gain " + au.gain + ")");
+  await page.keyboard.press("m");
+  await page.waitForTimeout(120);
+  const muted = await page.evaluate(() => ({ gain: SFX.master.gain.value, label: document.getElementById("snd").textContent }));
+  ok(muted.gain === 0, "M coupe le son");
+  ok(/coupé/.test(muted.label), "l'indicateur affiche « " + muted.label + " »");
+  await page.keyboard.press("m");
+  await page.waitForTimeout(120);
+  ok(await page.evaluate(() => SFX.master.gain.value) > 0.5, "M le remet");
+
+  console.log("— courir —");
+  const run = await page.evaluate(() => {
+    const b = beds.find(x => x.tier === 1);
+    const walk = () => {
+      G.px = b.x; G.pz = b.z; G.yaw = 0; G.stam = 1; G.sleeping = null; G.dead = 0;
+      const x0 = G.px, z0 = G.pz;
+      for (let i = 0; i < 30; i++) movePlayer(1 / 60);
+      return Math.hypot(G.px - x0, G.pz - z0);
+    };
+    keys["z"] = true; keys["shift"] = false;
+    const marche = walk();
+    keys["shift"] = true;
+    const course = walk();
+    const stamApres = G.stam;
+    // jusqu'à épuisement
+    G.stam = 1; let t = 0;
+    while (G.stam > 0 && t < 10) { movePlayer(1 / 60); t += 1 / 60; }
+    const vide = t;
+    const essouffle = G.winded;
+    // à sec, Maj ne relance pas la course tant qu'on n'a pas récupéré
+    let relance = false;
+    for (let i = 0; i < 30; i++) { movePlayer(1 / 60); if (G.sprint) relance = true; }
+    keys["z"] = false; keys["shift"] = false;
+    let r = 0; while (G.stam < 1 && r < 20) { movePlayer(1 / 60); r += 1 / 60; }
+    return { marche, course, stamApres, vide, recup: r, essouffle, relance };
+  });
+  ok(run.course > run.marche * 1.4,
+     "Maj fait courir : " + run.course.toFixed(1) + " studs contre " + run.marche.toFixed(1) + " en marchant");
+  ok(run.stamApres < 0.9, "courir vide la jauge (" + (run.stamApres * 100).toFixed(0) + " % restants)");
+  ok(run.vide > 2.5 && run.vide < 4, "la jauge tient " + run.vide.toFixed(1) + " s, pas plus");
+  ok(run.recup > 4 && run.recup < 7, "elle met " + run.recup.toFixed(1) + " s à revenir — la course reste une sortie de secours");
+  ok(run.essouffle, "à sec, le joueur est essoufflé");
+  ok(!run.relance, "essoufflé, Maj ne relance pas la course en saccades");
+
+  console.log("— silhouettes des créatures —");
+  const forms = await page.evaluate(() => {
+    const out = {};
+    clearBeasts();
+    for (const t of [2, 3, 4, 5]) {
+      spawnBeast(BEASTS[t], null, true);
+      const inst = G.beasts[G.beasts.length - 1];
+      const mats = [];
+      inst.obj.traverse(o => { if (o.material) mats.push(Array.isArray(o.material) ? o.material : [o.material]); });
+      const flat = [].concat(...mats);
+      out[BEASTS[t].id] = {
+        crawl: !!inst.obj.userData.crawl,
+        pieces: inst.obj.children.length,
+        visage: flat.some(m => m.map),
+        couleurJoueur: flat.some(m => m.color && m.color.getHex() === 0x3f7fbf),
+      };
+    }
+    const pf = [];
+    player.traverse(o => { if (o.material) pf.push(...(Array.isArray(o.material) ? o.material : [o.material])); });
+    out.joueur = { visage: pf.some(m => m.map) };
+    clearBeasts();
+    return out;
+  });
+  ok(forms.joueur.visage, "le joueur a un vrai visage dessiné sur la tête");
+  ok(forms.crawler.crawl, "LA RAMPANTE est à quatre pattes, pas debout");
+  ok(forms.crawler.visage, "LA RAMPANTE a une bouche cousue à la place des yeux");
+  ok(!forms.watchman.crawl && forms.watchman.pieces >= 7, "LE VEILLEUR est debout, avec sa casquette");
+  ok(forms.mimic.couleurJoueur, "LE MIME porte les couleurs du joueur");
+  ok(forms.mimic.visage, "LE MIME porte un visage — le mauvais");
+
+  console.log("— décor —");
+  const deco = await page.evaluate(() => {
+    const y = [];
+    // un plafond doit exister au-dessus du point d'apparition
+    const ray = new THREE.Raycaster(new THREE.Vector3(spawn.x, 2, spawn.z), new THREE.Vector3(0, 1, 0), 0, 40);
+    const hits = ray.intersectObjects(world.children, true);
+    return { objets: world.children.length, plafond: hits.length > 0, hauteur: hits[0] ? hits[0].distance : -1 };
+  });
+  ok(deco.objets > 150, deco.objets + " objets dans le décor (sol, murs, plafond, mobilier)");
+  ok(deco.plafond, "il y a un plafond au-dessus de la tête (à " + deco.hauteur.toFixed(1) + " studs)");
+
+  console.log("— résumé de fin de nuit —");
+  const rec = await page.evaluate(() => {
+    closeSheet(); G.running = true; clearBeasts();
+    G.night = 3; G.nightEarn = 0; G.nightCaught = 1; G.nightDeep = 4;
+    G.phase = "night"; G.unbanked = 2400;
+    beginDawn();
+    const card = document.getElementById("sheet").textContent;
+    return { sheet, running: G.running, card };
+  });
+  ok(rec.sheet === "night", "l'aube ouvre le bilan de la nuit");
+  ok(rec.running === false, "le bilan met le jeu en pause");
+  ok(/2 400/.test(rec.card.replace(/\u202f|\u00a0/g, " ")), "le bilan affiche ce qui a été déposé");
+  ok(/Chambre froide/.test(rec.card), "le bilan nomme la planque la plus profonde");
+  ok(/1 fois/.test(rec.card.replace(/\u202f|\u00a0/g, " ")), "le bilan compte les prises");
+  await shot("10-bilan.png");
+  await page.click("#b-nx");
+  await page.waitForTimeout(150);
+  ok(await page.evaluate(() => G.running), "« Continuer » relance la partie");
+
   console.log("— occlusion : on ne voit pas à travers les murs —");
   const occ = await page.evaluate(async () => {
     clearBeasts(); G.dead = 0;
@@ -223,6 +362,24 @@ const ok = (c, m) => { n++; console.log((c ? "  OK    " : "  ÉCHEC ") + m); if 
     return { inWall, d };
   });
   ok(!cam.inWall, "dos au mur, la caméra se rapproche au lieu de passer dedans (" + cam.d.toFixed(1) + " studs)");
+  // balayage : partout dans les 5 salles, sous tous les angles, la caméra doit
+  // rester dans le décor jouable
+  const sweep = await page.evaluate(async () => {
+    let bad = 0, total = 0, worst = null;
+    for (const b of beds) {
+      for (let dx = -14; dx <= 14; dx += 7) for (let dz = -14; dz <= 14; dz += 7) {
+        if (solid(b.x + dx, b.z + dz)) continue;
+        for (let k = 0; k < 8; k++) {
+          G.px = b.x + dx; G.pz = b.z + dz; G.yaw = k * Math.PI / 4; G.pitch = -0.15;
+          await new Promise(r => requestAnimationFrame(r));
+          total++;
+          if (solid(camera.position.x, camera.position.z)) { bad++; worst = worst || { x: G.px, z: G.pz, yaw: k }; }
+        }
+      }
+    }
+    return { bad, total, worst };
+  });
+  ok(sweep.bad === 0, "sur " + sweep.total + " positions et angles dans les 5 salles, la caméra n'est jamais dans un mur (" + sweep.bad + " cas)");
   await shot("04-dos-au-mur.png");
 
   // Vue représentative : debout dans le hall, face au coffre.
