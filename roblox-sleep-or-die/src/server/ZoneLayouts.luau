@@ -117,6 +117,7 @@ function Layouts.street(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 
 	local spawn = B.spawnPoint(origin + Vector3.new(0, 1, -LENGTH / 2 + 30), folder)
 	spawn.Enabled = true
+	B.particles(origin + Vector3.new(0, 6, 0), Vector3.new(WIDTH, 2, LENGTH), "dust", folder)
 
 	local patrol = {}
 	for z = -LENGTH / 2 + 50, LENGTH / 2 - 50, 52 do
@@ -191,6 +192,9 @@ function Layouts.sewers(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate("dollhouse", "MAISON DES POUPÉES — zone 3", origin + Vector3.new(200, 0.8, 0),
 		Color3.fromRGB(120, 80, 110), folder)
 	B.spawnPoint(origin + Vector3.new(-170, 1, 0), folder)
+	for _, z in ipairs({ -90, 0, 90 }) do
+		B.particles(origin + Vector3.new(0, 4, z), Vector3.new(380, 2, 16), "dust", folder)
+	end
 
 	spawns = {
 		origin + Vector3.new(120, 3, 90),
@@ -245,6 +249,7 @@ function Layouts.dollhouse(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate("slasher", "QUARTIER DU SLASHER — zone 4", origin + Vector3.new(55, 1.4, 0),
 		Color3.fromRGB(130, 60, 60), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, 30), folder)
+	B.particles(origin + Vector3.new(0, 8, 0), Vector3.new(110, 2, 80), "dust", folder)
 
 	return {
 		Patrol = patrol,
@@ -307,6 +312,13 @@ function Layouts.slasher(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate("convent", "COUVENT MAUDIT — zone 5", origin + Vector3.new(0, 1.4, R - 10),
 		Color3.fromRGB(90, 80, 130), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, 0), folder)
+	-- La brume du quartier, c'est la moitié de la peur : on l'entend arriver
+	-- avant de le voir.
+	for i = 0, 5 do
+		local a = math.rad(i * 60)
+		B.particles(origin + Vector3.new(math.cos(a) * R, 4, math.sin(a) * R),
+			Vector3.new(90, 2, 90), "fog", folder)
+	end
 
 	return {
 		Patrol = patrol,
@@ -359,6 +371,10 @@ function Layouts.convent(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate("hospital", "HÔPITAL DES CAUCHEMARS — zone 6", origin + Vector3.new(40, 1.4, 60),
 		Color3.fromRGB(80, 120, 130), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, 0), folder)
+	for _, point in ipairs({ Vector3.new(0, 0, -120), Vector3.new(0, 0, 60) }) do
+		B.particles(origin + point + Vector3.new(0, 6, 0), Vector3.new(8, 2, 8),
+			"embers", folder)
+	end
 
 	return {
 		Patrol = patrol,
@@ -414,6 +430,7 @@ function Layouts.hospital(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate("carnival", "??? — une porte qui ne devrait pas être là",
 		origin + Vector3.new(60, 1.4, 160), Color3.fromRGB(180, 60, 110), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, -190), folder)
+	B.particles(origin + Vector3.new(0, 5, 0), Vector3.new(24, 2, 380), "dust", folder)
 
 	return {
 		Patrol = patrol,
@@ -471,6 +488,7 @@ function Layouts.carnival(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate("hospital", "RETOUR — l'hôpital", origin + Vector3.new(0, 1.4, -(R + 150)),
 		Color3.fromRGB(80, 120, 130), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, -(R + 120)), folder)
+	B.particles(origin + Vector3.new(0, 3, 0), Vector3.new(170, 2, 170), "embers", folder)
 
 	return {
 		Patrol = patrol,

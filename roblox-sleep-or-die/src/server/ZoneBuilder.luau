@@ -207,6 +207,66 @@ function ZoneBuilder.objective(kind: string, zoneId: string, position: Vector3,
 	return part
 end
 
+-- Particules d'ambiance. On n'utilise que les textures livrées avec Roblox
+-- (`rbxasset://`) : elles existent dans toutes les installations, il n'y a
+-- rien à téléverser et rien qui puisse être modéré un jour.
+function ZoneBuilder.particles(position: Vector3, size: Vector3, kind: string, parent: Instance)
+	local anchor = ZoneBuilder.part("Ambience", size, position,
+		Color3.new(1, 1, 1), Enum.Material.SmoothPlastic, parent)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanTouch = false
+	anchor.CanQuery = false
+
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Parent = anchor
+	emitter.Rate = 14
+	emitter.Lifetime = NumberRange.new(6, 12)
+	emitter.Speed = NumberRange.new(0.4, 1.4)
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.RotSpeed = NumberRange.new(-12, 12)
+	emitter.LightEmission = 0.15
+	emitter.LockedToPart = false
+
+	if kind == "dust" then
+		emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		emitter.Color = ColorSequence.new(Color3.fromRGB(150, 160, 140))
+		emitter.Size = NumberSequence.new(1.2)
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.3, 0.88),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		emitter.Acceleration = Vector3.new(0.2, 0.3, 0)
+	elseif kind == "fog" then
+		emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		emitter.Color = ColorSequence.new(Color3.fromRGB(160, 162, 170))
+		emitter.Size = NumberSequence.new(26)
+		emitter.Rate = 6
+		emitter.Lifetime = NumberRange.new(14, 22)
+		emitter.Speed = NumberRange.new(0.2, 0.6)
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.4, 0.92),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+	elseif kind == "embers" then
+		emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		emitter.Color = ColorSequence.new(Color3.fromRGB(255, 120, 90))
+		emitter.Size = NumberSequence.new(0.5)
+		emitter.LightEmission = 0.9
+		emitter.Rate = 20
+		emitter.Speed = NumberRange.new(1, 3)
+		emitter.Acceleration = Vector3.new(0, 2.5, 0)
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.2),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+	end
+	emitter.EmissionDirection = Enum.NormalId.Top
+	return anchor
+end
+
 function ZoneBuilder.spawnPoint(position: Vector3, parent: Instance): SpawnLocation
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "Spawn"

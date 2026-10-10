@@ -20,6 +20,7 @@ dans le code, elle est marquée « pas fait », même si la configuration existe
 | 8 bis | Éveil partagé | **fait** | `AwakeningService` | Jauge commune à tout le serveur, quatre stades, effet sur la vitesse et la vue de **tous** les monstres, contrepartie en gains, décroissance quand personne ne dort profond. Repris du prototype DEAD TIRED. |
 | 8 ter | Entraide | **fait** | `LifeService` | Le coup fatal met à terre plutôt que de tuer quand un autre joueur est là : 30 s de saignement, 4 s de maintien pour relever. Seul sur le serveur, le coup tue. |
 | 9 | Interface | **partiel** | `Hud.luau`, `Panels.luau` | Tout est là sauf l'écran de paramètres et les classements. |
+| 9 bis | Rendu | **partiel** | `MonsterRig`, `AtmosphereService` | Squelettes R6 animés par Motor6D, une silhouette par monstre, Atmosphere + Bloom + étalonnage par zone + profondeur de champ, ombres réelles, particules. **Manquent : le son (aucun), les MeshPart, les animations importées.** |
 | 10 | Architecture technique | **fait** | arborescence `src/` | Les noms de services sont exactement ceux du CDC. |
 | 11 | Sauvegarde | **fait** | `PlayerDataService` | — |
 | 12 | Monétisation | **fait, à configurer** | `MonetizationService` | Le code est complet. **Les identifiants de produits sont à 0** : il faut créer les Developer Products et les Game Passes sur le tableau de bord Roblox et recopier leurs identifiants dans `GameConfig.Monetization`. |

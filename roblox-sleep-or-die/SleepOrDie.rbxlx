@@ -1,4 +1,4 @@
-<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX42"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX43"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">2</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX11"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX10"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX44"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX45"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">4</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX11"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX10"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
 -- L'ÉVEIL DE LA MAISON — la jauge partagée par tout le serveur.
 --
 -- Reprise de la première version du jeu, parce que c'est la seule mécanique
@@ -566,6 +566,7 @@ export type Monster = {
 	AttackRange: number,
 	GiveUpSeconds: number,   -- abandon d'une cible inaccessible
 	MaxAlive: number,        -- plafond par serveur, pour les performances
+	Height: number,          -- hauteur du corps en studs (sert au gabarit)
 	Rule: string,            -- la mécanique propre à la zone
 	Tell: string,            -- le signal que le joueur doit apprendre à lire
 	Counter: string,
@@ -576,49 +577,49 @@ local MonsterConfig = {}
 MonsterConfig.List = {
 	{ Id = &quot;prowler&quot;, Name = &quot;LE RÔDEUR&quot;, Zone = &quot;street&quot;,
 		WalkSpeed = 13, Damage = 20, Health = 100, SightRange = 55, HearRange = 32,
-		AttackRange = 4.5, GiveUpSeconds = 12, MaxAlive = 3,
+		AttackRange = 4.5, GiveUpSeconds = 12, MaxAlive = 3, Height = 6,
 		Rule = &quot;none&quot;,
 		Tell = &quot;Il traîne les pieds. On l'entend avant de le voir.&quot;,
 		Counter = &quot;Casse la ligne de vue et reste immobile le temps qu'il passe.&quot; },
 
 	{ Id = &quot;sewer_thing&quot;, Name = &quot;LA CHOSE DES ÉGOUTS&quot;, Zone = &quot;sewers&quot;,
 		WalkSpeed = 17, Damage = 28, Health = 140, SightRange = 34, HearRange = 48,
-		AttackRange = 4.5, GiveUpSeconds = 14, MaxAlive = 3,
+		AttackRange = 4.5, GiveUpSeconds = 14, MaxAlive = 3, Height = 4.6,
 		Rule = &quot;sound&quot;,
 		Tell = &quot;Elle voit mal et entend tout : c'est le bruit qui l'attire.&quot;,
 		Counter = &quot;Marche. Courir dans un tunnel, c'est l'appeler.&quot; },
 
 	{ Id = &quot;doll&quot;, Name = &quot;LA POUPÉE&quot;, Zone = &quot;dollhouse&quot;,
 		WalkSpeed = 22, Damage = 34, Health = 160, SightRange = 60, HearRange = 20,
-		AttackRange = 4, GiveUpSeconds = 20, MaxAlive = 2,
+		AttackRange = 4, GiveUpSeconds = 20, MaxAlive = 2, Height = 4.2,
 		Rule = &quot;gaze&quot;,
 		Tell = &quot;Elle est toujours un peu plus près qu'au dernier regard.&quot;,
 		Counter = &quot;Garde-la dans ton champ de vision : regardée, elle ne bouge pas.&quot; },
 
 	{ Id = &quot;slasher&quot;, Name = &quot;LE MASQUE&quot;, Zone = &quot;slasher&quot;,
 		WalkSpeed = 11, Damage = 55, Health = 400, SightRange = 70, HearRange = 40,
-		AttackRange = 5, GiveUpSeconds = 45, MaxAlive = 1,
+		AttackRange = 5, GiveUpSeconds = 45, MaxAlive = 1, Height = 7.2,
 		Rule = &quot;relentless&quot;,
 		Tell = &quot;Il ne court pas. Il ne s'arrête pas non plus.&quot;,
 		Counter = &quot;Les raccourcis et les pièges. Le combat frontal ne marche pas.&quot; },
 
 	{ Id = &quot;demon&quot;, Name = &quot;L'ENTITÉ&quot;, Zone = &quot;convent&quot;,
 		WalkSpeed = 16, Damage = 62, Health = 500, SightRange = 65, HearRange = 45,
-		AttackRange = 5, GiveUpSeconds = 25, MaxAlive = 2,
+		AttackRange = 5, GiveUpSeconds = 25, MaxAlive = 2, Height = 9,
 		Rule = &quot;disable&quot;,
 		Tell = &quot;Les alarmes se taisent une par une avant qu'elle entre.&quot;,
 		Counter = &quot;Prévois une sortie : les défenses ne tiendront pas.&quot; },
 
 	{ Id = &quot;mimic_voice&quot;, Name = &quot;LE MENTEUR&quot;, Zone = &quot;hospital&quot;,
 		WalkSpeed = 18, Damage = 70, Health = 520, SightRange = 55, HearRange = 55,
-		AttackRange = 5, GiveUpSeconds = 25, MaxAlive = 2,
+		AttackRange = 5, GiveUpSeconds = 25, MaxAlive = 2, Height = 6,
 		Rule = &quot;fake_alerts&quot;,
 		Tell = &quot;Une alerte sur trois est fausse. Celle qui ne l'est pas arrive sans bruit.&quot;,
 		Counter = &quot;Ne réagis qu'aux alertes confirmées par deux signaux.&quot; },
 
 	{ Id = &quot;clown_boss&quot;, Name = &quot;LE CLOWN&quot;, Zone = &quot;carnival&quot;,
 		WalkSpeed = 20, Damage = 90, Health = 4000, SightRange = 90, HearRange = 90,
-		AttackRange = 7, GiveUpSeconds = 999, MaxAlive = 1,
+		AttackRange = 7, GiveUpSeconds = 999, MaxAlive = 1, Height = 12,
 		Rule = &quot;boss_phases&quot;,
 		Tell = &quot;Trois phases. Chacune reprend la mécanique d'une zone précédente.&quot;,
 		Counter = &quot;Tout ce que les six zones t'ont appris, dans l'ordre.&quot; },
@@ -852,7 +853,7 @@ function ZoneConfig.canEnter(zone: Zone, stats: {
 end
 
 return ZoneConfig
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX33"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX32"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX35"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX34"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
 -- Point d'entrée serveur. Tout le câblage est ici, et nulle part ailleurs :
 -- les services ne se connaissent que par appel direct, jamais par événement
 -- global, pour qu'on puisse lire le jeu de haut en bas depuis ce fichier.
@@ -869,6 +870,7 @@ local MonsterConfig = require(Shared.MonsterConfig)
 local Net = require(Shared.Net)
 local ZoneConfig = require(Shared.ZoneConfig)
 
+local AtmosphereService = require(script.AtmosphereService)
 local AwakeningService = require(script.AwakeningService)
 local BossService = require(script.BossService)
 local CombatService = require(script.CombatService)
@@ -952,6 +954,7 @@ end)
 -- ── construction de la ville et peuplement ────────────────────────────────
 PlayerDataService.init()
 PlayerDataService.startAutosave()
+AtmosphereService.init()
 WorldService.build()
 ShelterService.init()
 MonsterService.init()
@@ -1132,6 +1135,7 @@ local function onEnterZone(player: Player, zoneId: unknown)
 	alert(player, ok and (&quot;Zone : &quot; .. message) or message, ok and &quot;info&quot; or &quot;warn&quot;)
 	if ok then
 		ObjectiveService.noteZoneEntered(player, zoneId)
+		AtmosphereService.setZone(zoneId)
 	end
 	pushState(player)
 end
@@ -1242,7 +1246,155 @@ end
 print((&quot;[SLEEP OR DIE] serveur prêt — %d zones construites sur %d, %d missions, &quot;
 	.. &quot;espacement %d studs.&quot;)
 	:format(built, #ZoneConfig.List, #MissionConfig.List, ZoneBuilder.SPACING))
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX12"><Properties><string name="Name">AwakeningService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX12"><Properties><string name="Name">AtmosphereService</string><ProtectedString name="Source">--!strict
+-- Tout ce qui touche à Lighting vit ici, et nulle part ailleurs.
+--
+-- Roblox sans Atmosphere ni post-traitement a l'air d'un jeu de 2015 : des
+-- aplats de couleur sous une lumière plate. Avec, et sans un seul fichier à
+-- téléverser, on gagne la profondeur, le halo des lampes et le grain d'un
+-- jeu d'horreur récent.
+--
+-- Deux sources changent l'image, et elles se combinent :
+--   · la ZONE où est le joueur (étalonnage de couleur propre à chaque lieu) ;
+--   · l'ÉVEIL de la maison (le brouillard se resserre, l'image vire au rouge).
+
+local Lighting = game:GetService(&quot;Lighting&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+
+local AtmosphereService = {}
+
+type Grade = {
+	Tint: Color3,
+	Saturation: number,
+	Contrast: number,
+	Brightness: number,
+	Haze: number,
+	FogColor: Color3,
+}
+
+-- Une identité visuelle par zone. C'est ce qui fait qu'on sait où on est les
+-- yeux fermés à moitié, avant même de lire le HUD.
+local GRADES: { [string]: Grade } = {
+	street = { Tint = Color3.fromRGB(226, 232, 255), Saturation = -0.08, Contrast = 0.08,
+		Brightness = -0.02, Haze = 1.6, FogColor = Color3.fromRGB(8, 8, 13) },
+	sewers = { Tint = Color3.fromRGB(214, 255, 220), Saturation = -0.22, Contrast = 0.16,
+		Brightness = -0.06, Haze = 3.2, FogColor = Color3.fromRGB(10, 16, 12) },
+	dollhouse = { Tint = Color3.fromRGB(255, 232, 206), Saturation = 0.06, Contrast = 0.2,
+		Brightness = 0, Haze = 1.2, FogColor = Color3.fromRGB(18, 12, 10) },
+	slasher = { Tint = Color3.fromRGB(226, 226, 232), Saturation = -0.34, Contrast = 0.1,
+		Brightness = -0.04, Haze = 4.5, FogColor = Color3.fromRGB(16, 16, 18) },
+	convent = { Tint = Color3.fromRGB(206, 218, 255), Saturation = -0.1, Contrast = 0.24,
+		Brightness = -0.05, Haze = 2.2, FogColor = Color3.fromRGB(10, 10, 20) },
+	hospital = { Tint = Color3.fromRGB(216, 248, 244), Saturation = -0.18, Contrast = 0.18,
+		Brightness = -0.03, Haze = 2.0, FogColor = Color3.fromRGB(10, 18, 18) },
+	carnival = { Tint = Color3.fromRGB(255, 212, 236), Saturation = 0.18, Contrast = 0.22,
+		Brightness = -0.02, Haze = 2.6, FogColor = Color3.fromRGB(22, 6, 14) },
+}
+
+local atmosphere: Atmosphere
+local bloom: BloomEffect
+local color: ColorCorrectionEffect
+local blur: DepthOfFieldEffect
+
+local current = GRADES.street
+local target = GRADES.street
+local fogTarget, fogColorTarget = 320, GRADES.street.FogColor
+local awakeningTint = Color3.new(1, 1, 1)
+
+local function ensure&lt;T&gt;(className: string, name: string): T
+	local existing = Lighting:FindFirstChild(name)
+	if existing then
+		return existing :: any
+	end
+	local instance = Instance.new(className :: any)
+	instance.Name = name
+	instance.Parent = Lighting
+	return instance :: any
+end
+
+function AtmosphereService.init()
+	-- `Lighting.Technology` n'est PAS assignable depuis un script : l'affecter
+	-- ici lèverait une erreur et tout le reste de cette fonction ne tournerait
+	-- jamais. Elle est donc fixée dans le fichier de place et dans le projet
+	-- Rojo (valeur Future), pas ici.
+	Lighting.ClockTime = 0.4
+	Lighting.Brightness = 1
+	Lighting.EnvironmentDiffuseScale = 0.25
+	Lighting.EnvironmentSpecularScale = 0.3
+	Lighting.GlobalShadows = true
+	Lighting.Ambient = Color3.fromRGB(14, 14, 20)
+	Lighting.OutdoorAmbient = Color3.fromRGB(20, 20, 30)
+	Lighting.FogStart = 30
+	Lighting.FogEnd = 320
+
+	atmosphere = ensure(&quot;Atmosphere&quot;, &quot;Air&quot;)
+	atmosphere.Density = 0.42
+	atmosphere.Offset = 0.1
+	atmosphere.Color = Color3.fromRGB(28, 30, 40)
+	atmosphere.Decay = Color3.fromRGB(70, 74, 96)
+	atmosphere.Glare = 0.4
+	atmosphere.Haze = 1.6
+
+	bloom = ensure(&quot;BloomEffect&quot;, &quot;Bloom&quot;)
+	bloom.Intensity = 0.65
+	bloom.Size = 22
+	bloom.Threshold = 1.1
+
+	color = ensure(&quot;ColorCorrectionEffect&quot;, &quot;Grade&quot;)
+	color.Brightness = 0
+	color.Contrast = 0.08
+	color.Saturation = -0.08
+	color.TintColor = GRADES.street.Tint
+
+	blur = ensure(&quot;DepthOfFieldEffect&quot;, &quot;Depth&quot;)
+	blur.FarIntensity = 0.12
+	blur.NearIntensity = 0
+	blur.FocusDistance = 24
+	blur.InFocusRadius = 42
+
+	-- Transition douce : un changement de zone ne doit pas claquer d'un coup.
+	RunService.Heartbeat:Connect(function(dt)
+		local k = math.min(1, dt * 1.6)
+		current = {
+			Tint = current.Tint:Lerp(target.Tint, k),
+			Saturation = current.Saturation + (target.Saturation - current.Saturation) * k,
+			Contrast = current.Contrast + (target.Contrast - current.Contrast) * k,
+			Brightness = current.Brightness + (target.Brightness - current.Brightness) * k,
+			Haze = current.Haze + (target.Haze - current.Haze) * k,
+			FogColor = current.FogColor:Lerp(target.FogColor, k),
+		}
+		color.TintColor = current.Tint:Lerp(awakeningTint, 0.45)
+		color.Saturation = current.Saturation
+		color.Contrast = current.Contrast
+		color.Brightness = current.Brightness
+		atmosphere.Haze = current.Haze
+		Lighting.FogEnd += (fogTarget - Lighting.FogEnd) * k
+		Lighting.FogStart = math.min(30, Lighting.FogEnd * 0.12)
+		Lighting.FogColor = Lighting.FogColor:Lerp(fogColorTarget, k)
+	end)
+end
+
+-- Appelée quand un joueur change de zone. Avec plusieurs joueurs dans des
+-- zones différentes, c'est le dernier entré qui donne le ton : Lighting est
+-- un service global, il n'y a pas d'étalonnage par joueur côté serveur.
+function AtmosphereService.setZone(zoneId: string)
+	target = GRADES[zoneId] or GRADES.street
+	fogColorTarget = target.FogColor
+end
+
+-- Appelée par AwakeningService à chaque changement de stade.
+function AtmosphereService.setAwakening(stage: number, data)
+	fogTarget = data.FogEnd
+	fogColorTarget = data.FogColor
+	-- Plus la maison est réveillée, plus l'image vire vers sa couleur.
+	local strength = (stage - 1) / 3
+	awakeningTint = Color3.new(1, 1, 1):Lerp(data.Color, strength * 0.35)
+	bloom.Intensity = 0.65 + strength * 0.5
+	blur.FarIntensity = 0.12 + strength * 0.2
+end
+
+return AtmosphereService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13"><Properties><string name="Name">AwakeningService</string><ProtectedString name="Source">--!strict
 -- L'éveil de la maison : une jauge, un serveur, tout le monde dedans.
 --
 -- Elle monte pendant que des joueurs dorment dans les zones profondes, et
@@ -1253,9 +1405,7 @@ print((&quot;[SLEEP OR DIE] serveur prêt — %d zones construites sur %d, %d mi
 -- pas s'en protéger seul, et c'est exactement ce qui force les joueurs à se
 -- parler.
 
-local Lighting = game:GetService(&quot;Lighting&quot;)
-local RunService = game:GetService(&quot;RunService&quot;)
-
+local AtmosphereService = require(script.Parent.AtmosphereService)
 local AwakeningConfig = require(script.Parent.Parent.Shared.AwakeningConfig)
 local MonsterService = require(script.Parent.MonsterService)
 local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
@@ -1303,9 +1453,8 @@ local function applyStage()
 	-- Les monstres déjà sur le terrain changent tout de suite : on ne veut pas
 	-- que le stade n'ait d'effet qu'après une réapparition.
 	MonsterService.applyGlobal(data.Speed, data.Sight)
-	Lighting.FogEnd = data.FogEnd
-	Lighting.FogStart = math.min(40, data.FogEnd * 0.15)
-	Lighting.FogColor = data.FogColor
+	-- Un seul service touche à Lighting : celui-là.
+	AtmosphereService.setAwakening(stage, data)
 	broadcast()
 end
 
@@ -1347,7 +1496,7 @@ function AwakeningService.init()
 end
 
 return AwakeningService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13"><Properties><string name="Name">BossService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX14"><Properties><string name="Name">BossService</string><ProtectedString name="Source">--!strict
 -- §3 zone 7 — le combat de boss.
 --
 -- Le CDC demande « plusieurs phases » et « de maîtriser les mécaniques apprises
@@ -1510,7 +1659,7 @@ function BossService.init()
 end
 
 return BossService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX14"><Properties><string name="Name">CombatService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX15"><Properties><string name="Name">CombatService</string><ProtectedString name="Source">--!strict
 -- §5 et §15 — tous les dégâts passent ici, et tous sont validés côté serveur.
 --
 -- Les deux critères de validation du CDC §15 (« les monstres ne frappent pas à
@@ -1648,7 +1797,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 return CombatService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX15"><Properties><string name="Name">CosmeticService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX16"><Properties><string name="Name">CosmeticService</string><ProtectedString name="Source">--!strict
 -- Les skins. Achetés avec l'argent du jeu ou gagnés en jouant, jamais les
 -- deux : un skin qu'on ne peut pas acheter vaut plus qu'un skin à 299 Robux.
 
@@ -1751,7 +1900,7 @@ function CosmeticService.apply(player: Player)
 end
 
 return CosmeticService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX16"><Properties><string name="Name">EconomyService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX17"><Properties><string name="Name">EconomyService</string><ProtectedString name="Source">--!strict
 -- §6 — les deux soldes, et toutes les règles d'argent.
 --
 -- Rien n'ajoute d'argent sans passer par ici, et rien ici n'accepte un montant
@@ -1928,7 +2077,7 @@ function EconomyService.setMultiplier(player: Player, value: number, seconds: nu
 end
 
 return EconomyService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX17"><Properties><string name="Name">EventService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">EventService</string><ProtectedString name="Source">--!strict
 -- §13 — événements. Le serveur seul décide de l'événement actif, et une
 -- récompense d'événement ne peut pas être réclamée deux fois (clé = identifiant
 -- de l'événement + sa période).
@@ -1998,7 +2147,7 @@ function EventService.init()
 end
 
 return EventService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">InventoryService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">InventoryService</string><ProtectedString name="Source">--!strict
 -- §6 — inventaire. Court, parce que tout l'argent est dans EconomyService et
 -- toute la pose de défenses dans ShelterService.
 
@@ -2058,7 +2207,7 @@ function InventoryService.bestWeapon(player: Player): ItemConfig.Item?
 end
 
 return InventoryService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">LifeService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">LifeService</string><ProtectedString name="Source">--!strict
 -- À terre, pas mort : le coéquipier peut te relever.
 --
 -- Sans ça, une mort en multijoueur ne fait que renvoyer chacun à son coin.
@@ -2218,7 +2367,7 @@ function LifeService.init()
 end
 
 return LifeService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">MissionService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">MissionService</string><ProtectedString name="Source">--!strict
 -- §7 — missions. Le CDC §15 exige qu'une mission ne puisse pas être réclamée
 -- plusieurs fois : c'est `MissionsDone` pour les principales et secondaires, et
 -- les clés de jour / de semaine pour les répétables.
@@ -2354,7 +2503,7 @@ function MissionService.list(player: Player)
 end
 
 return MissionService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--!strict
 -- §12 — Robux.
 --
 -- Deux règles non négociables du CDC :
@@ -2462,7 +2611,269 @@ function MonetizationService.prompt(player: Player, productKey: string)
 end
 
 return MonetizationService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">MonsterService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">MonsterRig</string><ProtectedString name="Source">--!strict
+-- Le corps des monstres.
+--
+-- Avant, un monstre c'était deux boîtes soudées qui glissaient sur le sol.
+-- Ici c'est un vrai squelette R6 : HumanoidRootPart, Torso, Head, deux bras,
+-- deux jambes, reliés par des Motor6D — exactement la structure d'un
+-- personnage Roblox. Deux conséquences :
+--
+--   · Humanoid:MoveTo() fonctionne normalement (collisions, pentes, pathfinding) ;
+--   · on peut animer les membres en faisant tourner les Motor6D, sans aucun
+--     fichier d'animation à téléverser.
+--
+-- Chaque monstre a sa silhouette, et c'est elle qu'on reconnaît de loin avant
+-- de voir la couleur : LA RAMPANTE est à quatre pattes, L'AFFAMÉ est étiré,
+-- LE MENTEUR porte l'apparence d'un joueur.
+
+local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+
+local MonsterRig = {}
+
+-- Proportions R6 d'origine, en studs, pour un monstre de 5 de haut.
+local TORSO = Vector3.new(2, 2, 1)
+local HEAD = Vector3.new(1.6, 1.6, 1.6)
+local LIMB = Vector3.new(1, 2, 1)
+
+export type Look = {
+	Body: Color3,
+	Skin: Color3,
+	Eye: Color3,
+	Eyes: number,
+	ArmLength: number,
+	Crawl: boolean,
+	Thin: boolean,
+	Hat: Color3?,
+	Lantern: boolean,
+}
+
+-- Apparence par monstre. Tout est déduit du catalogue sauf ce qui est
+-- purement visuel, qui vit ici pour ne pas polluer MonsterConfig.
+local LOOKS: { [string]: Look } = {
+	prowler = { Body = Color3.fromRGB(42, 38, 36), Skin = Color3.fromRGB(96, 84, 74),
+		Eye = Color3.fromRGB(255, 196, 92), Eyes = 2, ArmLength = 2.4,
+		Crawl = false, Thin = false, Hat = nil, Lantern = false },
+	sewer_thing = { Body = Color3.fromRGB(96, 112, 90), Skin = Color3.fromRGB(120, 134, 108),
+		Eye = Color3.fromRGB(230, 60, 70), Eyes = 0, ArmLength = 2.8,
+		Crawl = true, Thin = false, Hat = nil, Lantern = false },
+	doll = { Body = Color3.fromRGB(226, 210, 214), Skin = Color3.fromRGB(244, 236, 234),
+		Eye = Color3.fromRGB(120, 255, 180), Eyes = 2, ArmLength = 2.2,
+		Crawl = false, Thin = false, Hat = nil, Lantern = false },
+	slasher = { Body = Color3.fromRGB(34, 34, 38), Skin = Color3.fromRGB(220, 220, 222),
+		Eye = Color3.fromRGB(255, 70, 60), Eyes = 1, ArmLength = 2.6,
+		Crawl = false, Thin = false, Hat = Color3.fromRGB(20, 20, 24), Lantern = false },
+	demon = { Body = Color3.fromRGB(58, 30, 38), Skin = Color3.fromRGB(80, 36, 44),
+		Eye = Color3.fromRGB(255, 120, 40), Eyes = 4, ArmLength = 3.4,
+		Crawl = false, Thin = true, Hat = nil, Lantern = false },
+	mimic_voice = { Body = Color3.fromRGB(180, 186, 190), Skin = Color3.fromRGB(226, 214, 190),
+		Eye = Color3.fromRGB(140, 255, 220), Eyes = 2, ArmLength = 2.5,
+		Crawl = false, Thin = false, Hat = nil, Lantern = true },
+	clown_boss = { Body = Color3.fromRGB(190, 40, 70), Skin = Color3.fromRGB(248, 244, 240),
+		Eye = Color3.fromRGB(255, 40, 40), Eyes = 6, ArmLength = 4.2,
+		Crawl = false, Thin = false, Hat = Color3.fromRGB(230, 60, 100), Lantern = false },
+}
+
+function MonsterRig.look(id: string): Look
+	return LOOKS[id] or LOOKS.prowler
+end
+
+local function part(name: string, size: Vector3, color: Color3, parent: Instance,
+	material: Enum.Material?): Part
+	local p = Instance.new(&quot;Part&quot;)
+	p.Name = name
+	p.Size = size
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.CanCollide = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+local function motor(name: string, part0: BasePart, part1: BasePart, c0: CFrame, c1: CFrame): Motor6D
+	local m = Instance.new(&quot;Motor6D&quot;)
+	m.Name = name
+	m.Part0 = part0
+	m.Part1 = part1
+	m.C0 = c0
+	m.C1 = c1
+	m.Parent = part0
+	return m
+end
+
+-- Construit le corps. `scale` vient de la hauteur déclarée dans MonsterConfig.
+function MonsterRig.build(def: MonsterConfig.Monster, position: Vector3): (Model, any)
+	local look = MonsterRig.look(def.Id)
+	local s = def.Height / 5
+	local model = Instance.new(&quot;Model&quot;)
+	model.Name = def.Id
+
+	local torsoSize = TORSO * s
+	if look.Thin then
+		torsoSize = Vector3.new(TORSO.X * 0.72, TORSO.Y * 1.25, TORSO.Z * 0.8) * s
+	end
+	if look.Crawl then
+		-- À quatre pattes : le torse est couché, plus long que haut.
+		torsoSize = Vector3.new(TORSO.X * 0.95, TORSO.Y * 0.55, TORSO.Z * 2.6) * s
+	end
+
+	-- HumanoidRootPart : c'est lui qui porte la collision et que l'Humanoid pilote.
+	local root = part(&quot;HumanoidRootPart&quot;, torsoSize, look.Body, model)
+	root.Transparency = 1
+	root.CanCollide = true
+	root.CFrame = CFrame.new(position + Vector3.new(0, torsoSize.Y / 2 + LIMB.Y * s, 0))
+
+	local torso = part(&quot;Torso&quot;, torsoSize, look.Body, model, Enum.Material.Fabric)
+	local head = part(&quot;Head&quot;, HEAD * s, look.Skin, model)
+
+	motor(&quot;RootJoint&quot;, root, torso, CFrame.new(), CFrame.new())
+	local headOffset = look.Crawl
+		and CFrame.new(0, 0, -(torsoSize.Z / 2 + HEAD.Z * s / 2))
+		or CFrame.new(0, torsoSize.Y / 2 + HEAD.Y * s / 2, 0)
+	motor(&quot;Neck&quot;, torso, head, headOffset, CFrame.new())
+
+	local limbSize = Vector3.new(LIMB.X, look.ArmLength, LIMB.Z) * s
+	local legSize = LIMB * s
+	if look.Crawl then
+		limbSize = Vector3.new(LIMB.X * 0.7, look.ArmLength * 0.85, LIMB.Z * 0.7) * s
+		legSize = limbSize
+	end
+
+	local joints = {}
+	local function limb(name: string, jointName: string, size: Vector3, attach: CFrame)
+		local p = part(name, size, look.Body, model, Enum.Material.Fabric)
+		-- Le pivot est en haut du membre : une rotation doit partir de
+		-- l'épaule ou de la hanche, pas du sol.
+		joints[jointName] = motor(jointName, torso, p, attach,
+			CFrame.new(0, size.Y / 2, 0))
+	end
+
+	if look.Crawl then
+		local front = -torsoSize.Z / 2 + limbSize.Z
+		local back = torsoSize.Z / 2 - limbSize.Z
+		limb(&quot;Left Arm&quot;, &quot;Left Shoulder&quot;, limbSize,
+			CFrame.new(-torsoSize.X / 2, -torsoSize.Y / 2, front))
+		limb(&quot;Right Arm&quot;, &quot;Right Shoulder&quot;, limbSize,
+			CFrame.new(torsoSize.X / 2, -torsoSize.Y / 2, front))
+		limb(&quot;Left Leg&quot;, &quot;Left Hip&quot;, legSize,
+			CFrame.new(-torsoSize.X / 2, -torsoSize.Y / 2, back))
+		limb(&quot;Right Leg&quot;, &quot;Right Hip&quot;, legSize,
+			CFrame.new(torsoSize.X / 2, -torsoSize.Y / 2, back))
+	else
+		limb(&quot;Left Arm&quot;, &quot;Left Shoulder&quot;, limbSize,
+			CFrame.new(-(torsoSize.X / 2 + limbSize.X / 2), torsoSize.Y / 2 - limbSize.X / 2, 0))
+		limb(&quot;Right Arm&quot;, &quot;Right Shoulder&quot;, limbSize,
+			CFrame.new(torsoSize.X / 2 + limbSize.X / 2, torsoSize.Y / 2 - limbSize.X / 2, 0))
+		limb(&quot;Left Leg&quot;, &quot;Left Hip&quot;, legSize,
+			CFrame.new(-legSize.X / 2, -torsoSize.Y / 2, 0))
+		limb(&quot;Right Leg&quot;, &quot;Right Hip&quot;, legSize,
+			CFrame.new(legSize.X / 2, -torsoSize.Y / 2, 0))
+	end
+
+	-- Yeux : souvent la seule chose qu'on voit d'un monstre dans le noir.
+	if look.Eyes &gt; 0 then
+		for i = 1, look.Eyes do
+			local eye = part(&quot;Eye&quot;, Vector3.new(0.3, 0.16, 0.1) * s, look.Eye, model,
+				Enum.Material.Neon)
+			local x, y = 0, 0
+			if look.Eyes == 2 then
+				x = (i == 1 and -0.38 or 0.38)
+			elseif look.Eyes &gt; 2 then
+				local a = i / look.Eyes * math.pi * 2
+				x, y = math.cos(a) * 0.45, math.sin(a) * 0.35
+			end
+			motor(&quot;EyeJoint&quot; .. i, head, eye,
+				CFrame.new(x * s, y * s, -(HEAD.Z * s / 2 + 0.05)), CFrame.new())
+		end
+		local glow = Instance.new(&quot;PointLight&quot;)
+		glow.Color = look.Eye
+		glow.Brightness = 1.4
+		glow.Range = 22 * s
+		glow.Parent = head
+	else
+		-- La Rampante n'a pas d'yeux : une bouche claire, cousue en travers.
+		local mouth = part(&quot;Mouth&quot;, Vector3.new(1.1, 0.2, 0.1) * s, look.Eye, model,
+			Enum.Material.Neon)
+		motor(&quot;MouthJoint&quot;, head, mouth,
+			CFrame.new(0, -0.2 * s, -(HEAD.Z * s / 2 + 0.05)), CFrame.new())
+	end
+
+	if look.Hat then
+		local hat = part(&quot;Hat&quot;, Vector3.new(HEAD.X * 1.1, 0.5, HEAD.Z * 1.1) * s,
+			look.Hat, model, Enum.Material.Fabric)
+		motor(&quot;HatJoint&quot;, head, hat, CFrame.new(0, HEAD.Y * s / 2 + 0.25 * s, 0), CFrame.new())
+	end
+
+	if look.Lantern then
+		local lamp = part(&quot;Lantern&quot;, Vector3.new(0.7, 0.9, 0.7) * s,
+			Color3.fromRGB(255, 200, 120), model, Enum.Material.Neon)
+		motor(&quot;LanternJoint&quot;, torso, lamp,
+			CFrame.new(torsoSize.X / 2 + 0.6 * s, -0.4 * s, -0.4 * s), CFrame.new())
+		local light = Instance.new(&quot;PointLight&quot;)
+		light.Color = Color3.fromRGB(255, 196, 120)
+		light.Brightness = 2.4
+		light.Range = 46
+		light.Parent = lamp
+	end
+
+	local humanoid = Instance.new(&quot;Humanoid&quot;)
+	humanoid.RigType = Enum.HumanoidRigType.R6
+	humanoid.MaxHealth = def.Health
+	humanoid.Health = def.Health
+	humanoid.WalkSpeed = def.WalkSpeed
+	humanoid.HipHeight = 0
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.Parent = model
+
+	model.PrimaryPart = root
+	model:SetAttribute(&quot;MonsterId&quot;, def.Id)
+
+	-- On range les Motor6D animables dans un dossier pour ne pas les
+	-- rechercher à chaque image.
+	local rig = {
+		Joints = joints,
+		Neck = torso:FindFirstChild(&quot;Neck&quot;) :: Motor6D,
+		Crawl = look.Crawl,
+		Base = {},
+	}
+	for name, joint in pairs(joints) do
+		rig.Base[name] = joint.C0
+	end
+	return model, rig :: any
+end
+
+-- Cycle de marche. `phase` avance avec la distance parcourue, `amount` est
+-- l'amplitude : 0 à l'arrêt, ~1 en pleine course.
+function MonsterRig.animate(rig, phase: number, amount: number)
+	if not rig or not rig.Joints then
+		return
+	end
+	local swing = math.sin(phase) * amount
+	local function set(name: string, angle: number)
+		local joint = rig.Joints[name]
+		local base = rig.Base[name]
+		if joint and base then
+			joint.C0 = base * CFrame.Angles(angle, 0, 0)
+		end
+	end
+	if rig.Crawl then
+		-- Quatre pattes : les diagonales vont ensemble.
+		set(&quot;Left Shoulder&quot;, swing)
+		set(&quot;Right Hip&quot;, swing * 0.9)
+		set(&quot;Right Shoulder&quot;, -swing)
+		set(&quot;Left Hip&quot;, -swing * 0.9)
+	else
+		set(&quot;Left Shoulder&quot;, swing)
+		set(&quot;Right Shoulder&quot;, -swing)
+		set(&quot;Left Hip&quot;, -swing)
+		set(&quot;Right Hip&quot;, swing)
+	end
+end
+
+return MonsterRig
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">MonsterService</string><ProtectedString name="Source">--!strict
 -- §5 — les monstres et leur IA.
 --
 -- Deux boucles, comme toujours quand il y a du pathfinding :
@@ -2482,6 +2893,7 @@ local Workspace = game:GetService(&quot;Workspace&quot;)
 local CombatService = require(script.Parent.CombatService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local MonsterRig = require(script.Parent.MonsterRig)
 local ShelterService = require(script.Parent.ShelterService)
 
 local MonsterService = {}
@@ -2500,6 +2912,8 @@ type Agent = {
 	LastKnown: Vector3?,
 	Path: { Vector3 },
 	PathIndex: number,
+	Rig: any,
+	Walk: number,
 	NextThink: number,
 	LostSince: number,
 	StunUntil: number,
@@ -2727,6 +3141,9 @@ end
 local function move(agent: Agent, dt: number)
 	if os.clock() &lt; agent.StunUntil then
 		agent.Humanoid.WalkSpeed = 0
+		-- Étourdi : les membres retombent au lieu de rester figés en pleine
+		-- foulée, c'est ce qui fait lire l'état d'un coup d'œil.
+		MonsterRig.animate(agent.Rig, 0, 0)
 		return
 	end
 
@@ -2735,6 +3152,12 @@ local function move(agent: Agent, dt: number)
 		speed *= 0.55
 	end
 	agent.Humanoid.WalkSpeed = speed
+
+	-- Animation : la phase avance avec la vitesse réelle, donc les jambes
+	-- suivent le déplacement au lieu de pédaler dans le vide.
+	local moving = agent.Path[agent.PathIndex] ~= nil
+	agent.Walk += dt * speed * 0.42
+	MonsterRig.animate(agent.Rig, agent.Walk, moving and 0.85 or 0.06)
 
 	local point = agent.Path[agent.PathIndex]
 	while point and (Vector3.new(point.X, agent.Root.Position.Y, point.Z)
@@ -2759,39 +3182,11 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		return nil
 	end
 
-	local model = Instance.new(&quot;Model&quot;)
-	model.Name = def.Id
+	-- Un vrai squelette R6, avec des membres qui bougent.
+	local model, rig = MonsterRig.build(def, position)
+	local root = model.PrimaryPart :: BasePart
+	local humanoid = model:FindFirstChildOfClass(&quot;Humanoid&quot;) :: Humanoid
 
-	local root = Instance.new(&quot;Part&quot;)
-	root.Name = &quot;HumanoidRootPart&quot;
-	root.Size = Vector3.new(3, 5.5, 2)
-	root.Position = position + Vector3.new(0, 3, 0)
-	root.Anchored = false
-	root.CanCollide = true
-	root.Color = Color3.fromRGB(28, 24, 26)
-	root.Material = Enum.Material.SmoothPlastic
-	root.Parent = model
-
-	local head = Instance.new(&quot;Part&quot;)
-	head.Name = &quot;Head&quot;
-	head.Size = Vector3.new(2, 2, 2)
-	head.Color = Color3.fromRGB(40, 30, 32)
-	head.CanCollide = false
-	head.Parent = model
-	local weld = Instance.new(&quot;WeldConstraint&quot;)
-	weld.Part0 = root
-	weld.Part1 = head
-	weld.Parent = head
-	head.Position = root.Position + Vector3.new(0, 3.5, 0)
-
-	local humanoid = Instance.new(&quot;Humanoid&quot;)
-	humanoid.MaxHealth = def.Health
-	humanoid.Health = def.Health
-	humanoid.WalkSpeed = def.WalkSpeed
-	humanoid.Parent = model
-
-	model.PrimaryPart = root
-	model:SetAttribute(&quot;MonsterId&quot;, def.Id)
 	model:SetAttribute(&quot;Zone&quot;, zoneId)
 	CollectionService:AddTag(model, &quot;Monster&quot;)
 	model.Parent = Workspace
@@ -2801,6 +3196,7 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		ZoneId = zoneId, Home = position,
 		State = S.PATROL, Target = nil, LastKnown = nil,
 		Path = {}, PathIndex = 1, NextThink = 0, LostSince = 0,
+		Rig = rig, Walk = 0,
 		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
 	}
@@ -2933,7 +3329,7 @@ function MonsterService.assault(shelterId: string)
 end
 
 return MonsterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">ObjectiveService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">ObjectiveService</string><ProtectedString name="Source">--!strict
 -- §7 — les objectifs de mission qui ont besoin d'objets dans le monde.
 --
 -- Les quatre types ramassables (`collect`, `repair`, `rescue`, `deliver`) sont
@@ -3065,7 +3461,7 @@ function ObjectiveService.noteZoneEntered(player: Player, zoneId: string)
 end
 
 return ObjectiveService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
 -- §11 — profils joueurs et DataStore.
 --
 -- Règle qui compte le plus (CDC §11) : « Si les données ne peuvent pas être
@@ -3307,7 +3703,7 @@ function PlayerDataService.startAutosave()
 end
 
 return PlayerDataService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX27"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
 -- §4 — refuges : réservation, défenses, contestation.
 --
 -- Les refuges sont des modèles du Workspace marqués par l'attribut `Zone` et
@@ -3626,7 +4022,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 return ShelterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX28"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
 -- §6 — la boutique. Le client envoie un identifiant d'objet, rien d'autre :
 -- le prix vient toujours du serveur.
 
@@ -3681,7 +4077,7 @@ function ShopService.buy(player: Player, itemId: string): (boolean, string)
 end
 
 return ShopService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX27"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
 -- §2 et §4 — la session de survie : la boucle centrale du jeu.
 --
 -- Une session démarre quand le joueur dort dans SON refuge. Elle crédite
@@ -3879,7 +4275,7 @@ function SurvivalService.onCharacterAdded(player: Player, character: Model)
 end
 
 return SurvivalService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX28"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
 -- Construit les sept zones au démarrage et retient, pour chacune, ses points
 -- de ronde, ses points d'apparition et son point d'arrivée.
 --
@@ -3970,7 +4366,7 @@ function WorldService.startPopulating()
 end
 
 return WorldService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
 -- Primitives de construction, partagées par les sept zones.
 --
 -- Chaque zone occupe une dalle de 1600 studs sur l'axe X : la rue en 0, les
@@ -4179,6 +4575,66 @@ function ZoneBuilder.objective(kind: string, zoneId: string, position: Vector3,
 	return part
 end
 
+-- Particules d'ambiance. On n'utilise que les textures livrées avec Roblox
+-- (`rbxasset://`) : elles existent dans toutes les installations, il n'y a
+-- rien à téléverser et rien qui puisse être modéré un jour.
+function ZoneBuilder.particles(position: Vector3, size: Vector3, kind: string, parent: Instance)
+	local anchor = ZoneBuilder.part(&quot;Ambience&quot;, size, position,
+		Color3.new(1, 1, 1), Enum.Material.SmoothPlastic, parent)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanTouch = false
+	anchor.CanQuery = false
+
+	local emitter = Instance.new(&quot;ParticleEmitter&quot;)
+	emitter.Parent = anchor
+	emitter.Rate = 14
+	emitter.Lifetime = NumberRange.new(6, 12)
+	emitter.Speed = NumberRange.new(0.4, 1.4)
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.RotSpeed = NumberRange.new(-12, 12)
+	emitter.LightEmission = 0.15
+	emitter.LockedToPart = false
+
+	if kind == &quot;dust&quot; then
+		emitter.Texture = &quot;rbxasset://textures/particles/smoke_main.dds&quot;
+		emitter.Color = ColorSequence.new(Color3.fromRGB(150, 160, 140))
+		emitter.Size = NumberSequence.new(1.2)
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.3, 0.88),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		emitter.Acceleration = Vector3.new(0.2, 0.3, 0)
+	elseif kind == &quot;fog&quot; then
+		emitter.Texture = &quot;rbxasset://textures/particles/smoke_main.dds&quot;
+		emitter.Color = ColorSequence.new(Color3.fromRGB(160, 162, 170))
+		emitter.Size = NumberSequence.new(26)
+		emitter.Rate = 6
+		emitter.Lifetime = NumberRange.new(14, 22)
+		emitter.Speed = NumberRange.new(0.2, 0.6)
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.4, 0.92),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+	elseif kind == &quot;embers&quot; then
+		emitter.Texture = &quot;rbxasset://textures/particles/sparkles_main.dds&quot;
+		emitter.Color = ColorSequence.new(Color3.fromRGB(255, 120, 90))
+		emitter.Size = NumberSequence.new(0.5)
+		emitter.LightEmission = 0.9
+		emitter.Rate = 20
+		emitter.Speed = NumberRange.new(1, 3)
+		emitter.Acceleration = Vector3.new(0, 2.5, 0)
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.2),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+	end
+	emitter.EmissionDirection = Enum.NormalId.Top
+	return anchor
+end
+
 function ZoneBuilder.spawnPoint(position: Vector3, parent: Instance): SpawnLocation
 	local spawn = Instance.new(&quot;SpawnLocation&quot;)
 	spawn.Name = &quot;Spawn&quot;
@@ -4219,7 +4675,7 @@ function ZoneBuilder.reset()
 end
 
 return ZoneBuilder
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX32"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
 -- Les sept cartes. Une fonction par zone, toutes bâties avec les primitives de
 -- ZoneBuilder, toutes renvoyant la même chose : points de ronde, points
 -- d'apparition des monstres, et le point d'arrivée quand on entre dans la zone.
@@ -4338,6 +4794,7 @@ function Layouts.street(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 
 	local spawn = B.spawnPoint(origin + Vector3.new(0, 1, -LENGTH / 2 + 30), folder)
 	spawn.Enabled = true
+	B.particles(origin + Vector3.new(0, 6, 0), Vector3.new(WIDTH, 2, LENGTH), &quot;dust&quot;, folder)
 
 	local patrol = {}
 	for z = -LENGTH / 2 + 50, LENGTH / 2 - 50, 52 do
@@ -4412,6 +4869,9 @@ function Layouts.sewers(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate(&quot;dollhouse&quot;, &quot;MAISON DES POUPÉES — zone 3&quot;, origin + Vector3.new(200, 0.8, 0),
 		Color3.fromRGB(120, 80, 110), folder)
 	B.spawnPoint(origin + Vector3.new(-170, 1, 0), folder)
+	for _, z in ipairs({ -90, 0, 90 }) do
+		B.particles(origin + Vector3.new(0, 4, z), Vector3.new(380, 2, 16), &quot;dust&quot;, folder)
+	end
 
 	spawns = {
 		origin + Vector3.new(120, 3, 90),
@@ -4466,6 +4926,7 @@ function Layouts.dollhouse(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate(&quot;slasher&quot;, &quot;QUARTIER DU SLASHER — zone 4&quot;, origin + Vector3.new(55, 1.4, 0),
 		Color3.fromRGB(130, 60, 60), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, 30), folder)
+	B.particles(origin + Vector3.new(0, 8, 0), Vector3.new(110, 2, 80), &quot;dust&quot;, folder)
 
 	return {
 		Patrol = patrol,
@@ -4528,6 +4989,13 @@ function Layouts.slasher(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate(&quot;convent&quot;, &quot;COUVENT MAUDIT — zone 5&quot;, origin + Vector3.new(0, 1.4, R - 10),
 		Color3.fromRGB(90, 80, 130), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, 0), folder)
+	-- La brume du quartier, c'est la moitié de la peur : on l'entend arriver
+	-- avant de le voir.
+	for i = 0, 5 do
+		local a = math.rad(i * 60)
+		B.particles(origin + Vector3.new(math.cos(a) * R, 4, math.sin(a) * R),
+			Vector3.new(90, 2, 90), &quot;fog&quot;, folder)
+	end
 
 	return {
 		Patrol = patrol,
@@ -4580,6 +5048,10 @@ function Layouts.convent(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate(&quot;hospital&quot;, &quot;HÔPITAL DES CAUCHEMARS — zone 6&quot;, origin + Vector3.new(40, 1.4, 60),
 		Color3.fromRGB(80, 120, 130), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, 0), folder)
+	for _, point in ipairs({ Vector3.new(0, 0, -120), Vector3.new(0, 0, 60) }) do
+		B.particles(origin + point + Vector3.new(0, 6, 0), Vector3.new(8, 2, 8),
+			&quot;embers&quot;, folder)
+	end
 
 	return {
 		Patrol = patrol,
@@ -4635,6 +5107,7 @@ function Layouts.hospital(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate(&quot;carnival&quot;, &quot;??? — une porte qui ne devrait pas être là&quot;,
 		origin + Vector3.new(60, 1.4, 160), Color3.fromRGB(180, 60, 110), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, -190), folder)
+	B.particles(origin + Vector3.new(0, 5, 0), Vector3.new(24, 2, 380), &quot;dust&quot;, folder)
 
 	return {
 		Patrol = patrol,
@@ -4692,6 +5165,7 @@ function Layouts.carnival(origin: Vector3, folder: Folder): ZoneBuilder.Layout
 	B.gate(&quot;hospital&quot;, &quot;RETOUR — l'hôpital&quot;, origin + Vector3.new(0, 1.4, -(R + 150)),
 		Color3.fromRGB(80, 120, 130), folder)
 	B.spawnPoint(origin + Vector3.new(0, 1, -(R + 120)), folder)
+	B.particles(origin + Vector3.new(0, 3, 0), Vector3.new(170, 2, 170), &quot;embers&quot;, folder)
 
 	return {
 		Patrol = patrol,
@@ -4711,7 +5185,7 @@ Layouts.ById = {
 }
 
 return Layouts
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX33"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
 -- §3 — accès aux zones. Une zone ne se débloque jamais sans que ses conditions
 -- soient remplies (CDC §15), et la vérification est faite ici, côté serveur,
 -- à chaque entrée — pas seulement au moment du déblocage.
@@ -4821,7 +5295,7 @@ function ZoneService.overview(player: Player)
 end
 
 return ZoneService
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX41"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX39"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX40"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX38"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX37"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX36"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX43"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX41"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX42"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX40"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX39"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX38"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
 -- Point d'entrée client. Il ne décide de rien : il affiche ce que le serveur
 -- envoie et transmet les demandes du joueur.
 
@@ -5113,7 +5587,7 @@ ContextActionService:SetTitle(&quot;Attack&quot;, &quot;FRAPPER&quot;)
 ContextActionService:SetTitle(&quot;Skins&quot;, &quot;SKINS&quot;)
 
 Hud.toast(&quot;Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.&quot;, &quot;info&quot;)
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX34"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX36"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
 -- §9 — l'interface. Tout ce que le cahier des charges demande d'afficher :
 -- argent sécurisé et non sécurisé, zone, santé, objectifs, état du refuge,
 -- alertes, temps de survie, inventaire, carte, écran de mort, paramètres.
@@ -5407,7 +5881,7 @@ function Hud.setHealth(current: number, max: number)
 end
 
 return Hud
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX35"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX37"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
 -- Boutique, missions, carte, écran de mort et paramètres (§9).
 -- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
 

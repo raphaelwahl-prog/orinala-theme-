@@ -9,9 +9,7 @@
 -- pas s'en protéger seul, et c'est exactement ce qui force les joueurs à se
 -- parler.
 
-local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
-
+local AtmosphereService = require(script.Parent.AtmosphereService)
 local AwakeningConfig = require(script.Parent.Parent.Shared.AwakeningConfig)
 local MonsterService = require(script.Parent.MonsterService)
 local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
@@ -59,9 +57,8 @@ local function applyStage()
 	-- Les monstres déjà sur le terrain changent tout de suite : on ne veut pas
 	-- que le stade n'ait d'effet qu'après une réapparition.
 	MonsterService.applyGlobal(data.Speed, data.Sight)
-	Lighting.FogEnd = data.FogEnd
-	Lighting.FogStart = math.min(40, data.FogEnd * 0.15)
-	Lighting.FogColor = data.FogColor
+	-- Un seul service touche à Lighting : celui-là.
+	AtmosphereService.setAwakening(stage, data)
 	broadcast()
 end
 

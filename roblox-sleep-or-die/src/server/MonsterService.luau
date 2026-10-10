@@ -18,6 +18,7 @@ local Workspace = game:GetService("Workspace")
 local CombatService = require(script.Parent.CombatService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local MonsterRig = require(script.Parent.MonsterRig)
 local ShelterService = require(script.Parent.ShelterService)
 
 local MonsterService = {}
@@ -36,6 +37,8 @@ type Agent = {
 	LastKnown: Vector3?,
 	Path: { Vector3 },
 	PathIndex: number,
+	Rig: any,
+	Walk: number,
 	NextThink: number,
 	LostSince: number,
 	StunUntil: number,
@@ -263,6 +266,9 @@ end
 local function move(agent: Agent, dt: number)
 	if os.clock() < agent.StunUntil then
 		agent.Humanoid.WalkSpeed = 0
+		-- Étourdi : les membres retombent au lieu de rester figés en pleine
+		-- foulée, c'est ce qui fait lire l'état d'un coup d'œil.
+		MonsterRig.animate(agent.Rig, 0, 0)
 		return
 	end
 
@@ -271,6 +277,12 @@ local function move(agent: Agent, dt: number)
 		speed *= 0.55
 	end
 	agent.Humanoid.WalkSpeed = speed
+
+	-- Animation : la phase avance avec la vitesse réelle, donc les jambes
+	-- suivent le déplacement au lieu de pédaler dans le vide.
+	local moving = agent.Path[agent.PathIndex] ~= nil
+	agent.Walk += dt * speed * 0.42
+	MonsterRig.animate(agent.Rig, agent.Walk, moving and 0.85 or 0.06)
 
 	local point = agent.Path[agent.PathIndex]
 	while point and (Vector3.new(point.X, agent.Root.Position.Y, point.Z)
@@ -295,39 +307,11 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		return nil
 	end
 
-	local model = Instance.new("Model")
-	model.Name = def.Id
+	-- Un vrai squelette R6, avec des membres qui bougent.
+	local model, rig = MonsterRig.build(def, position)
+	local root = model.PrimaryPart :: BasePart
+	local humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 
-	local root = Instance.new("Part")
-	root.Name = "HumanoidRootPart"
-	root.Size = Vector3.new(3, 5.5, 2)
-	root.Position = position + Vector3.new(0, 3, 0)
-	root.Anchored = false
-	root.CanCollide = true
-	root.Color = Color3.fromRGB(28, 24, 26)
-	root.Material = Enum.Material.SmoothPlastic
-	root.Parent = model
-
-	local head = Instance.new("Part")
-	head.Name = "Head"
-	head.Size = Vector3.new(2, 2, 2)
-	head.Color = Color3.fromRGB(40, 30, 32)
-	head.CanCollide = false
-	head.Parent = model
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = head
-	weld.Parent = head
-	head.Position = root.Position + Vector3.new(0, 3.5, 0)
-
-	local humanoid = Instance.new("Humanoid")
-	humanoid.MaxHealth = def.Health
-	humanoid.Health = def.Health
-	humanoid.WalkSpeed = def.WalkSpeed
-	humanoid.Parent = model
-
-	model.PrimaryPart = root
-	model:SetAttribute("MonsterId", def.Id)
 	model:SetAttribute("Zone", zoneId)
 	CollectionService:AddTag(model, "Monster")
 	model.Parent = Workspace
@@ -337,6 +321,7 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 		ZoneId = zoneId, Home = position,
 		State = S.PATROL, Target = nil, LastKnown = nil,
 		Path = {}, PathIndex = 1, NextThink = 0, LostSince = 0,
+		Rig = rig, Walk = 0,
 		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
 	}

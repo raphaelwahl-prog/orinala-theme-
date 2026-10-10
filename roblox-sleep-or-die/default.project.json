@@ -4,27 +4,39 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
-      "Shared": { "$path": "src/shared" }
+      "Shared": {
+        "$path": "src/shared"
+      }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "Server": { "$path": "src/server" }
+      "Server": {
+        "$path": "src/server"
+      }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "Client": { "$path": "src/client" }
+        "Client": {
+          "$path": "src/client"
+        }
       }
     },
     "ServerStorage": {
       "$className": "ServerStorage",
-      "Monsters": { "$className": "Folder" },
-      "Props": { "$className": "Folder" }
+      "Monsters": {
+        "$className": "Folder"
+      },
+      "Props": {
+        "$className": "Folder"
+      }
     },
     "Workspace": {
       "$className": "Workspace",
-      "$properties": { "FilteringEnabled": true }
+      "$properties": {
+        "FilteringEnabled": true
+      }
     },
     "Lighting": {
       "$className": "Lighting",
@@ -32,7 +44,19 @@
         "Brightness": 1,
         "ClockTime": 0.4,
         "FogEnd": 320,
-        "FogStart": 40
+        "FogStart": 40,
+        "Technology": "Future",
+        "Ambient": [
+          0.055,
+          0.055,
+          0.078
+        ],
+        "OutdoorAmbient": [
+          0.078,
+          0.078,
+          0.117
+        ],
+        "GlobalShadows": true
       }
     }
   }

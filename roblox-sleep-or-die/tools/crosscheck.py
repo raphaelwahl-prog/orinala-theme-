@@ -75,13 +75,32 @@ for f, text in sources.items():
         if remote not in declared:
             errors.append(f"{f.name} : remote « {remote} » non déclaré dans Net.Events")
 
-# ── 4. tout service serveur est requis par le bootstrap ──────────────────
-boot = (SRC / "server" / "init.server.luau").read_text(encoding="utf-8")
+# ── 4. aucun module mort : tout doit être atteignable depuis un démarrage ──
+# Un module peut très bien n'être utilisé que par un autre module (MonsterRig
+# ne sert qu'à MonsterService). Ce qui compte, c'est qu'en partant de
+# init.server et init.client on finisse par l'atteindre.
+# Attention : init.server et init.client ont le MÊME radical une fois les
+# suffixes retirés. Les confondre efface les arêtes de l'un des deux et fait
+# passer tout le client pour du code mort. On indexe donc par nom de fichier.
+graph = {f.stem: set(aliases[f].values()) for f in files}
+stem_of = {f.stem.replace(".server", "").replace(".client", ""): f.stem for f in files}
+
+reachable = set()
+stack = [f.stem for f in files if f.name.startswith("init")]
+while stack:
+    current = stack.pop()
+    if current in reachable:
+        continue
+    reachable.add(current)
+    for target in graph.get(current, ()):
+        stem = stem_of.get(target, target)
+        if stem not in reachable:
+            stack.append(stem)
+
 for f in files:
-    if f.parent.name == "server" and not f.name.startswith("init"):
-        checked += 1
-        if f.stem not in boot:
-            errors.append(f"init.server.luau n'utilise jamais {f.name}")
+    checked += 1
+    if f.stem not in reachable:
+        errors.append(f"{f.name} n'est atteignable depuis aucun démarrage — module mort")
 
 print(f"{len(files)} fichiers, {checked} liens vérifiés.")
 if errors:

@@ -79,6 +79,34 @@ normalement, avec la perte d'argent qui va avec.
 Seul sur le serveur, le coup tue directement — on ne laisse pas quelqu'un
 agoniser sans aucune issue.
 
+## Ce que ça donne à l'écran
+
+Tout est construit en pièces Roblox et en code — **aucun asset à téléverser**,
+rien qui puisse être modéré un jour et casser le jeu sans prévenir.
+
+- **Les monstres ont un vrai squelette R6** : torse, tête, deux bras, deux
+  jambes, reliés par des `Motor6D`. Leurs membres sont animés en code, la
+  phase du cycle de marche suit la vitesse réelle. Avant, c'étaient deux
+  boîtes soudées qui glissaient sur le sol.
+- **Une silhouette par monstre** : LA CHOSE des égouts est à quatre pattes,
+  L'ENTITÉ du couvent est étirée, LE MASQUE porte une casquette, LE MENTEUR
+  de l'hôpital se promène avec une lanterne, LE CLOWN fait douze studs.
+- **Atmosphere, Bloom, étalonnage de couleur, profondeur de champ** et
+  `Technology = Future` (ombres réelles). Chaque zone a son étalonnage : vert
+  délavé aux égouts, chaud et contrasté dans la maison, gris désaturé chez le
+  slasher, bleu froid au couvent, cyan maladif à l'hôpital, magenta saturé au
+  carnaval. La transition est progressive, pas un claquement.
+- **L'éveil repeint l'image** : plus la jauge monte, plus le brouillard se
+  resserre, plus le bloom déborde et plus l'image vire vers la couleur du
+  stade.
+- **Particules** : poussière dans la rue, les égouts, la maison et l'hôpital ;
+  nappes de brume chez le slasher ; braises au couvent et au carnaval. Textures
+  `rbxasset://`, livrées avec Roblox.
+
+Ce qui manque encore, honnêtement : **aucun son** (Roblox ne synthétise pas
+l'audio, il faut des assets), aucun MeshPart, et les animations sont
+procédurales plutôt que des `Animation` importées.
+
 ## Les sept zones
 
 | # | Zone | Taux | Pour y entrer | Monstre |

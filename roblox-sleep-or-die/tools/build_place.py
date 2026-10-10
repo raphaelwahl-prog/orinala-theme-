@@ -122,7 +122,7 @@ def build() -> str:
         # Nuit permanente : c'est le cadre du jeu (CDC §1).
         '<float name="Brightness">1</float>'
         '<float name="ClockTime">0.4</float>'
-        '<token name="Technology">2</token>'
+        '<token name="Technology">4</token>'   # 4 = Future (ombres réelles)
         '<float name="FogEnd">320</float>'
         '<float name="FogStart">40</float>'
         '<Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3>'

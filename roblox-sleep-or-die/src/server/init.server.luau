@@ -15,6 +15,7 @@ local MonsterConfig = require(Shared.MonsterConfig)
 local Net = require(Shared.Net)
 local ZoneConfig = require(Shared.ZoneConfig)
 
+local AtmosphereService = require(script.AtmosphereService)
 local AwakeningService = require(script.AwakeningService)
 local BossService = require(script.BossService)
 local CombatService = require(script.CombatService)
@@ -98,6 +99,7 @@ end)
 -- ── construction de la ville et peuplement ────────────────────────────────
 PlayerDataService.init()
 PlayerDataService.startAutosave()
+AtmosphereService.init()
 WorldService.build()
 ShelterService.init()
 MonsterService.init()
@@ -278,6 +280,7 @@ local function onEnterZone(player: Player, zoneId: unknown)
 	alert(player, ok and ("Zone : " .. message) or message, ok and "info" or "warn")
 	if ok then
 		ObjectiveService.noteZoneEntered(player, zoneId)
+		AtmosphereService.setZone(zoneId)
 	end
 	pushState(player)
 end
