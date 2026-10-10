@@ -136,3 +136,27 @@ Après chaque changement de `Rate` ou `DetectChance`, relis le tableau
 d'espérance de gain dans `DESIGN.md` : si un palier devient strictement meilleur
 que les autres, tous les joueurs n'iront plus que là et le jeu perd ses cinq
 niveaux de tension.
+
+---
+
+## Chemin le plus rapide : ouvrir la place déjà construite
+
+`DeadTired.rbxlx`, à la racine de `roblox-dead-tired/`, est une **place Roblox
+complète** : les 27 scripts sont déjà aux bons endroits.
+
+1. Télécharge `DeadTired.rbxlx`.
+2. Double-clique dessus (ou dans Studio : **File → Open from File**).
+3. Appuie sur **Play**.
+
+C'est tout. Pas de Rojo, pas de copier-coller de module. Au bout de 25 secondes
+la première nuit commence, avec ton avatar Roblox.
+
+Si tu modifies le code dans `src/`, régénère la place :
+
+```
+python3 tools/build_place.py
+```
+
+Le script vérifie que le XML est valide et que les 27 modules sont bien dedans
+avant d'écrire le fichier — une place incomplète s'ouvrirait sans erreur et ne
+planterait qu'au Play.
