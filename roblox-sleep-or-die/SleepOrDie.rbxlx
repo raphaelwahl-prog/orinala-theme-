@@ -1,0 +1,3992 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX33"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX34"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">2</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX9"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX8"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">Format</string><ProtectedString name="Source">--!strict
+-- Mise en forme des nombres.
+--
+-- ⚠️ POINT TECHNIQUE QUI A DES CONSÉQUENCES SUR TOUT LE JEU
+-- Le cahier des charges prévoit 100 000 $/seconde en zone 7 et un refuge à
+-- 500 000 000 $. Un IntValue Roblox est un entier 32 bits : il sature à
+-- 2 147 483 647. À 100 000 $/s, un joueur atteint ce plafond en 5 h 58 de jeu,
+-- et ensuite son argent arrête de monter (ou devient négatif).
+-- Donc : l'argent est stocké en `number` (double, exact jusqu'à 2^53) et
+-- affiché avec des suffixes. Aucun IntValue n'est utilisé pour l'argent.
+
+local Format = {}
+
+local UNITS = {
+	{ 1e12, &quot;T&quot; },
+	{ 1e9, &quot;Md&quot; },
+	{ 1e6, &quot;M&quot; },
+	{ 1e3, &quot;k&quot; },
+}
+
+-- 12 450 → &quot;12,4 k $&quot;  ·  1 500 000 000 → &quot;1,50 Md $&quot;
+function Format.money(value: number): string
+	local sign = value &lt; 0 and &quot;-&quot; or &quot;&quot;
+	local n = math.abs(value)
+	for _, unit in ipairs(UNITS) do
+		local scale, suffix = unit[1], unit[2]
+		if n &gt;= scale then
+			local scaled = n / scale
+			local decimals = scaled &lt; 10 and 2 or (scaled &lt; 100 and 1 or 0)
+			local text = string.format(&quot;%.&quot; .. decimals .. &quot;f&quot;, scaled)
+			return sign .. (text:gsub(&quot;%.&quot;, &quot;,&quot;)) .. &quot; &quot; .. suffix .. &quot; $&quot;
+		end
+	end
+	return sign .. string.format(&quot;%d&quot;, math.floor(n + 0.5)) .. &quot; $&quot;
+end
+
+-- Taux par seconde, lisible dans le HUD.
+function Format.rate(value: number): string
+	return Format.money(value) .. &quot;/s&quot;
+end
+
+function Format.clock(seconds: number): string
+	seconds = math.max(0, math.floor(seconds))
+	local h = math.floor(seconds / 3600)
+	local m = math.floor(seconds % 3600 / 60)
+	local s = seconds % 60
+	if h &gt; 0 then
+		return string.format(&quot;%d:%02d:%02d&quot;, h, m, s)
+	end
+	return string.format(&quot;%d:%02d&quot;, m, s)
+end
+
+return Format
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX2"><Properties><string name="Name">GameConfig</string><ProtectedString name="Source">--!strict
+-- Réglages globaux. Tout ce qui s'équilibre est ici, pas dispersé dans les
+-- services. Les valeurs issues du cahier des charges sont marquées « CDC ».
+
+local GameConfig = {}
+
+GameConfig.Economy = {
+	StartingCash = 0,                -- CDC §1 : « le joueur commence sans argent »
+	BankRadius = 14,                 -- distance au coffre pour déposer
+	-- CDC §2 : « l'argent sécurisé est conservé après une mort, tandis qu'une
+	-- partie des gains non sécurisés peut être perdue ». Le pourcentage est
+	-- défini par zone (ZoneConfig.DeathLossRatio).
+	DisconnectKeepsUnbanked = false, -- CDC §4 : la déconnexion arrête les gains
+	PayoutInterval = 1,              -- le serveur crédite toutes les secondes
+	-- Anti-farming passif (CDC §2) : au-delà du plafond, le taux est divisé.
+	SoftCapDivisor = 4,
+}
+
+GameConfig.Survival = {
+	-- Une session ne tourne pas indéfiniment : il faut se lever, déposer,
+	-- recommencer. C'est ce qui empêche le jeu de devenir du farm passif.
+	GraceSeconds = 3,                -- délai avant que les gains démarrent
+	WakeLockSeconds = 1.5,           -- on ne peut pas se rendormir instantanément
+	MaxHealth = 100,
+	RespawnSeconds = 6,
+	-- Fréquence des assauts pendant une session, par zone (multiplicateur).
+	BaseAssaultInterval = 38,
+	AssaultJitter = 12,
+}
+
+GameConfig.Shelter = {
+	MaxSlots = 6,                    -- emplacements de défense par refuge
+	ClaimCooldownSeconds = 20,       -- anti-spam de réservation
+	-- CDC §4 : « le système doit être équilibré pour éviter le harcèlement ».
+	-- Un joueur qui vient de perdre son refuge est protégé : le même agresseur
+	-- ne peut pas lui reprendre le suivant pendant ce délai.
+	HarassmentShieldSeconds = 180,
+	-- Un refuge n'est contestable que si son propriétaire est mort, déconnecté
+	-- ou absent depuis AbandonSeconds.
+	AbandonSeconds = 45,
+	RepairCostRatio = 0.25,          -- part du prix pour remettre une défense à neuf
+}
+
+GameConfig.Combat = {
+	-- CDC §15 : « les monstres ne frappent pas à travers les murs ou à distance
+	-- impossible ». Les deux sont vérifiés côté serveur avant chaque dégât.
+	MaxHitDistance = 8,
+	RequireLineOfSight = true,
+	PlayerAttackReach = 7,
+	FriendlyFire = false,
+}
+
+GameConfig.Data = {
+	StoreName = &quot;SleepOrDie_Profiles_v1&quot;,
+	AutosaveSeconds = 120,
+	MaxRetries = 4,
+	RetryBackoff = 2,
+	SessionLockSeconds = 60,
+}
+
+GameConfig.Monetization = {
+	-- CDC §12. Les achats répétables sont des Developer Products traités par
+	-- ProcessReceipt ; les avantages permanents sont des Game Passes.
+	-- Les identifiants sont à remplacer par ceux créés sur le tableau de bord.
+	Products = {
+		{ Id = &quot;x2_15m&quot;, DevProductId = 0, Name = &quot;Gains x2 — 15 min&quot;, Robux = 19,
+			Effect = &quot;multiplier&quot;, Value = 2, Seconds = 900 },
+		{ Id = &quot;x2_1h&quot;, DevProductId = 0, Name = &quot;Gains x2 — 1 h&quot;, Robux = 49,
+			Effect = &quot;multiplier&quot;, Value = 2, Seconds = 3600 },
+		{ Id = &quot;cash_small&quot;, DevProductId = 0, Name = &quot;Petit pack d'argent&quot;, Robux = 49,
+			Effect = &quot;cash&quot;, Value = 50000 },
+		{ Id = &quot;cash_big&quot;, DevProductId = 0, Name = &quot;Pack d'argent avancé&quot;, Robux = 149,
+			Effect = &quot;cash&quot;, Value = 400000 },
+	},
+	Passes = {
+		{ Id = &quot;vip&quot;, GamePassId = 0, Name = &quot;Pass VIP (cosmétique)&quot;, Robux = 199 },
+		{ Id = &quot;skins&quot;, GamePassId = 0, Name = &quot;Pack de skins légendaires&quot;, Robux = 299 },
+	},
+	MaxMultiplier = 2,  -- les multiplicateurs ne se cumulent pas
+}
+
+GameConfig.Events = {
+	-- CDC §13. Le serveur décide seul de l'événement actif.
+	RotationSeconds = 1800,
+	List = {
+		{ Id = &quot;street_invasion&quot;, Name = &quot;Invasion de la rue&quot;,
+			Zone = &quot;street&quot;, MonsterMultiplier = 2, RewardMultiplier = 1.5,
+			Text = &quot;Des vagues de rôdeurs. Les gains montent, la rue devient invivable.&quot; },
+		{ Id = &quot;blood_moon&quot;, Name = &quot;Lune de sang&quot;,
+			Zone = &quot;any&quot;, MonsterSpeed = 1.2, RewardMultiplier = 1.75,
+			Text = &quot;Tout est plus rapide et plus agressif. Classement spécial.&quot; },
+		{ Id = &quot;forbidden_carnival&quot;, Name = &quot;Carnaval interdit&quot;,
+			Zone = &quot;any&quot;, MiniBoss = true, RewardMultiplier = 1.4,
+			Text = &quot;Un mini-boss apparaît. Cosmétique exclusif à la clé.&quot; },
+		{ Id = &quot;endless_night&quot;, Name = &quot;Nuit sans fin&quot;,
+			Zone = &quot;any&quot;, Collective = true, RewardMultiplier = 2,
+			Text = &quot;Défi collectif : le serveur entier doit tenir.&quot; },
+	},
+}
+
+GameConfig.Ui = {
+	ToastSeconds = 5,
+	AlertSeconds = 4,
+}
+
+GameConfig.Debug = {
+	-- Mettre à true pour voir dans la sortie les décisions d'IA et d'économie.
+	Verbose = false,
+}
+
+return GameConfig
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX3"><Properties><string name="Name">ItemConfig</string><ProtectedString name="Source">--!strict
+-- Équipements du §6. Les prix sont ceux du cahier des charges.
+--
+-- Le CDC précise : « Ils ne doivent jamais rendre le joueur invincible. »
+-- C'est appliqué ici par trois règles tenues côté serveur :
+--   · tout équipement de défense a une DURABILITÉ (il se consomme) ;
+--   · aucun ne met la détection ou les dégâts à zéro, seulement en pourcentage ;
+--   · chaque refuge a un nombre de emplacements limité (ShelterService).
+
+export type Kind = &quot;weapon&quot; | &quot;defense&quot;
+
+export type Item = {
+	Id: string,
+	Name: string,
+	Kind: Kind,
+	Price: number,
+	Zone: string,          -- zone minimale où l'objet est en vente
+	Desc: string,
+	-- armes
+	Damage: number?,
+	StunSeconds: number?,
+	Cooldown: number?,
+	-- défenses
+	Slots: number?,        -- emplacements occupés dans le refuge
+	Durability: number?,   -- nombre d'assauts encaissés avant destruction
+	DelaySeconds: number?, -- temps gagné sur un assaut
+	DetectionCut: number?, -- réduction de la chance d'être repéré (0..0.6)
+	WarningSeconds: number?,
+}
+
+local ItemConfig = {}
+
+ItemConfig.List = {
+	-- Armes
+	{ Id = &quot;bat_wood&quot;, Name = &quot;Batte en bois&quot;, Kind = &quot;weapon&quot;, Price = 2500, Zone = &quot;street&quot;,
+		Damage = 12, StunSeconds = 0.8, Cooldown = 0.9,
+		Desc = &quot;Repousse. Ne tue pas.&quot; },
+	{ Id = &quot;bat_steel&quot;, Name = &quot;Batte renforcée&quot;, Kind = &quot;weapon&quot;, Price = 100000, Zone = &quot;sewers&quot;,
+		Damage = 30, StunSeconds = 1.2, Cooldown = 0.9,
+		Desc = &quot;Assez lourde pour faire reculer ce qui vit sous la ville.&quot; },
+	{ Id = &quot;stun_baton&quot;, Name = &quot;Matraque électrique&quot;, Kind = &quot;weapon&quot;, Price = 1000000, Zone = &quot;dollhouse&quot;,
+		Damage = 45, StunSeconds = 3.0, Cooldown = 2.5,
+		Desc = &quot;Trois secondes d'immobilité. C'est long, trois secondes.&quot; },
+	{ Id = &quot;pulse_gun&quot;, Name = &quot;Arme à impulsion&quot;, Kind = &quot;weapon&quot;, Price = 25000000, Zone = &quot;convent&quot;,
+		Damage = 110, StunSeconds = 4.0, Cooldown = 4.0,
+		Desc = &quot;Souffle le monstre en arrière. Recharge lente.&quot; },
+	{ Id = &quot;legendary&quot;, Name = &quot;Arme légendaire&quot;, Kind = &quot;weapon&quot;, Price = 150000000, Zone = &quot;hospital&quot;,
+		Damage = 260, StunSeconds = 5.0, Cooldown = 6.0,
+		Desc = &quot;Ne tue toujours pas le boss. Elle fait gagner du temps.&quot; },
+
+	-- Défenses
+	{ Id = &quot;alarm&quot;, Name = &quot;Alarme de proximité&quot;, Kind = &quot;defense&quot;, Price = 5000, Zone = &quot;street&quot;,
+		Slots = 1, Durability = 8, WarningSeconds = 3.5,
+		Desc = &quot;Prévient 3,5 s avant l'assaut. Se déclenche 8 fois.&quot; },
+	{ Id = &quot;snare&quot;, Name = &quot;Piège ralentisseur&quot;, Kind = &quot;defense&quot;, Price = 25000, Zone = &quot;street&quot;,
+		Slots = 1, Durability = 4, DelaySeconds = 4,
+		Desc = &quot;Retient le monstre 4 s. Quatre usages.&quot; },
+	{ Id = &quot;barricade&quot;, Name = &quot;Barricade renforcée&quot;, Kind = &quot;defense&quot;, Price = 150000, Zone = &quot;sewers&quot;,
+		Slots = 2, Durability = 6, DelaySeconds = 7,
+		Desc = &quot;Sept secondes de plus. Elle finit toujours par céder.&quot; },
+	{ Id = &quot;camera&quot;, Name = &quot;Caméra de surveillance&quot;, Kind = &quot;defense&quot;, Price = 750000, Zone = &quot;dollhouse&quot;,
+		Slots = 1, Durability = 20, DetectionCut = 0.15, WarningSeconds = 6,
+		Desc = &quot;Voir venir vaut mieux que résister.&quot; },
+	{ Id = &quot;steel_door&quot;, Name = &quot;Porte blindée&quot;, Kind = &quot;defense&quot;, Price = 5000000, Zone = &quot;slasher&quot;,
+		Slots = 2, Durability = 10, DelaySeconds = 12, DetectionCut = 0.1,
+		Desc = &quot;Douze secondes. Dix assauts. Pas un de plus.&quot; },
+	{ Id = &quot;shield&quot;, Name = &quot;Bouclier anti-monstre&quot;, Kind = &quot;defense&quot;, Price = 25000000, Zone = &quot;convent&quot;,
+		Slots = 3, Durability = 6, DelaySeconds = 18, DetectionCut = 0.2,
+		Desc = &quot;Le couvent sait le neutraliser. Pas partout.&quot; },
+	{ Id = &quot;ultimate&quot;, Name = &quot;Refuge ultime&quot;, Kind = &quot;defense&quot;, Price = 500000000, Zone = &quot;hospital&quot;,
+		Slots = 5, Durability = 12, DelaySeconds = 25, DetectionCut = 0.35,
+		Desc = &quot;Le meilleur abri du jeu. Il tombe en douze assauts.&quot; },
+} :: { Item }
+
+ItemConfig.ById = {}
+for _, item in ipairs(ItemConfig.List) do
+	ItemConfig.ById[item.Id] = item
+end
+
+function ItemConfig.get(id: string): Item?
+	return ItemConfig.ById[id]
+end
+
+-- Somme des effets des défenses posées, bornée pour qu'aucun refuge ne soit
+-- imprenable : la détection ne descend jamais sous 40 % de sa valeur de base.
+function ItemConfig.defenseProfile(placed: { [string]: number }): {
+	Delay: number, Warning: number, Detection: number, Slots: number,
+}
+	local delay, warning, cut, slots = 0, 0, 0, 0
+	for id, count in pairs(placed) do
+		local item = ItemConfig.ById[id]
+		if item and item.Kind == &quot;defense&quot; and count &gt; 0 then
+			delay += (item.DelaySeconds or 0) * count
+			warning = math.max(warning, item.WarningSeconds or 0)
+			cut += (item.DetectionCut or 0) * count
+			slots += (item.Slots or 1) * count
+		end
+	end
+	return {
+		Delay = math.min(delay, 40),
+		Warning = warning,
+		Detection = math.max(0.4, 1 - math.min(cut, 0.6)),
+		Slots = slots,
+	}
+end
+
+return ItemConfig
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX4"><Properties><string name="Name">MissionConfig</string><ProtectedString name="Source">--!strict
+-- §7 — missions principales, secondaires, quotidiennes et hebdomadaires.
+-- Les missions principales débloquent les zones (leur compte alimente
+-- `MainMissions` dans ZoneConfig.canEnter).
+
+export type Kind = &quot;main&quot; | &quot;side&quot; | &quot;daily&quot; | &quot;weekly&quot;
+
+export type Mission = {
+	Id: string,
+	Kind: Kind,
+	Name: string,
+	Zone: string,
+	Goal: string,            -- type d'objectif, lu par MissionService
+	Target: number,
+	Giver: string,           -- PNJ qui la donne
+	Reward: { Cash: number, Items: { string }?, Quest: string? },
+	Text: string,
+}
+
+local MissionConfig = {}
+
+MissionConfig.List = {
+	-- Principales : la colonne vertébrale, une par palier de zone.
+	{ Id = &quot;m1_first_night&quot;, Kind = &quot;main&quot;, Name = &quot;Ta première nuit&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;survive_session&quot;, Target = 1, Giver = &quot;guide&quot;,
+		Reward = { Cash = 2000 },
+		Text = &quot;Réserve un refuge, barricade-le et tiens une session complète.&quot; },
+	{ Id = &quot;m2_supplies&quot;, Kind = &quot;main&quot;, Name = &quot;Des provisions&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;collect&quot;, Target = 5, Giver = &quot;merchant&quot;,
+		Reward = { Cash = 6000 },
+		Text = &quot;Ramasse cinq caisses de ressources dans la rue.&quot; },
+	{ Id = &quot;m3_three_nights&quot;, Kind = &quot;main&quot;, Name = &quot;Trois nuits d'affilée&quot;, Zone = &quot;sewers&quot;,
+		Goal = &quot;survive_session&quot;, Target = 3, Giver = &quot;guide&quot;,
+		Reward = { Cash = 60000 },
+		Text = &quot;Survis trois sessions complètes sans mourir une seule fois.&quot; },
+	{ Id = &quot;m4_chase&quot;, Kind = &quot;main&quot;, Name = &quot;La poursuite&quot;, Zone = &quot;dollhouse&quot;,
+		Goal = &quot;escape_chase&quot;, Target = 1, Giver = &quot;researcher&quot;,
+		Reward = { Cash = 400000, Quest = &quot;chase&quot; },
+		Text = &quot;Attire la poupée hors de la maison et sème-la.&quot; },
+	{ Id = &quot;m5_vigil&quot;, Kind = &quot;main&quot;, Name = &quot;La veillée&quot;, Zone = &quot;slasher&quot;,
+		Goal = &quot;survive_session&quot;, Target = 5, Giver = &quot;mechanic&quot;,
+		Reward = { Cash = 1500000, Quest = &quot;vigil&quot; },
+		Text = &quot;Tiens cinq sessions dans le quartier sans perdre un refuge.&quot; },
+	{ Id = &quot;m6_extreme&quot;, Kind = &quot;main&quot;, Name = &quot;Nuit extrême&quot;, Zone = &quot;convent&quot;,
+		Goal = &quot;survive_extreme&quot;, Target = 1, Giver = &quot;informant&quot;,
+		Reward = { Cash = 6000000, Quest = &quot;extreme_night&quot; },
+		Text = &quot;Une session entière au couvent, sans aucune défense posée.&quot; },
+	{ Id = &quot;m7_secret&quot;, Kind = &quot;main&quot;, Name = &quot;La porte derrière l'hôpital&quot;, Zone = &quot;hospital&quot;,
+		Goal = &quot;find_secret&quot;, Target = 1, Giver = &quot;researcher&quot;,
+		Reward = { Cash = 25000000, Quest = &quot;secret&quot; },
+		Text = &quot;Trouve l'entrée du carnaval. Elle n'est pas sur la carte.&quot; },
+
+	-- Secondaires : argent, ressources, cosmétiques.
+	{ Id = &quot;s_lost_item&quot;, Kind = &quot;side&quot;, Name = &quot;Un objet perdu&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;collect&quot;, Target = 1, Giver = &quot;survivor&quot;,
+		Reward = { Cash = 1500 },
+		Text = &quot;Quelqu'un a laissé tomber quelque chose près du métro.&quot; },
+	{ Id = &quot;s_parcel&quot;, Kind = &quot;side&quot;, Name = &quot;Livrer un colis&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;deliver&quot;, Target = 1, Giver = &quot;merchant&quot;,
+		Reward = { Cash = 2500 },
+		Text = &quot;Porte ce paquet au mécanicien. Sans traîner.&quot; },
+	{ Id = &quot;s_generator&quot;, Kind = &quot;side&quot;, Name = &quot;Réparer le générateur&quot;, Zone = &quot;sewers&quot;,
+		Goal = &quot;repair&quot;, Target = 3, Giver = &quot;mechanic&quot;,
+		Reward = { Cash = 25000 },
+		Text = &quot;Trois pièces à remettre en place pendant que ça rôde.&quot; },
+	{ Id = &quot;s_rescue&quot;, Kind = &quot;side&quot;, Name = &quot;Aider un survivant&quot;, Zone = &quot;sewers&quot;,
+		Goal = &quot;rescue&quot;, Target = 1, Giver = &quot;survivor&quot;,
+		Reward = { Cash = 40000 },
+		Text = &quot;Il est coincé. Il ne tiendra pas la nuit tout seul.&quot; },
+
+	-- Quotidiennes : petites récompenses, remises à zéro chaque jour.
+	{ Id = &quot;d_survive&quot;, Kind = &quot;daily&quot;, Name = &quot;Dormir une fois&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;survive_session&quot;, Target = 1, Giver = &quot;guide&quot;,
+		Reward = { Cash = 3000 },
+		Text = &quot;Une session complète, n'importe où.&quot; },
+	{ Id = &quot;d_repel&quot;, Kind = &quot;daily&quot;, Name = &quot;Repousser un monstre&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;repel&quot;, Target = 2, Giver = &quot;mechanic&quot;,
+		Reward = { Cash = 5000 },
+		Text = &quot;Étourdis deux monstres.&quot; },
+	{ Id = &quot;d_bank&quot;, Kind = &quot;daily&quot;, Name = &quot;Mettre à l'abri&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;bank&quot;, Target = 1, Giver = &quot;merchant&quot;,
+		Reward = { Cash = 2000 },
+		Text = &quot;Dépose au moins une fois ce que tu as gagné.&quot; },
+
+	-- Hebdomadaires : gros bonus.
+	{ Id = &quot;w_marathon&quot;, Kind = &quot;weekly&quot;, Name = &quot;La semaine longue&quot;, Zone = &quot;street&quot;,
+		Goal = &quot;survive_session&quot;, Target = 15, Giver = &quot;guide&quot;,
+		Reward = { Cash = 120000 },
+		Text = &quot;Quinze sessions complètes dans la semaine.&quot; },
+	{ Id = &quot;w_hunter&quot;, Kind = &quot;weekly&quot;, Name = &quot;Chasseur&quot;, Zone = &quot;sewers&quot;,
+		Goal = &quot;repel&quot;, Target = 25, Giver = &quot;researcher&quot;,
+		Reward = { Cash = 250000 },
+		Text = &quot;Vingt-cinq monstres repoussés.&quot; },
+} :: { Mission }
+
+MissionConfig.ById = {}
+for _, mission in ipairs(MissionConfig.List) do
+	MissionConfig.ById[mission.Id] = mission
+end
+
+MissionConfig.Npcs = {
+	{ Id = &quot;guide&quot;, Name = &quot;Le Guide&quot;, Role = &quot;Explique les règles et suit ta progression.&quot; },
+	{ Id = &quot;merchant&quot;, Name = &quot;Le Marchand&quot;, Role = &quot;Vend les équipements, reprend les ressources.&quot; },
+	{ Id = &quot;mechanic&quot;, Name = &quot;Le Mécanicien&quot;, Role = &quot;Répare et améliore les refuges.&quot; },
+	{ Id = &quot;informant&quot;, Name = &quot;L'Informateur&quot;, Role = &quot;Vend des renseignements sur les zones.&quot; },
+	{ Id = &quot;survivor&quot;, Name = &quot;Les Survivants&quot;, Role = &quot;Donnent des missions d'entraide.&quot; },
+	{ Id = &quot;researcher&quot;, Name = &quot;Le Chercheur&quot;, Role = &quot;Étudie les monstres. Paie pour des observations.&quot; },
+}
+
+function MissionConfig.get(id: string): Mission?
+	return MissionConfig.ById[id]
+end
+
+function MissionConfig.ofKind(kind: Kind): { Mission }
+	local out = {}
+	for _, mission in ipairs(MissionConfig.List) do
+		if mission.Kind == kind then
+			table.insert(out, mission)
+		end
+	end
+	return out
+end
+
+return MissionConfig
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX5"><Properties><string name="Name">MonsterConfig</string><ProtectedString name="Source">--!strict
+-- §5 — un monstre par zone, chacun avec une mécanique différente.
+-- Le CDC insiste : « Chaque zone doit introduire une mécanique différente
+-- plutôt que simplement augmenter les dégâts et la résistance. » C'est le
+-- champ `Rule` qui porte ça ; MonsterService l'applique.
+
+export type Monster = {
+	Id: string,
+	Name: string,
+	Zone: string,
+	WalkSpeed: number,
+	Damage: number,
+	Health: number,          -- pour l'étourdissement, pas pour la mort
+	SightRange: number,
+	HearRange: number,
+	AttackRange: number,
+	GiveUpSeconds: number,   -- abandon d'une cible inaccessible
+	MaxAlive: number,        -- plafond par serveur, pour les performances
+	Rule: string,            -- la mécanique propre à la zone
+	Tell: string,            -- le signal que le joueur doit apprendre à lire
+	Counter: string,
+}
+
+local MonsterConfig = {}
+
+MonsterConfig.List = {
+	{ Id = &quot;prowler&quot;, Name = &quot;LE RÔDEUR&quot;, Zone = &quot;street&quot;,
+		WalkSpeed = 13, Damage = 20, Health = 100, SightRange = 55, HearRange = 32,
+		AttackRange = 4.5, GiveUpSeconds = 12, MaxAlive = 3,
+		Rule = &quot;none&quot;,
+		Tell = &quot;Il traîne les pieds. On l'entend avant de le voir.&quot;,
+		Counter = &quot;Casse la ligne de vue et reste immobile le temps qu'il passe.&quot; },
+
+	{ Id = &quot;sewer_thing&quot;, Name = &quot;LA CHOSE DES ÉGOUTS&quot;, Zone = &quot;sewers&quot;,
+		WalkSpeed = 17, Damage = 28, Health = 140, SightRange = 34, HearRange = 48,
+		AttackRange = 4.5, GiveUpSeconds = 14, MaxAlive = 3,
+		Rule = &quot;sound&quot;,
+		Tell = &quot;Elle voit mal et entend tout : c'est le bruit qui l'attire.&quot;,
+		Counter = &quot;Marche. Courir dans un tunnel, c'est l'appeler.&quot; },
+
+	{ Id = &quot;doll&quot;, Name = &quot;LA POUPÉE&quot;, Zone = &quot;dollhouse&quot;,
+		WalkSpeed = 22, Damage = 34, Health = 160, SightRange = 60, HearRange = 20,
+		AttackRange = 4, GiveUpSeconds = 20, MaxAlive = 2,
+		Rule = &quot;gaze&quot;,
+		Tell = &quot;Elle est toujours un peu plus près qu'au dernier regard.&quot;,
+		Counter = &quot;Garde-la dans ton champ de vision : regardée, elle ne bouge pas.&quot; },
+
+	{ Id = &quot;slasher&quot;, Name = &quot;LE MASQUE&quot;, Zone = &quot;slasher&quot;,
+		WalkSpeed = 11, Damage = 55, Health = 400, SightRange = 70, HearRange = 40,
+		AttackRange = 5, GiveUpSeconds = 45, MaxAlive = 1,
+		Rule = &quot;relentless&quot;,
+		Tell = &quot;Il ne court pas. Il ne s'arrête pas non plus.&quot;,
+		Counter = &quot;Les raccourcis et les pièges. Le combat frontal ne marche pas.&quot; },
+
+	{ Id = &quot;demon&quot;, Name = &quot;L'ENTITÉ&quot;, Zone = &quot;convent&quot;,
+		WalkSpeed = 16, Damage = 62, Health = 500, SightRange = 65, HearRange = 45,
+		AttackRange = 5, GiveUpSeconds = 25, MaxAlive = 2,
+		Rule = &quot;disable&quot;,
+		Tell = &quot;Les alarmes se taisent une par une avant qu'elle entre.&quot;,
+		Counter = &quot;Prévois une sortie : les défenses ne tiendront pas.&quot; },
+
+	{ Id = &quot;mimic_voice&quot;, Name = &quot;LE MENTEUR&quot;, Zone = &quot;hospital&quot;,
+		WalkSpeed = 18, Damage = 70, Health = 520, SightRange = 55, HearRange = 55,
+		AttackRange = 5, GiveUpSeconds = 25, MaxAlive = 2,
+		Rule = &quot;fake_alerts&quot;,
+		Tell = &quot;Une alerte sur trois est fausse. Celle qui ne l'est pas arrive sans bruit.&quot;,
+		Counter = &quot;Ne réagis qu'aux alertes confirmées par deux signaux.&quot; },
+
+	{ Id = &quot;clown_boss&quot;, Name = &quot;LE CLOWN&quot;, Zone = &quot;carnival&quot;,
+		WalkSpeed = 20, Damage = 90, Health = 4000, SightRange = 90, HearRange = 90,
+		AttackRange = 7, GiveUpSeconds = 999, MaxAlive = 1,
+		Rule = &quot;boss_phases&quot;,
+		Tell = &quot;Trois phases. Chacune reprend la mécanique d'une zone précédente.&quot;,
+		Counter = &quot;Tout ce que les six zones t'ont appris, dans l'ordre.&quot; },
+} :: { Monster }
+
+MonsterConfig.ById = {}
+for _, monster in ipairs(MonsterConfig.List) do
+	MonsterConfig.ById[monster.Id] = monster
+end
+
+-- §5 : les huit états demandés par le cahier des charges.
+MonsterConfig.States = {
+	PATROL = &quot;patrol&quot;,
+	INVESTIGATE = &quot;investigate&quot;,
+	DETECT = &quot;detect&quot;,
+	CHASE = &quot;chase&quot;,
+	ATTACK = &quot;attack&quot;,
+	SEARCH = &quot;search&quot;,
+	STUNNED = &quot;stunned&quot;,
+	RETURN = &quot;return&quot;,
+}
+
+function MonsterConfig.get(id: string): Monster?
+	return MonsterConfig.ById[id]
+end
+
+return MonsterConfig
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX6"><Properties><string name="Name">Net</string><ProtectedString name="Source">--!strict
+-- Tous les RemoteEvents / RemoteFunctions du jeu, déclarés au même endroit.
+-- Le serveur les crée au démarrage ; le client ne fait que les attendre.
+-- Aucun remote ne transporte de montant d'argent depuis le client : le client
+-- demande une action, le serveur décide et répond.
+
+local ReplicatedStorage = game:GetService(&quot;ReplicatedStorage&quot;)
+
+local Net = {}
+
+Net.Events = {
+	-- serveur → client
+	&quot;StateChanged&quot;,      -- profil complet (argent, zones, inventaire, missions)
+	&quot;Alert&quot;,             -- message d'alerte (son/lumière côté client)
+	&quot;SessionChanged&quot;,    -- début/fin de session de survie
+	&quot;ShelterChanged&quot;,    -- état d'un refuge
+	&quot;MonsterSignal&quot;,     -- signal visuel/sonore d'un monstre
+	&quot;EventChanged&quot;,      -- événement serveur actif
+	&quot;DeathReport&quot;,       -- bilan de mort
+	-- client → serveur
+	&quot;RequestClaim&quot;,      -- réserver un refuge
+	&quot;RequestSleep&quot;,      -- démarrer une session
+	&quot;RequestWake&quot;,       -- se réveiller
+	&quot;RequestBank&quot;,       -- déposer l'argent non sécurisé
+	&quot;RequestBuy&quot;,        -- acheter un objet
+	&quot;RequestPlace&quot;,      -- poser une défense dans son refuge
+	&quot;RequestRepair&quot;,     -- réparer une défense
+	&quot;RequestEnterZone&quot;,  -- entrer dans une zone
+	&quot;RequestAttack&quot;,     -- frapper un monstre
+	&quot;RequestMission&quot;,    -- accepter / rendre une mission
+	&quot;RequestPurchase&quot;,   -- ouvrir une fenêtre d'achat Robux
+}
+
+local cache: { [string]: RemoteEvent } = {}
+
+-- Appelé une seule fois par le serveur.
+function Net.build()
+	local folder = ReplicatedStorage:FindFirstChild(&quot;Remotes&quot;)
+	if not folder then
+		folder = Instance.new(&quot;Folder&quot;)
+		folder.Name = &quot;Remotes&quot;
+		folder.Parent = ReplicatedStorage
+	end
+	for _, name in ipairs(Net.Events) do
+		if not folder:FindFirstChild(name) then
+			local remote = Instance.new(&quot;RemoteEvent&quot;)
+			remote.Name = name
+			remote.Parent = folder
+		end
+	end
+end
+
+function Net.get(name: string): RemoteEvent
+	local cached = cache[name]
+	if cached then
+		return cached
+	end
+	local folder = ReplicatedStorage:WaitForChild(&quot;Remotes&quot;, 20) :: Folder
+	local remote = folder:WaitForChild(name, 20) :: RemoteEvent
+	cache[name] = remote
+	return remote
+end
+
+return Net
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX7"><Properties><string name="Name">ZoneConfig</string><ProtectedString name="Source">--!strict
+-- Les 7 zones, telles que décrites au §3 du cahier des charges.
+--
+-- Les gains et les seuils sont ceux du document. Deux remarques honnêtes, à
+-- lire avant d'équilibrer (le CDC dit lui-même que ce sont des valeurs à
+-- tester) :
+--
+-- 1. La marche zone 6 → zone 7 est de x8 (12 500 → 100 000 $/s) alors que les
+--    autres vont de x2,5 à x10. Surtout, à 100 000 $/s on gagne les 15 M$ qui
+--    débloquent l'hôpital en 150 secondes : une fois le carnaval atteint, tout
+--    le reste de l'économie n'existe plus. `Zone.SoftCapPerSession` plafonne
+--    donc ce qu'une seule session peut rapporter, par zone.
+-- 2. Les seuils de déblocage sont cumulatifs sur l'argent DÉPOSÉ (Cash gagné à
+--    vie), pas sur le solde courant : sinon il suffit de ne rien dépenser.
+
+export type Zone = {
+	Id: string,
+	Order: number,
+	Name: string,
+	Rate: number,              -- $ par seconde de survie éligible
+	SoftCapPerSession: number, -- au-delà, le taux est divisé par 4
+	MaxSessionSeconds: number, -- une session ne dure pas éternellement
+	DeathLossRatio: number,    -- part du non sécurisé perdue à la mort
+	Monster: string,
+	Unlock: {
+		Banked: number,            -- $ cumulés déposés
+		Missions: number,          -- missions principales terminées
+		NightsSurvived: number,
+		SurvivalSeconds: number,
+		RequiresQuest: string?,
+	},
+	Blurb: string,
+	Mechanic: string,
+}
+
+local ZoneConfig = {}
+
+ZoneConfig.List = {
+	{
+		Id = &quot;street&quot;, Order = 1, Name = &quot;La rue&quot;,
+		Rate = 10, SoftCapPerSession = 4000, MaxSessionSeconds = 300,
+		DeathLossRatio = 0.5, Monster = &quot;prowler&quot;,
+		Unlock = { Banked = 0, Missions = 0, NightsSurvived = 0, SurvivalSeconds = 0 },
+		Blurb = &quot;Des refuges précaires entre deux immeubles. On y apprend à dormir sans mourir.&quot;,
+		Mechanic = &quot;Tutoriel : réserver, barricader, dormir, se réveiller à temps.&quot;,
+	},
+	{
+		Id = &quot;sewers&quot;, Order = 2, Name = &quot;Les égouts&quot;,
+		Rate = 100, SoftCapPerSession = 30000, MaxSessionSeconds = 300,
+		DeathLossRatio = 0.5, Monster = &quot;sewer_thing&quot;,
+		Unlock = { Banked = 10000, Missions = 2, NightsSurvived = 0, SurvivalSeconds = 0 },
+		Blurb = &quot;Tunnels étroits, embuscades, ressources cachées.&quot;,
+		Mechanic = &quot;Itinéraires : une seule sortie par section, il faut choisir avant de dormir.&quot;,
+	},
+	{
+		Id = &quot;dollhouse&quot;, Order = 3, Name = &quot;La maison des poupées&quot;,
+		Rate = 500, SoftCapPerSession = 120000, MaxSessionSeconds = 360,
+		DeathLossRatio = 0.55, Monster = &quot;doll&quot;,
+		Unlock = { Banked = 200000, Missions = 3, NightsSurvived = 3, SurvivalSeconds = 0 },
+		Blurb = &quot;Elle ne bouge que quand personne ne la regarde.&quot;,
+		Mechanic = &quot;Observation : la poupée est figée tant qu'un joueur l'a dans son champ de vision.&quot;,
+	},
+	{
+		Id = &quot;slasher&quot;, Order = 4, Name = &quot;Le quartier du slasher&quot;,
+		Rate = 1500, SoftCapPerSession = 350000, MaxSessionSeconds = 360,
+		DeathLossRatio = 0.6, Monster = &quot;slasher&quot;,
+		Unlock = { Banked = 1500000, Missions = 4, NightsSurvived = 0, SurvivalSeconds = 0,
+			RequiresQuest = &quot;chase&quot; },
+		Blurb = &quot;Brume, pavillons, et quelqu'un qui ne s'arrête jamais.&quot;,
+		Mechanic = &quot;Lent mais increvable : on ne le combat pas, on gère les raccourcis.&quot;,
+	},
+	{
+		Id = &quot;convent&quot;, Order = 5, Name = &quot;Le couvent maudit&quot;,
+		Rate = 5000, SoftCapPerSession = 1000000, MaxSessionSeconds = 420,
+		DeathLossRatio = 0.65, Monster = &quot;demon&quot;,
+		Unlock = { Banked = 5000000, Missions = 5, NightsSurvived = 0, SurvivalSeconds = 0,
+			RequiresQuest = &quot;vigil&quot; },
+		Blurb = &quot;Les défenses tiennent. C'est elle qui décide quand elles lâchent.&quot;,
+		Mechanic = &quot;Les équipements peuvent être neutralisés : il faut une solution de repli.&quot;,
+	},
+	{
+		Id = &quot;hospital&quot;, Order = 6, Name = &quot;L'hôpital des cauchemars&quot;,
+		Rate = 12500, SoftCapPerSession = 2500000, MaxSessionSeconds = 420,
+		DeathLossRatio = 0.7, Monster = &quot;mimic_voice&quot;,
+		Unlock = { Banked = 15000000, Missions = 6, NightsSurvived = 0, SurvivalSeconds = 0,
+			RequiresQuest = &quot;extreme_night&quot; },
+		Blurb = &quot;Les alarmes mentent. Les voix aussi.&quot;,
+		Mechanic = &quot;Fausses alertes : une partie des signaux sonores et visuels est truquée.&quot;,
+	},
+	{
+		Id = &quot;carnival&quot;, Order = 7, Name = &quot;Le carnaval de l'enfer&quot;,
+		Rate = 100000, SoftCapPerSession = 8000000, MaxSessionSeconds = 480,
+		DeathLossRatio = 0.75, Monster = &quot;clown_boss&quot;,
+		Unlock = { Banked = 60000000, Missions = 7, NightsSurvived = 0, SurvivalSeconds = 36000,
+			RequiresQuest = &quot;secret&quot; },
+		Blurb = &quot;Zone finale. Un seul occupant, un seul boss, plusieurs phases.&quot;,
+		Mechanic = &quot;Combat de boss en phases : chaque phase reprend une mécanique d'une zone.&quot;,
+	},
+} :: { Zone }
+
+ZoneConfig.ById = {}
+for _, zone in ipairs(ZoneConfig.List) do
+	ZoneConfig.ById[zone.Id] = zone
+end
+
+function ZoneConfig.get(id: string): Zone?
+	return ZoneConfig.ById[id]
+end
+
+function ZoneConfig.first(): Zone
+	return ZoneConfig.List[1]
+end
+
+-- Renvoie true + nil si la zone est accessible, false + la raison sinon.
+function ZoneConfig.canEnter(zone: Zone, stats: {
+	LifetimeBanked: number, MainMissions: number, NightsSurvived: number,
+	SurvivalSeconds: number, Quests: { [string]: boolean },
+}): (boolean, string?)
+	local u = zone.Unlock
+	if stats.LifetimeBanked &lt; u.Banked then
+		return false, string.format(&quot;Il faut %d $ déposés à vie.&quot;, u.Banked)
+	end
+	if stats.MainMissions &lt; u.Missions then
+		return false, string.format(&quot;Il faut %d missions principales.&quot;, u.Missions)
+	end
+	if stats.NightsSurvived &lt; u.NightsSurvived then
+		return false, string.format(&quot;Il faut %d nuits survécues.&quot;, u.NightsSurvived)
+	end
+	if stats.SurvivalSeconds &lt; u.SurvivalSeconds then
+		return false, string.format(&quot;Il faut %d heures de survie cumulées.&quot;,
+			math.floor(u.SurvivalSeconds / 3600))
+	end
+	if u.RequiresQuest and not stats.Quests[u.RequiresQuest] then
+		return false, &quot;Une quête spéciale reste à terminer.&quot;
+	end
+	return true, nil
+end
+
+return ZoneConfig
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX24"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX23"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
+-- Point d'entrée serveur. Tout le câblage est ici, et nulle part ailleurs :
+-- les services ne se connaissent que par appel direct, jamais par événement
+-- global, pour qu'on puisse lire le jeu de haut en bas depuis ce fichier.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Format = require(Shared.Format)
+local GameConfig = require(Shared.GameConfig)
+local MissionConfig = require(Shared.MissionConfig)
+local MonsterConfig = require(Shared.MonsterConfig)
+local Net = require(Shared.Net)
+local ZoneConfig = require(Shared.ZoneConfig)
+
+local CityBuilder = require(script.CityBuilder)
+local CombatService = require(script.CombatService)
+local EconomyService = require(script.EconomyService)
+local EventService = require(script.EventService)
+local InventoryService = require(script.InventoryService)
+local MissionService = require(script.MissionService)
+local MonetizationService = require(script.MonetizationService)
+local MonsterService = require(script.MonsterService)
+local PlayerDataService = require(script.PlayerDataService)
+local ShelterService = require(script.ShelterService)
+local ShopService = require(script.ShopService)
+local SurvivalService = require(script.SurvivalService)
+local ZoneService = require(script.ZoneService)
+
+Net.build()
+
+local function send(player: Player, event: string, ...)
+	Net.get(event):FireClient(player, ...)
+end
+
+local function alert(player: Player, text: string, kind: string?)
+	send(player, &quot;Alert&quot;, text, kind or &quot;info&quot;)
+end
+
+-- ── état complet envoyé au client ─────────────────────────────────────────
+local function pushState(player: Player)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	local session = SurvivalService.get(player)
+	local shelter = ShelterService.ownedBy(player)
+	send(player, &quot;StateChanged&quot;, {
+		Cash = profile.Cash,
+		Unbanked = profile.UnbankedCash,
+		LifetimeBanked = profile.LifetimeBanked,
+		Zone = profile.CurrentZone,
+		Zones = ZoneService.overview(player),
+		Inventory = profile.Inventory,
+		Placed = shelter and shelter.Placed or {},
+		Missions = MissionService.list(player),
+		Shop = ShopService.catalogue(player),
+		Sleeping = session ~= nil,
+		SessionEarned = session and session.Earned or 0,
+		SessionSeconds = session and session.EligibleSeconds or 0,
+		SessionMax = session and (ZoneConfig.get(session.ZoneId) :: any).MaxSessionSeconds or 0,
+		ShelterId = shelter and shelter.Id or &quot;&quot;,
+		Multiplier = EconomyService.multiplier(player),
+		Event = EventService.active(),
+		Stats = {
+			Nights = profile.NightsSurvived,
+			Deaths = profile.Deaths,
+			Survival = profile.SurvivalSeconds,
+			Main = profile.MainMissions,
+		},
+	})
+end
+
+EconomyService.onChanged(pushState)
+ShelterService.onChanged(function(shelter)
+	if shelter.Owner then
+		pushState(shelter.Owner)
+	end
+end)
+
+-- ── construction de la ville et peuplement ────────────────────────────────
+PlayerDataService.init()
+PlayerDataService.startAutosave()
+local city = CityBuilder.build()
+ShelterService.init()
+MonsterService.init()
+SurvivalService.init()
+EventService.init()
+MonetizationService.init()
+
+EventService.onChanged(function(active)
+	for _, player in ipairs(Players:GetPlayers()) do
+		send(player, &quot;EventChanged&quot;, active)
+		alert(player, active.Name .. &quot; — &quot; .. active.Text, &quot;event&quot;)
+	end
+end)
+
+-- Le rôdeur peuple la rue, dans la limite de MaxAlive.
+task.spawn(function()
+	local prowler = MonsterConfig.get(&quot;prowler&quot;)
+	if not prowler then
+		return
+	end
+	while true do
+		if MonsterService.count() &lt; prowler.MaxAlive then
+			local point = city.MonsterSpawns[math.random(1, #city.MonsterSpawns)]
+			MonsterService.spawn(prowler, &quot;street&quot;, point, city.Patrol)
+		end
+		task.wait(20)
+	end
+end)
+
+MonsterService.onSignal(function(monsterId, kind, position)
+	for _, player in ipairs(Players:GetPlayers()) do
+		send(player, &quot;MonsterSignal&quot;, monsterId, kind, position)
+	end
+end)
+
+-- ── sessions de survie ────────────────────────────────────────────────────
+SurvivalService.onAssault(function(session)
+	alert(session.Player, &quot;Quelque chose vient vers ton refuge.&quot;, &quot;danger&quot;)
+	MonsterService.assault(session.ShelterId)
+end)
+
+SurvivalService.onChanged(function(player, session, reason)
+	send(player, &quot;SessionChanged&quot;, reason, session and {
+		Earned = session.Earned, Seconds = session.EligibleSeconds, Zone = session.ZoneId,
+	} or nil)
+
+	if reason == &quot;complete&quot; and session then
+		MissionService.progress(player, &quot;survive_session&quot;, 1)
+		alert(player, (&quot;Session terminée. %s sur toi — va les déposer.&quot;)
+			:format(Format.money(session.Earned)), &quot;cash&quot;)
+	elseif reason == &quot;death&quot; and session then
+		send(player, &quot;DeathReport&quot;, {
+			Zone = session.ZoneId, Earned = session.Earned,
+			Seconds = session.EligibleSeconds,
+		})
+	end
+	pushState(player)
+end)
+
+CombatService.onRepel(function(player, _monsterId)
+	MissionService.progress(player, &quot;repel&quot;, 1)
+end)
+
+-- ── remotes ───────────────────────────────────────────────────────────────
+local function onClaim(player: Player, shelterId: unknown)
+	if type(shelterId) ~= &quot;string&quot; then
+		return
+	end
+	local ok, message = ShelterService.claim(player, shelterId)
+	alert(player, message, ok and &quot;info&quot; or &quot;warn&quot;)
+	pushState(player)
+end
+
+local function onSleep(player: Player)
+	local ok, message = SurvivalService.start(player)
+	alert(player, message, ok and &quot;info&quot; or &quot;warn&quot;)
+	pushState(player)
+end
+
+local function onWake(player: Player)
+	local session = SurvivalService.stop(player, &quot;wake&quot;)
+	if session then
+		alert(player, (&quot;Réveillé. %s sur toi.&quot;):format(Format.money(session.Earned)), &quot;info&quot;)
+	end
+	pushState(player)
+end
+
+local function onBank(player: Player)
+	local character = player.Character
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	local vault = Workspace:FindFirstChild(&quot;City&quot;) and (Workspace.City :: any):FindFirstChild(&quot;Vault&quot;)
+	if not root or not vault then
+		return
+	end
+	if (root.Position - (vault :: BasePart).Position).Magnitude &gt; GameConfig.Economy.BankRadius then
+		alert(player, &quot;Trop loin du coffre.&quot;, &quot;warn&quot;)
+		return
+	end
+	local amount = EconomyService.bank(player)
+	if amount &gt; 0 then
+		alert(player, (&quot;+%s déposés. C'est à toi pour de bon.&quot;):format(Format.money(amount)), &quot;cash&quot;)
+		MissionService.progress(player, &quot;bank&quot;, 1)
+		local opened = ZoneService.refresh(player)
+		for _, name in ipairs(opened) do
+			alert(player, name .. &quot; — zone débloquée.&quot;, &quot;unlock&quot;)
+		end
+	else
+		alert(player, &quot;Tu n'as rien sur toi.&quot;, &quot;info&quot;)
+	end
+	pushState(player)
+end
+
+local function onBuy(player: Player, itemId: unknown)
+	if type(itemId) ~= &quot;string&quot; then
+		return
+	end
+	local ok, message = ShopService.buy(player, itemId)
+	alert(player, message, ok and &quot;cash&quot; or &quot;warn&quot;)
+	pushState(player)
+end
+
+local function onPlace(player: Player, itemId: unknown)
+	if type(itemId) ~= &quot;string&quot; then
+		return
+	end
+	local ok, message = ShelterService.place(player, itemId)
+	alert(player, message, ok and &quot;info&quot; or &quot;warn&quot;)
+	pushState(player)
+end
+
+local function onEnterZone(player: Player, zoneId: unknown)
+	if type(zoneId) ~= &quot;string&quot; then
+		return
+	end
+	local ok, message = ZoneService.enter(player, zoneId)
+	alert(player, ok and (&quot;Zone : &quot; .. message) or message, ok and &quot;info&quot; or &quot;warn&quot;)
+	pushState(player)
+end
+
+local function onAttack(player: Player, target: unknown)
+	if typeof(target) ~= &quot;Instance&quot; or not target:IsA(&quot;Model&quot;) then
+		return
+	end
+	if not CollectionService:HasTag(target, &quot;Monster&quot;) then
+		return
+	end
+	local ok, label, stun = CombatService.playerAttack(player, target)
+	if ok then
+		MonsterService.stun(target, stun)
+		alert(player, label .. &quot; — il recule.&quot;, &quot;info&quot;)
+	end
+end
+
+local function onMission(player: Player, action: unknown, missionId: unknown)
+	if type(action) ~= &quot;string&quot; or type(missionId) ~= &quot;string&quot; then
+		return
+	end
+	local mission = MissionConfig.get(missionId)
+	if not mission then
+		return
+	end
+	-- Les missions se valident par la progression, pas par un bouton : ce
+	-- remote ne sert qu'à afficher le détail côté client.
+	pushState(player)
+end
+
+local function onPurchase(player: Player, productKey: unknown)
+	if type(productKey) ~= &quot;string&quot; then
+		return
+	end
+	if not MonetizationService.prompt(player, productKey) then
+		alert(player, &quot;Ce produit n'est pas encore configuré sur le tableau de bord.&quot;, &quot;warn&quot;)
+	end
+end
+
+Net.get(&quot;RequestClaim&quot;).OnServerEvent:Connect(onClaim)
+Net.get(&quot;RequestSleep&quot;).OnServerEvent:Connect(onSleep)
+Net.get(&quot;RequestWake&quot;).OnServerEvent:Connect(onWake)
+Net.get(&quot;RequestBank&quot;).OnServerEvent:Connect(onBank)
+Net.get(&quot;RequestBuy&quot;).OnServerEvent:Connect(onBuy)
+Net.get(&quot;RequestPlace&quot;).OnServerEvent:Connect(onPlace)
+Net.get(&quot;RequestEnterZone&quot;).OnServerEvent:Connect(onEnterZone)
+Net.get(&quot;RequestAttack&quot;).OnServerEvent:Connect(onAttack)
+Net.get(&quot;RequestMission&quot;).OnServerEvent:Connect(onMission)
+Net.get(&quot;RequestPurchase&quot;).OnServerEvent:Connect(onPurchase)
+Net.get(&quot;RequestRepair&quot;).OnServerEvent:Connect(function(player)
+	alert(player, &quot;Les défenses se remplacent à la boutique.&quot;, &quot;info&quot;)
+end)
+
+-- ── cycle de vie des joueurs ──────────────────────────────────────────────
+Players.PlayerAdded:Connect(function(player)
+	local profile = PlayerDataService.load(player)
+	MissionService.rollPeriods(player)
+	ZoneService.refresh(player)
+
+	if not profile.Loaded then
+		alert(player, &quot;Tes données n'ont pas pu être chargées. &quot;
+			.. &quot;Rien ne sera écrasé, mais cette session ne sera pas sauvegardée.&quot;, &quot;warn&quot;)
+	end
+
+	player.CharacterAdded:Connect(function(character)
+		SurvivalService.onCharacterAdded(player, character)
+		task.wait(0.5)
+		pushState(player)
+	end)
+
+	task.wait(1)
+	pushState(player)
+	alert(player, &quot;Trouve un refuge, barricade-le, dors. L'argent vient en survivant.&quot;, &quot;info&quot;)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	PlayerDataService.release(player)
+end)
+
+print(&quot;[SLEEP OR DIE] serveur prêt — &quot; .. #ZoneConfig.List .. &quot; zones, &quot;
+	.. #MissionConfig.List .. &quot; missions.&quot;)
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX10"><Properties><string name="Name">CityBuilder</string><ProtectedString name="Source">--!strict
+-- Construit « La rue » au démarrage : immeubles, ruelles, refuges, PNJ, coffre,
+-- boutique, points de patrouille et l'entrée des égouts.
+--
+-- Tout est généré en code pour que la place s'ouvre et se joue sans qu'aucun
+-- modèle ne soit à importer. Quand tu voudras une vraie ville modélisée, il
+-- suffira de remplacer ce fichier : le reste du jeu ne connaît la carte que par
+-- les tags (`Shelter`, `Npc`, `ZoneGate`) et les attributs.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local MissionConfig = require(script.Parent.Parent.Shared.MissionConfig)
+
+local CityBuilder = {}
+
+local STREET_LENGTH = 420
+local STREET_WIDTH = 60
+
+local function part(name: string, size: Vector3, position: Vector3, color: Color3,
+	material: Enum.Material?, parent: Instance): Part
+	local p = Instance.new(&quot;Part&quot;)
+	p.Name = name
+	p.Size = size
+	p.Position = position
+	p.Anchored = true
+	p.Color = color
+	p.Material = material or Enum.Material.Concrete
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+local function light(parent: BasePart, color: Color3, brightness: number, range: number)
+	local l = Instance.new(&quot;PointLight&quot;)
+	l.Color = color
+	l.Brightness = brightness
+	l.Range = range
+	l.Parent = parent
+end
+
+local function sign(text: string, parent: BasePart, color: Color3)
+	local gui = Instance.new(&quot;BillboardGui&quot;)
+	gui.Size = UDim2.fromScale(10, 2.4)
+	gui.StudsOffset = Vector3.new(0, 4, 0)
+	gui.AlwaysOnTop = false
+	gui.MaxDistance = 120
+	gui.Parent = parent
+	local label = Instance.new(&quot;TextLabel&quot;)
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = color
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.Parent = gui
+end
+
+local function buildShelter(index: number, position: Vector3, parent: Instance): Model
+	local model = Instance.new(&quot;Model&quot;)
+	model.Name = &quot;Shelter_&quot; .. index
+
+	local floor = part(&quot;Floor&quot;, Vector3.new(16, 1, 16), position, Color3.fromRGB(58, 54, 50),
+		Enum.Material.WoodPlanks, model)
+	part(&quot;WallBack&quot;, Vector3.new(16, 12, 1), position + Vector3.new(0, 6, -7.5),
+		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
+	part(&quot;WallLeft&quot;, Vector3.new(1, 12, 16), position + Vector3.new(-7.5, 6, 0),
+		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
+	part(&quot;WallRight&quot;, Vector3.new(1, 12, 16), position + Vector3.new(7.5, 6, 0),
+		Color3.fromRGB(44, 42, 44), Enum.Material.Brick, model)
+	part(&quot;Roof&quot;, Vector3.new(16, 1, 16), position + Vector3.new(0, 12, 0),
+		Color3.fromRGB(36, 34, 36), Enum.Material.Metal, model)
+
+	local bed = part(&quot;Bed&quot;, Vector3.new(6, 1.6, 10), position + Vector3.new(0, 1.3, 1),
+		Color3.fromRGB(92, 62, 58), Enum.Material.Fabric, model)
+	sign(&quot;REFUGE &quot; .. index, bed, Color3.fromRGB(230, 226, 220))
+	light(bed, Color3.fromRGB(255, 196, 120), 1.4, 22)
+
+	model.PrimaryPart = floor
+	model:SetAttribute(&quot;ShelterId&quot;, &quot;street_&quot; .. index)
+	model:SetAttribute(&quot;Zone&quot;, &quot;street&quot;)
+	model:SetAttribute(&quot;OwnerName&quot;, &quot;&quot;)
+	CollectionService:AddTag(model, &quot;Shelter&quot;)
+	model.Parent = parent
+	return model
+end
+
+local function buildNpc(def, position: Vector3, parent: Instance): Model
+	local model = Instance.new(&quot;Model&quot;)
+	model.Name = &quot;Npc_&quot; .. def.Id
+
+	local body = part(&quot;Torso&quot;, Vector3.new(2, 3, 1.2), position + Vector3.new(0, 3.5, 0),
+		Color3.fromRGB(58, 70, 98), Enum.Material.Fabric, model)
+	part(&quot;Head&quot;, Vector3.new(1.6, 1.6, 1.6), position + Vector3.new(0, 5.9, 0),
+		Color3.fromRGB(214, 176, 132), Enum.Material.SmoothPlastic, model)
+	part(&quot;Legs&quot;, Vector3.new(2, 2, 1.2), position + Vector3.new(0, 1, 0),
+		Color3.fromRGB(38, 40, 48), Enum.Material.Fabric, model)
+	sign(def.Name, body, Color3.fromRGB(255, 214, 140))
+	light(body, Color3.fromRGB(255, 214, 140), 0.8, 16)
+
+	local prompt = Instance.new(&quot;ProximityPrompt&quot;)
+	prompt.ActionText = &quot;Parler&quot;
+	prompt.ObjectText = def.Name
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = body
+
+	model.PrimaryPart = body
+	model:SetAttribute(&quot;NpcId&quot;, def.Id)
+	CollectionService:AddTag(model, &quot;Npc&quot;)
+	model.Parent = parent
+	return model
+end
+
+function CityBuilder.build(): { Patrol: { Vector3 }, MonsterSpawns: { Vector3 } }
+	local existing = Workspace:FindFirstChild(&quot;City&quot;)
+	if existing then
+		existing:Destroy()
+	end
+
+	local city = Instance.new(&quot;Folder&quot;)
+	city.Name = &quot;City&quot;
+	city.Parent = Workspace
+
+	-- Chaussée et trottoirs
+	part(&quot;Road&quot;, Vector3.new(STREET_WIDTH, 1, STREET_LENGTH), Vector3.new(0, 0, 0),
+		Color3.fromRGB(34, 34, 38), Enum.Material.Asphalt, city)
+	for _, side in ipairs({ -1, 1 }) do
+		part(&quot;Sidewalk&quot; .. side, Vector3.new(10, 1.6, STREET_LENGTH),
+			Vector3.new(side * (STREET_WIDTH / 2 - 5), 0.3, 0),
+			Color3.fromRGB(62, 62, 66), Enum.Material.Concrete, city)
+	end
+
+	-- Immeubles des deux côtés, avec des ruelles régulières
+	local buildings = Instance.new(&quot;Folder&quot;)
+	buildings.Name = &quot;Buildings&quot;
+	buildings.Parent = city
+	for _, side in ipairs({ -1, 1 }) do
+		local z = -STREET_LENGTH / 2 + 30
+		while z &lt; STREET_LENGTH / 2 - 30 do
+			local depth = 46 + (z % 7) * 3
+			local height = 60 + ((z + side * 13) % 11) * 9
+			local x = side * (STREET_WIDTH / 2 + depth / 2 - 2)
+			local tint = 38 + ((z + side * 5) % 9) * 3
+			part(&quot;Block&quot;, Vector3.new(depth, height, 56),
+				Vector3.new(x, height / 2, z),
+				Color3.fromRGB(tint, tint - 2, tint + 4), Enum.Material.Brick, buildings)
+			z += 56 + 24   -- 24 studs de ruelle entre deux immeubles
+		end
+	end
+
+	-- Lampadaires
+	for z = -STREET_LENGTH / 2 + 40, STREET_LENGTH / 2 - 40, 70 do
+		for _, side in ipairs({ -1, 1 }) do
+			local pole = part(&quot;Pole&quot;, Vector3.new(0.8, 18, 0.8),
+				Vector3.new(side * (STREET_WIDTH / 2 - 8), 9, z),
+				Color3.fromRGB(28, 28, 32), Enum.Material.Metal, city)
+			local head = part(&quot;Lamp&quot;, Vector3.new(3, 0.8, 3),
+				pole.Position + Vector3.new(0, 9, 0),
+				Color3.fromRGB(255, 224, 170), Enum.Material.Neon, city)
+			light(head, Color3.fromRGB(255, 220, 170), 2.2, 52)
+		end
+	end
+
+	-- Refuges, dans les ruelles
+	local shelters = Instance.new(&quot;Folder&quot;)
+	shelters.Name = &quot;Shelters&quot;
+	shelters.Parent = city
+	local index = 0
+	for _, side in ipairs({ -1, 1 }) do
+		for step = 0, 2 do
+			index += 1
+			local z = -STREET_LENGTH / 2 + 95 + step * 110
+			buildShelter(index, Vector3.new(side * (STREET_WIDTH / 2 + 12), 1, z), shelters)
+		end
+	end
+
+	-- Coffre (dépôt) et boutique, au centre de la rue
+	local vault = part(&quot;Vault&quot;, Vector3.new(10, 10, 6), Vector3.new(-18, 5, 0),
+		Color3.fromRGB(46, 108, 70), Enum.Material.DiamondPlate, city)
+	sign(&quot;COFFRE — E pour déposer&quot;, vault, Color3.fromRGB(120, 230, 160))
+	light(vault, Color3.fromRGB(110, 230, 160), 2, 34)
+	CollectionService:AddTag(vault, &quot;Vault&quot;)
+	local vaultPrompt = Instance.new(&quot;ProximityPrompt&quot;)
+	vaultPrompt.ActionText = &quot;Déposer&quot;
+	vaultPrompt.ObjectText = &quot;Coffre&quot;
+	vaultPrompt.MaxActivationDistance = 14
+	vaultPrompt.RequiresLineOfSight = false
+	vaultPrompt.Parent = vault
+
+	local shop = part(&quot;Shop&quot;, Vector3.new(10, 10, 6), Vector3.new(18, 5, 0),
+		Color3.fromRGB(58, 70, 126), Enum.Material.Metal, city)
+	sign(&quot;BOUTIQUE — E pour ouvrir&quot;, shop, Color3.fromRGB(150, 180, 255))
+	light(shop, Color3.fromRGB(140, 170, 255), 2, 34)
+	CollectionService:AddTag(shop, &quot;Shop&quot;)
+	local shopPrompt = Instance.new(&quot;ProximityPrompt&quot;)
+	shopPrompt.ActionText = &quot;Ouvrir&quot;
+	shopPrompt.ObjectText = &quot;Boutique&quot;
+	shopPrompt.MaxActivationDistance = 14
+	shopPrompt.RequiresLineOfSight = false
+	shopPrompt.Parent = shop
+
+	-- PNJ
+	local npcs = Instance.new(&quot;Folder&quot;)
+	npcs.Name = &quot;Npcs&quot;
+	npcs.Parent = city
+	for i, def in ipairs(MissionConfig.Npcs) do
+		local z = -60 + (i - 1) * 24
+		buildNpc(def, Vector3.new((i % 2 == 0) and 22 or -22, 1, z), npcs)
+	end
+
+	-- Entrée des égouts : la porte vers la zone 2
+	local gate = part(&quot;SewerGate&quot;, Vector3.new(12, 1.2, 12), Vector3.new(0, 0.8, STREET_LENGTH / 2 - 50),
+		Color3.fromRGB(70, 66, 58), Enum.Material.Metal, city)
+	sign(&quot;ÉGOUTS — zone 2&quot;, gate, Color3.fromRGB(180, 230, 180))
+	CollectionService:AddTag(gate, &quot;ZoneGate&quot;)
+	gate:SetAttribute(&quot;Zone&quot;, &quot;sewers&quot;)
+	local gatePrompt = Instance.new(&quot;ProximityPrompt&quot;)
+	gatePrompt.ActionText = &quot;Descendre&quot;
+	gatePrompt.ObjectText = &quot;Les égouts&quot;
+	gatePrompt.MaxActivationDistance = 12
+	gatePrompt.RequiresLineOfSight = false
+	gatePrompt.Parent = gate
+
+	-- Apparition des joueurs
+	local spawn = Instance.new(&quot;SpawnLocation&quot;)
+	spawn.Name = &quot;StreetSpawn&quot;
+	spawn.Size = Vector3.new(14, 1, 14)
+	spawn.Position = Vector3.new(0, 1, -STREET_LENGTH / 2 + 30)
+	spawn.Anchored = true
+	spawn.Color = Color3.fromRGB(70, 70, 78)
+	spawn.Material = Enum.Material.Concrete
+	spawn.Parent = city
+
+	-- Points de ronde et d'apparition des monstres
+	local patrol: { Vector3 } = {}
+	for z = -STREET_LENGTH / 2 + 50, STREET_LENGTH / 2 - 50, 52 do
+		table.insert(patrol, Vector3.new(-14, 3, z))
+		table.insert(patrol, Vector3.new(14, 3, z + 26))
+	end
+	local spawns: { Vector3 } = {
+		Vector3.new(0, 3, STREET_LENGTH / 2 - 70),
+		Vector3.new(-20, 3, 40),
+		Vector3.new(20, 3, -40),
+	}
+
+	return { Patrol = patrol, MonsterSpawns = spawns }
+end
+
+return CityBuilder
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX11"><Properties><string name="Name">CombatService</string><ProtectedString name="Source">--!strict
+-- §5 et §15 — tous les dégâts passent ici, et tous sont validés côté serveur.
+--
+-- Les deux critères de validation du CDC §15 (« les monstres ne frappent pas à
+-- travers les murs ou à distance impossible ») sont littéralement les deux
+-- vérifications de `monsterHit`. Le client ne peut jamais infliger de dégâts :
+-- il demande une frappe, le serveur mesure la distance et la ligne de vue.
+
+local Players = game:GetService(&quot;Players&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local ItemConfig = require(script.Parent.Parent.Shared.ItemConfig)
+local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+
+local CombatService = {}
+
+local lastAttack: { [Player]: number } = {}
+local repelHandlers: { (Player, string) -&gt; () } = {}
+
+function CombatService.onRepel(fn: (Player, string) -&gt; ())
+	table.insert(repelHandlers, fn)
+end
+
+-- Ligne de vue : un rayon qui ignore les personnages et le monstre lui-même.
+function CombatService.hasLineOfSight(from: Vector3, to: Vector3, ignore: Instance?): boolean
+	if not GameConfig.Combat.RequireLineOfSight then
+		return true
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local filter: { Instance } = {}
+	if ignore then
+		table.insert(filter, ignore)
+	end
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			table.insert(filter, player.Character)
+		end
+	end
+	params.FilterDescendantsInstances = filter
+
+	local direction = to - from
+	local result = Workspace:Raycast(from, direction, params)
+	return result == nil
+end
+
+-- Dégâts infligés par un monstre. Refusés si trop loin ou à travers un mur.
+function CombatService.monsterHit(def: MonsterConfig.Monster, origin: Vector3, player: Player): boolean
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	if not humanoid or not root or humanoid.Health &lt;= 0 then
+		return false
+	end
+
+	local distance = (root.Position - origin).Magnitude
+	if distance &gt; math.min(def.AttackRange + 1.5, GameConfig.Combat.MaxHitDistance) then
+		return false
+	end
+	if not CombatService.hasLineOfSight(origin, root.Position, character) then
+		return false
+	end
+
+	humanoid:TakeDamage(def.Damage)
+	return true
+end
+
+-- Frappe du joueur. Le client dit « j'attaque ce modèle » ; le serveur décide.
+-- Les monstres ne meurent pas : ils sont étourdis. C'est le CDC §5 (« état
+-- d'étourdissement ou de ralentissement temporaire »), et ça évite le farm de
+-- monstres comme source d'argent.
+function CombatService.playerAttack(player: Player, target: Model): (boolean, string, number)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return false, &quot;Profil introuvable.&quot;, 0
+	end
+
+	-- Meilleure arme possédée.
+	local best: ItemConfig.Item? = nil
+	for _, item in ipairs(ItemConfig.List) do
+		if item.Kind == &quot;weapon&quot; and (profile.Inventory[item.Id] or 0) &gt; 0 then
+			if not best or item.Price &gt; best.Price then
+				best = item
+			end
+		end
+	end
+	if not best then
+		return false, &quot;Tu n'as pas d'arme.&quot;, 0
+	end
+
+	local now = os.clock()
+	local last = lastAttack[player] or 0
+	if now - last &lt; (best.Cooldown or 1) then
+		return false, &quot;Pas encore.&quot;, 0
+	end
+
+	local character = player.Character
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	local targetRoot = target.PrimaryPart
+	if not root or not targetRoot then
+		return false, &quot;Cible invalide.&quot;, 0
+	end
+	if (targetRoot.Position - root.Position).Magnitude &gt; GameConfig.Combat.PlayerAttackReach then
+		return false, &quot;Trop loin.&quot;, 0
+	end
+	if not CombatService.hasLineOfSight(root.Position, targetRoot.Position, target) then
+		return false, &quot;Pas de ligne de vue.&quot;, 0
+	end
+
+	lastAttack[player] = now
+	local monsterId = target:GetAttribute(&quot;MonsterId&quot;)
+	if type(monsterId) == &quot;string&quot; then
+		profile.MonstersSeen[monsterId] = true
+		PlayerDataService.markDirty(player)
+		for _, fn in ipairs(repelHandlers) do
+			task.spawn(fn, player, monsterId)
+		end
+	end
+	return true, best.Name, best.StunSeconds or 1
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	lastAttack[player] = nil
+end)
+
+return CombatService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX12"><Properties><string name="Name">EconomyService</string><ProtectedString name="Source">--!strict
+-- §6 — les deux soldes, et toutes les règles d'argent.
+--
+-- Rien n'ajoute d'argent sans passer par ici, et rien ici n'accepte un montant
+-- venu du client. Les trois garde-fous du CDC §15 sont des `assert` de fait :
+--   · un achat ne peut pas faire passer le solde sous zéro ;
+--   · pas de gains négatifs ;
+--   · pas de double récompense (les appelants passent par des clés uniques).
+
+local Format = require(script.Parent.Parent.Shared.Format)
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
+
+local EconomyService = {}
+
+local listeners: { (Player) -&gt; () } = {}
+
+function EconomyService.onChanged(fn: (Player) -&gt; ())
+	table.insert(listeners, fn)
+end
+
+local function fire(player: Player)
+	for _, fn in ipairs(listeners) do
+		task.spawn(fn, player)
+	end
+end
+
+function EconomyService.multiplier(player: Player): number
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return 1
+	end
+	if profile.MultiplierUntil &gt; os.time() then
+		return math.min(profile.Multiplier, GameConfig.Monetization.MaxMultiplier)
+	end
+	return 1
+end
+
+-- Gain de survie pour `seconds` passées dans `zoneId`.
+-- Renvoie le montant réellement crédité (jamais négatif).
+function EconomyService.accrue(player: Player, zoneId: string, seconds: number, earnedThisSession: number): number
+	if seconds &lt;= 0 then
+		return 0
+	end
+	local profile = PlayerDataService.get(player)
+	local zone = ZoneConfig.get(zoneId)
+	if not profile or not zone then
+		return 0
+	end
+
+	local rate = zone.Rate * EconomyService.multiplier(player)
+	-- Plafond souple : au-delà, le taux est divisé. Sans ça, la zone 7 à
+	-- 100 000 $/s rend toute la progression précédente sans objet.
+	if earnedThisSession &gt;= zone.SoftCapPerSession then
+		rate /= GameConfig.Economy.SoftCapDivisor
+	end
+
+	local amount = rate * seconds
+	if amount &lt;= 0 or amount ~= amount then  -- NaN
+		return 0
+	end
+
+	profile.UnbankedCash += amount
+	PlayerDataService.markDirty(player)
+	fire(player)
+	return amount
+end
+
+-- Dépôt : l'argent non sécurisé devient sécurisé. C'est le seul endroit qui
+-- alimente LifetimeBanked, qui sert aux déblocages de zones.
+function EconomyService.bank(player: Player): number
+	local profile = PlayerDataService.get(player)
+	if not profile or profile.UnbankedCash &lt;= 0 then
+		return 0
+	end
+	local amount = profile.UnbankedCash
+	profile.UnbankedCash = 0
+	profile.Cash += amount
+	profile.LifetimeBanked += amount
+	PlayerDataService.markDirty(player)
+	fire(player)
+	return amount
+end
+
+-- Mort : on perd une part du non sécurisé, jamais du sécurisé (CDC §2).
+function EconomyService.applyDeath(player: Player, zoneId: string): number
+	local profile = PlayerDataService.get(player)
+	local zone = ZoneConfig.get(zoneId)
+	if not profile then
+		return 0
+	end
+	local ratio = zone and zone.DeathLossRatio or 0.5
+	local lost = profile.UnbankedCash * ratio
+	profile.UnbankedCash = math.max(0, profile.UnbankedCash - lost)
+	profile.Deaths += 1
+	PlayerDataService.markDirty(player)
+	fire(player)
+	return lost
+end
+
+-- Déconnexion : CDC §4, « la déconnexion arrête les gains immédiatement ».
+function EconomyService.applyDisconnect(player: Player)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	if not GameConfig.Economy.DisconnectKeepsUnbanked then
+		profile.UnbankedCash = 0
+	end
+	PlayerDataService.markDirty(player)
+end
+
+-- Dépense. Renvoie false si le solde ne suffit pas : aucun solde négatif.
+function EconomyService.spend(player: Player, amount: number): boolean
+	local profile = PlayerDataService.get(player)
+	if not profile or amount &lt; 0 then
+		return false
+	end
+	if profile.Cash &lt; amount then
+		return false
+	end
+	profile.Cash -= amount
+	PlayerDataService.markDirty(player)
+	fire(player)
+	return true
+end
+
+-- Récompense directe (mission, achat Robux). `reason` sert aux journaux.
+function EconomyService.grant(player: Player, amount: number, reason: string): boolean
+	local profile = PlayerDataService.get(player)
+	if not profile or amount &lt;= 0 then
+		return false
+	end
+	profile.Cash += amount
+	profile.LifetimeBanked += amount
+	PlayerDataService.markDirty(player)
+	if GameConfig.Debug.Verbose then
+		print((&quot;[Economy] %s +%s (%s)&quot;):format(player.Name, Format.money(amount), reason))
+	end
+	fire(player)
+	return true
+end
+
+function EconomyService.setMultiplier(player: Player, value: number, seconds: number)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	-- Les multiplicateurs ne se cumulent pas : on prend le meilleur, on
+	-- additionne la durée si c'est le même.
+	local capped = math.min(value, GameConfig.Monetization.MaxMultiplier)
+	if profile.MultiplierUntil &gt; os.time() and profile.Multiplier == capped then
+		profile.MultiplierUntil += seconds
+	else
+		profile.Multiplier = capped
+		profile.MultiplierUntil = os.time() + seconds
+	end
+	PlayerDataService.markDirty(player)
+	fire(player)
+end
+
+return EconomyService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13"><Properties><string name="Name">EventService</string><ProtectedString name="Source">--!strict
+-- §13 — événements. Le serveur seul décide de l'événement actif, et une
+-- récompense d'événement ne peut pas être réclamée deux fois (clé = identifiant
+-- de l'événement + sa période).
+
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+
+local EventService = {}
+
+local current: { Id: string, Name: string, Text: string, RewardMultiplier: number,
+	StartedAt: number, Period: string }? = nil
+local listeners: { (any) -&gt; () } = {}
+
+function EventService.onChanged(fn: (any) -&gt; ())
+	table.insert(listeners, fn)
+end
+
+function EventService.active()
+	return current
+end
+
+function EventService.rewardMultiplier(): number
+	return current and current.RewardMultiplier or 1
+end
+
+local function pick()
+	local list = GameConfig.Events.List
+	local chosen = list[math.random(1, #list)]
+	current = {
+		Id = chosen.Id,
+		Name = chosen.Name,
+		Text = chosen.Text,
+		RewardMultiplier = chosen.RewardMultiplier or 1,
+		StartedAt = os.time(),
+		-- La période rend la clé de récompense unique : même événement demain,
+		-- récompense à nouveau réclamable, mais pas deux fois aujourd'hui.
+		Period = os.date(&quot;!%Y%m%d%H&quot;),
+	}
+	for _, fn in ipairs(listeners) do
+		task.spawn(fn, current)
+	end
+end
+
+-- Réclamation d'une récompense d'événement, une seule fois par période.
+function EventService.claim(player: Player): (boolean, string)
+	local profile = PlayerDataService.get(player)
+	if not profile or not current then
+		return false, &quot;Aucun événement en cours.&quot;
+	end
+	local key = &quot;ev_&quot; .. current.Id .. &quot;_&quot; .. current.Period
+	if profile.Achievements[key] then
+		return false, &quot;Déjà réclamé.&quot;
+	end
+	profile.Achievements[key] = true
+	PlayerDataService.markDirty(player)
+	return true, current.Name
+end
+
+function EventService.init()
+	pick()
+	task.spawn(function()
+		while true do
+			task.wait(GameConfig.Events.RotationSeconds)
+			pick()
+		end
+	end)
+end
+
+return EventService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX14"><Properties><string name="Name">InventoryService</string><ProtectedString name="Source">--!strict
+-- §6 — inventaire. Court, parce que tout l'argent est dans EconomyService et
+-- toute la pose de défenses dans ShelterService.
+
+local ItemConfig = require(script.Parent.Parent.Shared.ItemConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+
+local InventoryService = {}
+
+function InventoryService.count(player: Player, itemId: string): number
+	local profile = PlayerDataService.get(player)
+	return profile and (profile.Inventory[itemId] or 0) or 0
+end
+
+function InventoryService.add(player: Player, itemId: string, amount: number?): boolean
+	local profile = PlayerDataService.get(player)
+	if not profile or not ItemConfig.get(itemId) then
+		return false
+	end
+	local n = amount or 1
+	if n &lt;= 0 then
+		return false
+	end
+	profile.Inventory[itemId] = (profile.Inventory[itemId] or 0) + n
+	PlayerDataService.markDirty(player)
+	return true
+end
+
+function InventoryService.remove(player: Player, itemId: string, amount: number?): boolean
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return false
+	end
+	local n = amount or 1
+	local owned = profile.Inventory[itemId] or 0
+	if owned &lt; n then
+		return false
+	end
+	profile.Inventory[itemId] = owned - n
+	PlayerDataService.markDirty(player)
+	return true
+end
+
+function InventoryService.bestWeapon(player: Player): ItemConfig.Item?
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return nil
+	end
+	local best: ItemConfig.Item? = nil
+	for _, item in ipairs(ItemConfig.List) do
+		if item.Kind == &quot;weapon&quot; and (profile.Inventory[item.Id] or 0) &gt; 0 then
+			if not best or item.Price &gt; best.Price then
+				best = item
+			end
+		end
+	end
+	return best
+end
+
+return InventoryService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX15"><Properties><string name="Name">MissionService</string><ProtectedString name="Source">--!strict
+-- §7 — missions. Le CDC §15 exige qu'une mission ne puisse pas être réclamée
+-- plusieurs fois : c'est `MissionsDone` pour les principales et secondaires, et
+-- les clés de jour / de semaine pour les répétables.
+
+local EconomyService = require(script.Parent.EconomyService)
+local InventoryService = require(script.Parent.InventoryService)
+local MissionConfig = require(script.Parent.Parent.Shared.MissionConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local ZoneService = require(script.Parent.ZoneService)
+
+local MissionService = {}
+
+local completionHandlers: { (Player, MissionConfig.Mission) -&gt; () } = {}
+
+function MissionService.onComplete(fn: (Player, MissionConfig.Mission) -&gt; ())
+	table.insert(completionHandlers, fn)
+end
+
+local function dayKey(): string
+	return os.date(&quot;!%Y-%m-%d&quot;)
+end
+
+local function weekKey(): string
+	-- Semaine ISO approximée : année + numéro de semaine UTC.
+	return os.date(&quot;!%Y-W%W&quot;)
+end
+
+-- Remet à zéro les quotidiennes et hebdomadaires quand la période change.
+function MissionService.rollPeriods(player: Player)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	local day, week = dayKey(), weekKey()
+	if profile.DailyKey ~= day then
+		profile.DailyKey = day
+		profile.DailyProgress = {}
+		PlayerDataService.markDirty(player)
+	end
+	if profile.WeeklyKey ~= week then
+		profile.WeeklyKey = week
+		profile.WeeklyProgress = {}
+		PlayerDataService.markDirty(player)
+	end
+end
+
+local function bucket(profile, mission: MissionConfig.Mission)
+	if mission.Kind == &quot;daily&quot; then
+		return profile.DailyProgress
+	elseif mission.Kind == &quot;weekly&quot; then
+		return profile.WeeklyProgress
+	end
+	return profile.Missions
+end
+
+local function isDone(profile, mission: MissionConfig.Mission): boolean
+	if mission.Kind == &quot;main&quot; or mission.Kind == &quot;side&quot; then
+		return profile.MissionsDone[mission.Id] == true
+	end
+	local done = bucket(profile, mission)[mission.Id .. &quot;_done&quot;]
+	return done ~= nil and done &gt; 0
+end
+
+local function markDone(player: Player, profile, mission: MissionConfig.Mission)
+	if mission.Kind == &quot;main&quot; or mission.Kind == &quot;side&quot; then
+		profile.MissionsDone[mission.Id] = true
+		if mission.Kind == &quot;main&quot; then
+			profile.MainMissions += 1
+		end
+	else
+		bucket(profile, mission)[mission.Id .. &quot;_done&quot;] = 1
+	end
+
+	if mission.Reward.Cash &gt; 0 then
+		EconomyService.grant(player, mission.Reward.Cash, &quot;mission:&quot; .. mission.Id)
+	end
+	if mission.Reward.Items then
+		for _, itemId in ipairs(mission.Reward.Items) do
+			InventoryService.add(player, itemId, 1)
+		end
+	end
+	if mission.Reward.Quest then
+		profile.Quests[mission.Reward.Quest] = true
+	end
+	PlayerDataService.markDirty(player)
+	ZoneService.refresh(player)
+
+	for _, fn in ipairs(completionHandlers) do
+		task.spawn(fn, player, mission)
+	end
+end
+
+-- Avance toutes les missions dont l'objectif correspond. C'est le seul point
+-- d'entrée : les services appellent `progress(player, &quot;survive_session&quot;, 1)`.
+function MissionService.progress(player: Player, goal: string, amount: number?)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	MissionService.rollPeriods(player)
+	local step = amount or 1
+
+	for _, mission in ipairs(MissionConfig.List) do
+		if mission.Goal == goal and not isDone(profile, mission) then
+			local store = bucket(profile, mission)
+			local current = (store[mission.Id] or 0) + step
+			store[mission.Id] = current
+			if current &gt;= mission.Target then
+				markDone(player, profile, mission)
+			end
+			PlayerDataService.markDirty(player)
+		end
+	end
+end
+
+function MissionService.list(player: Player)
+	local profile = PlayerDataService.get(player)
+	local out = {}
+	if not profile then
+		return out
+	end
+	MissionService.rollPeriods(player)
+	for _, mission in ipairs(MissionConfig.List) do
+		local store = bucket(profile, mission)
+		table.insert(out, {
+			Id = mission.Id, Kind = mission.Kind, Name = mission.Name,
+			Text = mission.Text, Giver = mission.Giver,
+			Target = mission.Target, Progress = math.min(store[mission.Id] or 0, mission.Target),
+			Done = isDone(profile, mission), Reward = mission.Reward.Cash,
+		})
+	end
+	return out
+end
+
+return MissionService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX16"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--!strict
+-- §12 — Robux.
+--
+-- Deux règles non négociables du CDC :
+--   · « Les récompenses d'achat doivent être attribuées côté serveur et ne
+--     jamais être données plusieurs fois pour le même reçu. » → `Receipts`
+--     dans le profil, consulté AVANT d'accorder et écrit AVANT de renvoyer
+--     PurchaseGranted.
+--   · « Les achats d'argent ne doivent pas permettre de contourner les quêtes
+--     et les conditions d'accès aux zones finales. » → l'argent acheté
+--     alimente Cash mais PAS LifetimeBanked, qui seul débloque les zones.
+
+local MarketplaceService = game:GetService(&quot;MarketplaceService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+
+local EconomyService = require(script.Parent.EconomyService)
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+
+local MonetizationService = {}
+
+local byProductId: { [number]: any } = {}
+
+local function grantProduct(player: Player, product): boolean
+	if product.Effect == &quot;cash&quot; then
+		local profile = PlayerDataService.get(player)
+		if not profile then
+			return false
+		end
+		-- Volontairement : Cash seulement. LifetimeBanked reste intact, donc
+		-- acheter de l'argent ne débloque aucune zone.
+		profile.Cash += product.Value
+		PlayerDataService.markDirty(player)
+		return true
+	elseif product.Effect == &quot;multiplier&quot; then
+		EconomyService.setMultiplier(player, product.Value, product.Seconds or 900)
+		return true
+	end
+	return false
+end
+
+function MonetizationService.init()
+	for _, product in ipairs(GameConfig.Monetization.Products) do
+		if product.DevProductId and product.DevProductId &gt; 0 then
+			byProductId[product.DevProductId] = product
+		end
+	end
+
+	MarketplaceService.ProcessReceipt = function(info)
+		local player = Players:GetPlayerByUserId(info.PlayerId)
+		if not player then
+			-- Le joueur est parti : on ne consomme pas le reçu, Roblox le
+			-- represente à la prochaine connexion.
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		local profile = PlayerDataService.get(player)
+		if not profile or not profile.Loaded then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		local key = tostring(info.PurchaseId)
+		if profile.Receipts[key] then
+			-- Déjà accordé : on confirme sans redonner.
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+
+		local product = byProductId[info.ProductId]
+		if not product then
+			warn(&quot;[Monetization] produit inconnu : &quot; .. tostring(info.ProductId))
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		if not grantProduct(player, product) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		profile.Receipts[key] = true
+		PlayerDataService.markDirty(player)
+		-- La sauvegarde doit réussir AVANT de confirmer : sinon un crash juste
+		-- après ferait perdre l'achat au joueur.
+		local saved = PlayerDataService.save(player, true)
+		if not saved then
+			profile.Receipts[key] = nil
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+end
+
+function MonetizationService.prompt(player: Player, productKey: string)
+	for _, product in ipairs(GameConfig.Monetization.Products) do
+		if product.Id == productKey and product.DevProductId &gt; 0 then
+			MarketplaceService:PromptProductPurchase(player, product.DevProductId)
+			return true
+		end
+	end
+	for _, pass in ipairs(GameConfig.Monetization.Passes) do
+		if pass.Id == productKey and pass.GamePassId &gt; 0 then
+			MarketplaceService:PromptGamePassPurchase(player, pass.GamePassId)
+			return true
+		end
+	end
+	return false
+end
+
+return MonetizationService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX17"><Properties><string name="Name">MonsterService</string><ProtectedString name="Source">--!strict
+-- §5 — les monstres et leur IA.
+--
+-- Deux boucles, comme toujours quand il y a du pathfinding :
+--   · Heartbeat : déplacement, portée d'attaque, signaux. Ne cède JAMAIS la
+--     main (pas de wait, pas de ComputeAsync) — sinon tout le serveur saccade.
+--   · boucle à 2 Hz : décisions et calculs de chemin, qui eux peuvent céder.
+--
+-- Les huit états du CDC sont dans MonsterConfig.States. La mécanique propre à
+-- chaque zone est portée par `Rule` et appliquée dans `decide`.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local PathfindingService = game:GetService(&quot;PathfindingService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local CombatService = require(script.Parent.CombatService)
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local ShelterService = require(script.Parent.ShelterService)
+
+local MonsterService = {}
+
+local S = MonsterConfig.States
+
+type Agent = {
+	Def: MonsterConfig.Monster,
+	Model: Model,
+	Root: BasePart,
+	Humanoid: Humanoid,
+	ZoneId: string,
+	Home: Vector3,
+	State: string,
+	Target: Player?,
+	LastKnown: Vector3?,
+	Path: { Vector3 },
+	PathIndex: number,
+	NextThink: number,
+	LostSince: number,
+	StunUntil: number,
+	NextAttack: number,
+	PatrolPoints: { Vector3 },
+	PatrolIndex: number,
+}
+
+local agents: { Agent } = {}
+local signalListeners: { (string, string, Vector3) -&gt; () } = {}
+
+function MonsterService.onSignal(fn: (string, string, Vector3) -&gt; ())
+	table.insert(signalListeners, fn)
+end
+
+local function signal(agent: Agent, kind: string)
+	for _, fn in ipairs(signalListeners) do
+		task.spawn(fn, agent.Def.Id, kind, agent.Root.Position)
+	end
+end
+
+local function countInZone(zoneId: string): number
+	local n = 0
+	for _, agent in ipairs(agents) do
+		if agent.ZoneId == zoneId then
+			n += 1
+		end
+	end
+	return n
+end
+
+-- Le joueur regarde-t-il l'agent ? (mécanique « gaze » de la poupée)
+local function isWatched(agent: Agent): boolean
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		local head = character and character:FindFirstChild(&quot;Head&quot;) :: BasePart?
+		if head then
+			local toAgent = agent.Root.Position - head.Position
+			local distance = toAgent.Magnitude
+			if distance &lt; agent.Def.SightRange * 1.5 then
+				local facing = head.CFrame.LookVector
+				if facing:Dot(toAgent.Unit) &gt; 0.55 and CombatService.hasLineOfSight(
+					head.Position, agent.Root.Position, agent.Model) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+local function canSee(agent: Agent, player: Player): boolean
+	local character = player.Character
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if not root or not humanoid or humanoid.Health &lt;= 0 then
+		return false
+	end
+	local distance = (root.Position - agent.Root.Position).Magnitude
+
+	-- Mécanique « sound » : la Chose des égouts vise le bruit, pas la vue.
+	if agent.Def.Rule == &quot;sound&quot; then
+		local moving = humanoid.MoveDirection.Magnitude &gt; 0.1
+		local loud = moving and humanoid.WalkSpeed &gt; 17
+		local range = loud and agent.Def.HearRange or agent.Def.HearRange * 0.45
+		return distance &lt;= range
+	end
+
+	if distance &gt; agent.Def.SightRange then
+		return false
+	end
+	return CombatService.hasLineOfSight(agent.Root.Position, root.Position, agent.Model)
+end
+
+local function nearestVisible(agent: Agent): (Player?, number)
+	local best, bestDistance = nil, math.huge
+	for _, player in ipairs(Players:GetPlayers()) do
+		if canSee(agent, player) then
+			local character = player.Character
+			local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+			if root then
+				local distance = (root.Position - agent.Root.Position).Magnitude
+				if distance &lt; bestDistance then
+					best, bestDistance = player, distance
+				end
+			end
+		end
+	end
+	return best, bestDistance
+end
+
+local function computePath(agent: Agent, goal: Vector3)
+	local path = PathfindingService:CreatePath({
+		AgentRadius = 2.5, AgentHeight = 5, AgentCanJump = false,
+	})
+	local ok = pcall(function()
+		path:ComputeAsync(agent.Root.Position, goal)
+	end)
+	agent.Path = {}
+	agent.PathIndex = 1
+	if ok and path.Status == Enum.PathStatus.Success then
+		for _, waypoint in ipairs(path:GetWaypoints()) do
+			table.insert(agent.Path, waypoint.Position)
+		end
+	else
+		-- Pas de chemin : on vise en ligne droite, ça vaut mieux que rien.
+		agent.Path = { goal }
+	end
+end
+
+-- Décisions. Appelée à 2 Hz, elle a le droit de céder la main.
+local function decide(agent: Agent)
+	if os.clock() &lt; agent.StunUntil then
+		agent.State = S.STUNNED
+		return
+	end
+
+	local target, distance = nearestVisible(agent)
+
+	-- Mécanique « gaze » : regardée, la poupée ne bouge pas du tout.
+	if agent.Def.Rule == &quot;gaze&quot; and isWatched(agent) then
+		agent.State = S.DETECT
+		agent.Path = {}
+		return
+	end
+
+	if target then
+		local root = (target.Character :: Model):FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart
+		agent.Target = target
+		agent.LastKnown = root.Position
+		agent.LostSince = 0
+		if distance &lt;= agent.Def.AttackRange then
+			agent.State = S.ATTACK
+		else
+			if agent.State ~= S.CHASE then
+				agent.State = S.CHASE
+				signal(agent, &quot;spotted&quot;)
+			end
+			computePath(agent, root.Position)
+		end
+		return
+	end
+
+	if agent.State == S.CHASE or agent.State == S.ATTACK then
+		agent.State = S.SEARCH
+		agent.LostSince = os.clock()
+		if agent.LastKnown then
+			computePath(agent, agent.LastKnown)
+		end
+		return
+	end
+
+	if agent.State == S.SEARCH then
+		local patience = agent.Def.GiveUpSeconds
+		-- Le Masque n'abandonne pratiquement jamais (mécanique « relentless »).
+		if agent.Def.Rule == &quot;relentless&quot; then
+			patience *= 3
+		end
+		if os.clock() - agent.LostSince &gt; patience then
+			agent.State = S.RETURN
+			computePath(agent, agent.Home)
+		end
+		return
+	end
+
+	if agent.State == S.RETURN then
+		if (agent.Root.Position - agent.Home).Magnitude &lt; 8 then
+			agent.State = S.PATROL
+		end
+		return
+	end
+
+	-- Patrouille : on passe au point suivant quand on est arrivé.
+	agent.State = S.PATROL
+	if #agent.PatrolPoints &gt; 0 then
+		local point = agent.PatrolPoints[agent.PatrolIndex]
+		if not point or (agent.Root.Position - point).Magnitude &lt; 7 then
+			agent.PatrolIndex = agent.PatrolIndex % #agent.PatrolPoints + 1
+			computePath(agent, agent.PatrolPoints[agent.PatrolIndex])
+		elseif #agent.Path == 0 then
+			computePath(agent, point)
+		end
+	end
+end
+
+-- Déplacement. Appelée à chaque image, ne cède jamais la main.
+local function move(agent: Agent, dt: number)
+	if os.clock() &lt; agent.StunUntil then
+		agent.Humanoid.WalkSpeed = 0
+		return
+	end
+
+	local speed = agent.Def.WalkSpeed
+	if agent.State == S.PATROL then
+		speed *= 0.55
+	end
+	agent.Humanoid.WalkSpeed = speed
+
+	local point = agent.Path[agent.PathIndex]
+	while point and (Vector3.new(point.X, agent.Root.Position.Y, point.Z)
+		- Vector3.new(agent.Root.Position.X, agent.Root.Position.Y, agent.Root.Position.Z)).Magnitude &lt; 4 do
+		agent.PathIndex += 1
+		point = agent.Path[agent.PathIndex]
+	end
+	if point then
+		agent.Humanoid:MoveTo(point)
+	end
+
+	if agent.State == S.ATTACK and agent.Target and os.clock() &gt;= agent.NextAttack then
+		agent.NextAttack = os.clock() + 1.2
+		CombatService.monsterHit(agent.Def, agent.Root.Position, agent.Target)
+		signal(agent, &quot;attack&quot;)
+	end
+end
+
+function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
+	patrol: { Vector3 }): Model?
+	if countInZone(zoneId) &gt;= def.MaxAlive then
+		return nil
+	end
+
+	local model = Instance.new(&quot;Model&quot;)
+	model.Name = def.Id
+
+	local root = Instance.new(&quot;Part&quot;)
+	root.Name = &quot;HumanoidRootPart&quot;
+	root.Size = Vector3.new(3, 5.5, 2)
+	root.Position = position + Vector3.new(0, 3, 0)
+	root.Anchored = false
+	root.CanCollide = true
+	root.Color = Color3.fromRGB(28, 24, 26)
+	root.Material = Enum.Material.SmoothPlastic
+	root.Parent = model
+
+	local head = Instance.new(&quot;Part&quot;)
+	head.Name = &quot;Head&quot;
+	head.Size = Vector3.new(2, 2, 2)
+	head.Color = Color3.fromRGB(40, 30, 32)
+	head.CanCollide = false
+	head.Parent = model
+	local weld = Instance.new(&quot;WeldConstraint&quot;)
+	weld.Part0 = root
+	weld.Part1 = head
+	weld.Parent = head
+	head.Position = root.Position + Vector3.new(0, 3.5, 0)
+
+	local humanoid = Instance.new(&quot;Humanoid&quot;)
+	humanoid.MaxHealth = def.Health
+	humanoid.Health = def.Health
+	humanoid.WalkSpeed = def.WalkSpeed
+	humanoid.Parent = model
+
+	model.PrimaryPart = root
+	model:SetAttribute(&quot;MonsterId&quot;, def.Id)
+	model:SetAttribute(&quot;Zone&quot;, zoneId)
+	CollectionService:AddTag(model, &quot;Monster&quot;)
+	model.Parent = Workspace
+
+	local agent: Agent = {
+		Def = def, Model = model, Root = root, Humanoid = humanoid,
+		ZoneId = zoneId, Home = position,
+		State = S.PATROL, Target = nil, LastKnown = nil,
+		Path = {}, PathIndex = 1, NextThink = 0, LostSince = 0,
+		StunUntil = 0, NextAttack = 0,
+		PatrolPoints = patrol, PatrolIndex = 1,
+	}
+	table.insert(agents, agent)
+	return model
+end
+
+function MonsterService.stun(model: Model, seconds: number)
+	for _, agent in ipairs(agents) do
+		if agent.Model == model then
+			agent.StunUntil = math.max(agent.StunUntil, os.clock() + seconds)
+			agent.State = S.STUNNED
+			signal(agent, &quot;stunned&quot;)
+			return true
+		end
+	end
+	return false
+end
+
+function MonsterService.despawn(model: Model)
+	for index = #agents, 1, -1 do
+		if agents[index].Model == model then
+			table.remove(agents, index)
+		end
+	end
+	model:Destroy()
+end
+
+function MonsterService.count(): number
+	return #agents
+end
+
+function MonsterService.init()
+	RunService.Heartbeat:Connect(function(dt)
+		for index = #agents, 1, -1 do
+			local agent = agents[index]
+			if not agent.Model.Parent or agent.Humanoid.Health &lt;= 0 then
+				table.remove(agents, index)
+				agent.Model:Destroy()
+			else
+				move(agent, dt)
+			end
+		end
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			for _, agent in ipairs(agents) do
+				if agent.Model.Parent then
+					local ok, err = pcall(decide, agent)
+					if not ok and GameConfig.Debug.Verbose then
+						warn(&quot;[MonsterService] &quot; .. tostring(err))
+					end
+				end
+			end
+		end
+	end)
+end
+
+-- Un assaut : le monstre le plus proche du refuge est envoyé dessus, et les
+-- défenses lui coûtent du temps avant qu'il arrive.
+function MonsterService.assault(shelterId: string)
+	local shelter = ShelterService.get(shelterId)
+	if not shelter or not shelter.Owner then
+		return
+	end
+	local pivot = shelter.Model:GetPivot().Position
+	local best, bestDistance = nil, math.huge
+	for _, agent in ipairs(agents) do
+		if agent.ZoneId == shelter.ZoneId then
+			local distance = (agent.Root.Position - pivot).Magnitude
+			if distance &lt; bestDistance then
+				best, bestDistance = agent, distance
+			end
+		end
+	end
+	if not best then
+		return
+	end
+
+	local delay = ShelterService.absorbAssault(shelter)
+	local profile = ShelterService.profileOf(shelter)
+	signal(best, &quot;assault&quot;)
+
+	task.spawn(function()
+		if delay &gt; 0 then
+			task.wait(delay)
+		end
+		if best.Model.Parent then
+			best.State = S.CHASE
+			best.LastKnown = pivot
+			best.Target = shelter.Owner
+			computePath(best, pivot)
+		end
+	end)
+	-- Le profil de défense ne sert pas qu'au délai : il réduit aussi la chance
+	-- que l'assaut suivant trouve le refuge.
+	shelter.Model:SetAttribute(&quot;Detection&quot;, profile.Detection)
+end
+
+return MonsterService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
+-- §11 — profils joueurs et DataStore.
+--
+-- Règle qui compte le plus (CDC §11) : « Si les données ne peuvent pas être
+-- chargées, le jeu ne doit pas écraser les données existantes avec un profil
+-- vide. » C'est le rôle de `profile.Loaded`. Tant qu'il est faux, aucune
+-- sauvegarde n'est écrite pour ce joueur, et il joue en lecture seule.
+
+local DataStoreService = game:GetService(&quot;DataStoreService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+
+local PlayerDataService = {}
+
+export type Profile = {
+	Loaded: boolean,
+	Dirty: boolean,
+	LastSave: number,
+
+	Cash: number,
+	UnbankedCash: number,
+	LifetimeBanked: number,
+
+	Zones: { [string]: boolean },
+	CurrentZone: string,
+	Quests: { [string]: boolean },
+
+	Inventory: { [string]: number },
+	Placed: { [string]: number },
+
+	Missions: { [string]: number },      -- id → progression
+	MissionsDone: { [string]: boolean },
+	MainMissions: number,
+
+	MonstersSeen: { [string]: boolean },
+	Cosmetics: { [string]: boolean },
+	Achievements: { [string]: boolean },
+
+	SurvivalSeconds: number,
+	NightsSurvived: number,
+	Deaths: number,
+	BossesBeaten: number,
+
+	DailyKey: string,
+	DailyProgress: { [string]: number },
+	WeeklyKey: string,
+	WeeklyProgress: { [string]: number },
+
+	Receipts: { [string]: boolean },     -- anti-doublon ProcessReceipt
+	MultiplierUntil: number,
+	Multiplier: number,
+}
+
+local store: DataStore? = nil
+local profiles: { [Player]: Profile } = {}
+
+local function blank(): Profile
+	return {
+		Loaded = false, Dirty = false, LastSave = 0,
+		Cash = GameConfig.Economy.StartingCash,
+		UnbankedCash = 0,
+		LifetimeBanked = 0,
+		Zones = { street = true },
+		CurrentZone = &quot;street&quot;,
+		Quests = {},
+		Inventory = {},
+		Placed = {},
+		Missions = {},
+		MissionsDone = {},
+		MainMissions = 0,
+		MonstersSeen = {},
+		Cosmetics = {},
+		Achievements = {},
+		SurvivalSeconds = 0,
+		NightsSurvived = 0,
+		Deaths = 0,
+		BossesBeaten = 0,
+		DailyKey = &quot;&quot;,
+		DailyProgress = {},
+		WeeklyKey = &quot;&quot;,
+		WeeklyProgress = {},
+		Receipts = {},
+		MultiplierUntil = 0,
+		Multiplier = 1,
+	}
+end
+
+-- Recopie champ par champ : une sauvegarde d'une version précédente peut ne pas
+-- contenir toutes les clés, et un `profile = saved` effacerait les nouvelles.
+local function merge(profile: Profile, saved: any)
+	if type(saved) ~= &quot;table&quot; then
+		return
+	end
+	for key, value in pairs(saved) do
+		if profile[key] ~= nil and type(profile[key]) == type(value) then
+			profile[key] = value
+		end
+	end
+	profile.Zones = profile.Zones or {}
+	profile.Zones.street = true
+end
+
+local function key(player: Player): string
+	return &quot;p_&quot; .. tostring(player.UserId)
+end
+
+local function retry&lt;T&gt;(fn: () -&gt; T): (boolean, T?)
+	local delay = 1
+	for attempt = 1, GameConfig.Data.MaxRetries do
+		local ok, result = pcall(fn)
+		if ok then
+			return true, result
+		end
+		if attempt &lt; GameConfig.Data.MaxRetries then
+			task.wait(delay)
+			delay *= GameConfig.Data.RetryBackoff
+		else
+			warn(&quot;[PlayerDataService] échec après &quot; .. attempt .. &quot; essais : &quot; .. tostring(result))
+		end
+	end
+	return false, nil
+end
+
+function PlayerDataService.init()
+	if RunService:IsStudio() then
+		-- En Studio sans accès API, GetDataStore lève. On joue alors en mémoire.
+		local ok, result = pcall(function()
+			return DataStoreService:GetDataStore(GameConfig.Data.StoreName)
+		end)
+		store = ok and result or nil
+		if not store then
+			warn(&quot;[PlayerDataService] DataStore indisponible (Studio) : profils en mémoire.&quot;)
+		end
+	else
+		store = DataStoreService:GetDataStore(GameConfig.Data.StoreName)
+	end
+end
+
+function PlayerDataService.load(player: Player): Profile
+	local profile = blank()
+	profiles[player] = profile
+
+	if not store then
+		profile.Loaded = true   -- mode mémoire : on accepte d'écrire (dans le vide)
+		return profile
+	end
+
+	local ok, saved = retry(function()
+		return (store :: DataStore):GetAsync(key(player))
+	end)
+
+	if ok then
+		merge(profile, saved)
+		profile.Loaded = true
+	else
+		-- Lecture impossible : le joueur joue, mais on n'écrasera rien.
+		profile.Loaded = false
+		warn(&quot;[PlayerDataService] profil non chargé pour &quot; .. player.Name ..
+			&quot; — sauvegarde désactivée pour cette session.&quot;)
+	end
+	return profile
+end
+
+function PlayerDataService.get(player: Player): Profile?
+	return profiles[player]
+end
+
+function PlayerDataService.markDirty(player: Player)
+	local profile = profiles[player]
+	if profile then
+		profile.Dirty = true
+	end
+end
+
+function PlayerDataService.save(player: Player, force: boolean?): boolean
+	local profile = profiles[player]
+	if not profile or not profile.Loaded then
+		return false
+	end
+	if not force and not profile.Dirty then
+		return false
+	end
+	if not store then
+		profile.Dirty = false
+		return true
+	end
+
+	-- On recopie les champs persistants, sans les drapeaux de session.
+	local payload = {}
+	for field, value in pairs(profile) do
+		if field ~= &quot;Loaded&quot; and field ~= &quot;Dirty&quot; and field ~= &quot;LastSave&quot; then
+			payload[field] = value
+		end
+	end
+
+	local ok = retry(function()
+		-- UpdateAsync plutôt que SetAsync : si deux serveurs écrivent en même
+		-- temps (reconnexion rapide), le dernier lu gagne proprement.
+		(store :: DataStore):UpdateAsync(key(player), function(_old)
+			return payload
+		end)
+		return true
+	end)
+
+	if ok then
+		profile.Dirty = false
+		profile.LastSave = os.clock()
+	end
+	return ok
+end
+
+function PlayerDataService.release(player: Player)
+	PlayerDataService.save(player, true)
+	profiles[player] = nil
+end
+
+function PlayerDataService.all(): { [Player]: Profile }
+	return profiles
+end
+
+function PlayerDataService.startAutosave()
+	task.spawn(function()
+		while true do
+			task.wait(GameConfig.Data.AutosaveSeconds)
+			for _, player in ipairs(Players:GetPlayers()) do
+				PlayerDataService.save(player, false)
+			end
+		end
+	end)
+	game:BindToClose(function()
+		for _, player in ipairs(Players:GetPlayers()) do
+			PlayerDataService.save(player, true)
+		end
+		task.wait(1)
+	end)
+end
+
+return PlayerDataService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
+-- §4 — refuges : réservation, défenses, contestation.
+--
+-- Les refuges sont des modèles du Workspace marqués par l'attribut `Zone` et
+-- le tag `Shelter`. Un refuge a au plus UN propriétaire à la fois (CDC §15).
+--
+-- Anti-harcèlement (CDC §4) : un joueur qui perd son refuge reçoit un bouclier
+-- temporaire ; pendant ce délai, le joueur qui le lui a pris ne peut pas lui
+-- reprendre un autre refuge. On empêche le ciblage répété sans empêcher la
+-- contestation en général.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local ItemConfig = require(script.Parent.Parent.Shared.ItemConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+
+local ShelterService = {}
+
+export type Shelter = {
+	Model: Model,
+	Id: string,
+	ZoneId: string,
+	Owner: Player?,
+	ClaimedAt: number,
+	LastSeen: number,          -- dernier instant où le propriétaire était présent
+	Placed: { [string]: number },
+	Wear: { [string]: number },  -- usure par objet posé
+	Occupied: boolean,           -- une session de survie est en cours
+}
+
+local shelters: { [string]: Shelter } = {}
+local lastClaim: { [Player]: number } = {}
+local shieldUntil: { [Player]: number } = {}
+local shieldFrom: { [Player]: Player } = {}
+local listeners: { (Shelter) -&gt; () } = {}
+
+function ShelterService.onChanged(fn: (Shelter) -&gt; ())
+	table.insert(listeners, fn)
+end
+
+local function fire(shelter: Shelter)
+	for _, fn in ipairs(listeners) do
+		task.spawn(fn, shelter)
+	end
+end
+
+function ShelterService.register(model: Model)
+	local id = model:GetAttribute(&quot;ShelterId&quot;)
+	if type(id) ~= &quot;string&quot; then
+		id = model:GetFullName()
+		model:SetAttribute(&quot;ShelterId&quot;, id)
+	end
+	local zoneId = model:GetAttribute(&quot;Zone&quot;)
+	if type(zoneId) ~= &quot;string&quot; then
+		zoneId = &quot;street&quot;
+		model:SetAttribute(&quot;Zone&quot;, zoneId)
+	end
+	shelters[id] = {
+		Model = model, Id = id, ZoneId = zoneId,
+		Owner = nil, ClaimedAt = 0, LastSeen = 0,
+		Placed = {}, Wear = {}, Occupied = false,
+	}
+	model:SetAttribute(&quot;OwnerName&quot;, &quot;&quot;)
+end
+
+function ShelterService.init()
+	for _, model in ipairs(CollectionService:GetTagged(&quot;Shelter&quot;)) do
+		if model:IsA(&quot;Model&quot;) then
+			ShelterService.register(model)
+		end
+	end
+	CollectionService:GetInstanceAddedSignal(&quot;Shelter&quot;):Connect(function(instance)
+		if instance:IsA(&quot;Model&quot;) then
+			ShelterService.register(instance)
+		end
+	end)
+end
+
+function ShelterService.get(id: string): Shelter?
+	return shelters[id]
+end
+
+function ShelterService.all(): { [string]: Shelter }
+	return shelters
+end
+
+function ShelterService.ownedBy(player: Player): Shelter?
+	for _, shelter in pairs(shelters) do
+		if shelter.Owner == player then
+			return shelter
+		end
+	end
+	return nil
+end
+
+local function release(shelter: Shelter, reason: string)
+	local previous = shelter.Owner
+	shelter.Owner = nil
+	shelter.ClaimedAt = 0
+	shelter.Occupied = false
+	shelter.Model:SetAttribute(&quot;OwnerName&quot;, &quot;&quot;)
+	if previous and reason == &quot;contested&quot; then
+		shieldUntil[previous] = os.clock() + GameConfig.Shelter.HarassmentShieldSeconds
+	end
+	fire(shelter)
+end
+
+-- Un refuge est contestable si personne ne l'occupe, ou si son propriétaire
+-- est parti / mort / absent depuis AbandonSeconds.
+function ShelterService.isContestable(shelter: Shelter): boolean
+	if not shelter.Owner then
+		return true
+	end
+	if not shelter.Owner.Parent then
+		return true
+	end
+	local character = shelter.Owner.Character
+	local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if not humanoid or humanoid.Health &lt;= 0 then
+		return true
+	end
+	if shelter.Occupied then
+		return false
+	end
+	return os.clock() - shelter.LastSeen &gt; GameConfig.Shelter.AbandonSeconds
+end
+
+-- Renvoie (succès, raison).
+function ShelterService.claim(player: Player, id: string): (boolean, string)
+	local shelter = shelters[id]
+	if not shelter then
+		return false, &quot;Ce refuge n'existe pas.&quot;
+	end
+	if shelter.Owner == player then
+		return true, &quot;Tu l'as déjà.&quot;
+	end
+
+	local last = lastClaim[player]
+	if last and os.clock() - last &lt; GameConfig.Shelter.ClaimCooldownSeconds then
+		local left = GameConfig.Shelter.ClaimCooldownSeconds - (os.clock() - last)
+		return false, string.format(&quot;Attends %.0f s avant de réserver un autre refuge.&quot;, left)
+	end
+
+	if shelter.Owner and not ShelterService.isContestable(shelter) then
+		return false, &quot;Quelqu'un dort ici.&quot;
+	end
+
+	-- Anti-harcèlement : si le propriétaire actuel est protégé contre CE joueur.
+	local current = shelter.Owner
+	if current and shieldUntil[current] and os.clock() &lt; shieldUntil[current]
+		and shieldFrom[current] == player then
+		return false, &quot;Laisse-le tranquille un moment.&quot;
+	end
+
+	-- Le joueur ne garde qu'un refuge à la fois.
+	local existing = ShelterService.ownedBy(player)
+	if existing and existing.Id ~= id then
+		release(existing, &quot;moved&quot;)
+	end
+
+	if current then
+		shieldFrom[current] = player
+		release(shelter, &quot;contested&quot;)
+	end
+
+	shelter.Owner = player
+	shelter.ClaimedAt = os.clock()
+	shelter.LastSeen = os.clock()
+	shelter.Model:SetAttribute(&quot;OwnerName&quot;, player.Name)
+	lastClaim[player] = os.clock()
+
+	-- Les défenses posées suivent le joueur : on recharge les siennes.
+	local profile = PlayerDataService.get(player)
+	shelter.Placed = {}
+	shelter.Wear = {}
+	if profile then
+		for itemId, count in pairs(profile.Placed) do
+			shelter.Placed[itemId] = count
+		end
+	end
+
+	fire(shelter)
+	return true, &quot;Refuge réservé.&quot;
+end
+
+function ShelterService.abandon(player: Player)
+	local shelter = ShelterService.ownedBy(player)
+	if shelter then
+		release(shelter, &quot;left&quot;)
+	end
+end
+
+function ShelterService.touch(player: Player)
+	local shelter = ShelterService.ownedBy(player)
+	if shelter then
+		shelter.LastSeen = os.clock()
+	end
+end
+
+function ShelterService.setOccupied(player: Player, occupied: boolean)
+	local shelter = ShelterService.ownedBy(player)
+	if shelter then
+		shelter.Occupied = occupied
+		shelter.LastSeen = os.clock()
+		fire(shelter)
+	end
+end
+
+-- Pose une défense. Les emplacements sont limités : aucun refuge n'est
+-- imprenable (CDC §4).
+function ShelterService.place(player: Player, itemId: string): (boolean, string)
+	local shelter = ShelterService.ownedBy(player)
+	if not shelter then
+		return false, &quot;Réserve d'abord un refuge.&quot;
+	end
+	local profile = PlayerDataService.get(player)
+	local item = ItemConfig.get(itemId)
+	if not profile or not item or item.Kind ~= &quot;defense&quot; then
+		return false, &quot;Objet inconnu.&quot;
+	end
+	local owned = profile.Inventory[itemId] or 0
+	local placed = shelter.Placed[itemId] or 0
+	if owned &lt;= placed then
+		return false, &quot;Tu n'en as pas d'autre.&quot;
+	end
+
+	local profileAfter = {}
+	for id, count in pairs(shelter.Placed) do
+		profileAfter[id] = count
+	end
+	profileAfter[itemId] = placed + 1
+	local used = ItemConfig.defenseProfile(profileAfter).Slots
+	if used &gt; GameConfig.Shelter.MaxSlots then
+		return false, string.format(&quot;Plus de place : %d emplacements au maximum.&quot;,
+			GameConfig.Shelter.MaxSlots)
+	end
+
+	shelter.Placed[itemId] = placed + 1
+	shelter.Wear[itemId] = 0
+	profile.Placed[itemId] = shelter.Placed[itemId]
+	PlayerDataService.markDirty(player)
+	fire(shelter)
+	return true, item.Name .. &quot; posé.&quot;
+end
+
+-- Appelé par MonsterService à chaque assaut : les défenses s'usent et
+-- finissent par céder. Renvoie le délai gagné, en secondes.
+function ShelterService.absorbAssault(shelter: Shelter): number
+	local gained = 0
+	for itemId, count in pairs(shelter.Placed) do
+		if count &gt; 0 then
+			local item = ItemConfig.get(itemId)
+			if item then
+				gained += (item.DelaySeconds or 0)
+				local wear = (shelter.Wear[itemId] or 0) + 1
+				shelter.Wear[itemId] = wear
+				if item.Durability and wear &gt;= item.Durability then
+					shelter.Placed[itemId] = count - 1
+					shelter.Wear[itemId] = 0
+					local owner = shelter.Owner
+					if owner then
+						local profile = PlayerDataService.get(owner)
+						if profile then
+							profile.Placed[itemId] = shelter.Placed[itemId]
+							profile.Inventory[itemId] = math.max(0, (profile.Inventory[itemId] or 1) - 1)
+							PlayerDataService.markDirty(owner)
+						end
+					end
+				end
+			end
+		end
+	end
+	fire(shelter)
+	return math.min(gained, 40)
+end
+
+function ShelterService.profileOf(shelter: Shelter)
+	return ItemConfig.defenseProfile(shelter.Placed)
+end
+
+function ShelterService.cleanup(player: Player)
+	ShelterService.abandon(player)
+	lastClaim[player] = nil
+	shieldUntil[player] = nil
+	shieldFrom[player] = nil
+	for other, from in pairs(shieldFrom) do
+		if from == player then
+			shieldFrom[other] = nil
+		end
+	end
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	ShelterService.cleanup(player)
+end)
+
+return ShelterService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
+-- §6 — la boutique. Le client envoie un identifiant d'objet, rien d'autre :
+-- le prix vient toujours du serveur.
+
+local EconomyService = require(script.Parent.EconomyService)
+local InventoryService = require(script.Parent.InventoryService)
+local ItemConfig = require(script.Parent.Parent.Shared.ItemConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
+
+local ShopService = {}
+
+-- Un objet n'est en vente que si la zone qui le propose est débloquée.
+function ShopService.isAvailable(player: Player, item: ItemConfig.Item): boolean
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return false
+	end
+	return profile.Zones[item.Zone] == true
+end
+
+function ShopService.catalogue(player: Player): { { Id: string, Name: string, Price: number,
+	Kind: string, Desc: string, Owned: number, Available: boolean, Zone: string } }
+	local out = {}
+	for _, item in ipairs(ItemConfig.List) do
+		table.insert(out, {
+			Id = item.Id, Name = item.Name, Price = item.Price, Kind = item.Kind,
+			Desc = item.Desc, Owned = InventoryService.count(player, item.Id),
+			Available = ShopService.isAvailable(player, item),
+			Zone = (ZoneConfig.get(item.Zone) :: any).Name,
+		})
+	end
+	return out
+end
+
+function ShopService.buy(player: Player, itemId: string): (boolean, string)
+	local item = ItemConfig.get(itemId)
+	if not item then
+		return false, &quot;Objet inconnu.&quot;
+	end
+	if not ShopService.isAvailable(player, item) then
+		return false, &quot;Débloque d'abord la zone correspondante.&quot;
+	end
+	-- Les armes ne se cumulent pas : une seule de chaque.
+	if item.Kind == &quot;weapon&quot; and InventoryService.count(player, itemId) &gt; 0 then
+		return false, &quot;Tu l'as déjà.&quot;
+	end
+	if not EconomyService.spend(player, item.Price) then
+		return false, &quot;Pas assez d'argent sécurisé.&quot;
+	end
+	InventoryService.add(player, itemId, 1)
+	return true, item.Name .. &quot; acheté.&quot;
+end
+
+return ShopService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
+-- §2 et §4 — la session de survie : la boucle centrale du jeu.
+--
+-- Une session démarre quand le joueur dort dans SON refuge. Elle crédite
+-- l'argent non sécurisé seconde par seconde, et s'arrête à la mort, à la
+-- déconnexion, au réveil volontaire, ou au bout de MaxSessionSeconds.
+--
+-- Le CDC §2 dit : « Le jeu ne doit pas devenir un simple système de farming
+-- passif ». Trois choses l'empêchent ici :
+--   · la session a une durée maximale, après quoi il faut se lever et déposer ;
+--   · des assauts arrivent à intervalle irrégulier et demandent une réaction ;
+--   · le plafond souple d'EconomyService divise le taux au-delà d'un seuil.
+
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+
+local EconomyService = require(script.Parent.EconomyService)
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local ShelterService = require(script.Parent.ShelterService)
+local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
+
+local SurvivalService = {}
+
+export type Session = {
+	Player: Player,
+	ZoneId: string,
+	ShelterId: string,
+	StartedAt: number,
+	EligibleSeconds: number,
+	Earned: number,
+	NextAssault: number,
+	Carry: number,           -- fraction de seconde en attente
+}
+
+local sessions: { [Player]: Session } = {}
+local listeners: { (Player, Session?, string) -&gt; () } = {}
+local assaultHandlers: { (Session) -&gt; () } = {}
+
+function SurvivalService.onChanged(fn: (Player, Session?, string) -&gt; ())
+	table.insert(listeners, fn)
+end
+
+function SurvivalService.onAssault(fn: (Session) -&gt; ())
+	table.insert(assaultHandlers, fn)
+end
+
+local function fire(player: Player, session: Session?, reason: string)
+	for _, fn in ipairs(listeners) do
+		task.spawn(fn, player, session, reason)
+	end
+end
+
+function SurvivalService.get(player: Player): Session?
+	return sessions[player]
+end
+
+local function scheduleAssault(session: Session)
+	local jitter = (math.random() * 2 - 1) * GameConfig.Survival.AssaultJitter
+	session.NextAssault = os.clock() + GameConfig.Survival.BaseAssaultInterval + jitter
+end
+
+function SurvivalService.start(player: Player): (boolean, string)
+	if sessions[player] then
+		return false, &quot;Tu dors déjà.&quot;
+	end
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return false, &quot;Profil introuvable.&quot;
+	end
+	local shelter = ShelterService.ownedBy(player)
+	if not shelter then
+		return false, &quot;Il te faut un refuge réservé.&quot;
+	end
+	local zone = ZoneConfig.get(shelter.ZoneId)
+	if not zone then
+		return false, &quot;Zone inconnue.&quot;
+	end
+	if not profile.Zones[zone.Id] then
+		return false, &quot;Cette zone n'est pas débloquée.&quot;
+	end
+
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if not humanoid or humanoid.Health &lt;= 0 then
+		return false, &quot;Pas dans cet état.&quot;
+	end
+
+	local session: Session = {
+		Player = player, ZoneId = zone.Id, ShelterId = shelter.Id,
+		StartedAt = os.clock(), EligibleSeconds = 0, Earned = 0,
+		NextAssault = 0, Carry = 0,
+	}
+	scheduleAssault(session)
+	sessions[player] = session
+	ShelterService.setOccupied(player, true)
+	profile.CurrentZone = zone.Id
+	PlayerDataService.markDirty(player)
+	fire(player, session, &quot;start&quot;)
+	return true, &quot;Bonne nuit.&quot;
+end
+
+function SurvivalService.stop(player: Player, reason: string): Session?
+	local session = sessions[player]
+	if not session then
+		return nil
+	end
+	sessions[player] = nil
+	ShelterService.setOccupied(player, false)
+
+	local profile = PlayerDataService.get(player)
+	if profile then
+		profile.SurvivalSeconds += session.EligibleSeconds
+		-- Une « nuit survécue » = une session menée jusqu'à son terme sans mourir.
+		if reason == &quot;complete&quot; then
+			profile.NightsSurvived += 1
+		end
+		PlayerDataService.markDirty(player)
+	end
+
+	fire(player, session, reason)
+	return session
+end
+
+local function tick(dt: number)
+	for player, session in pairs(sessions) do
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+		if not player.Parent or not humanoid or humanoid.Health &lt;= 0 then
+			SurvivalService.stop(player, &quot;interrupted&quot;)
+			continue
+		end
+
+		ShelterService.touch(player)
+
+		local elapsed = os.clock() - session.StartedAt
+		if elapsed &lt; GameConfig.Survival.GraceSeconds then
+			continue
+		end
+
+		-- On crédite par pas d'une seconde : c'est ce que le CDC appelle la
+		-- « durée de survie réellement éligible ».
+		session.Carry += dt
+		if session.Carry &gt;= GameConfig.Economy.PayoutInterval then
+			local whole = math.floor(session.Carry / GameConfig.Economy.PayoutInterval)
+			local seconds = whole * GameConfig.Economy.PayoutInterval
+			session.Carry -= seconds
+			session.EligibleSeconds += seconds
+			session.Earned += EconomyService.accrue(player, session.ZoneId, seconds, session.Earned)
+		end
+
+		if os.clock() &gt;= session.NextAssault then
+			scheduleAssault(session)
+			for _, fn in ipairs(assaultHandlers) do
+				task.spawn(fn, session)
+			end
+		end
+
+		local zone = ZoneConfig.get(session.ZoneId)
+		if zone and session.EligibleSeconds &gt;= zone.MaxSessionSeconds then
+			SurvivalService.stop(player, &quot;complete&quot;)
+		end
+	end
+end
+
+function SurvivalService.init()
+	RunService.Heartbeat:Connect(tick)
+
+	Players.PlayerRemoving:Connect(function(player)
+		if sessions[player] then
+			SurvivalService.stop(player, &quot;disconnect&quot;)
+		end
+		EconomyService.applyDisconnect(player)
+	end)
+end
+
+function SurvivalService.onCharacterAdded(player: Player, character: Model)
+	local humanoid = character:WaitForChild(&quot;Humanoid&quot;, 10) :: Humanoid?
+	if not humanoid then
+		return
+	end
+	humanoid.Died:Connect(function()
+		local session = sessions[player]
+		local zoneId = session and session.ZoneId
+			or (PlayerDataService.get(player) and (PlayerDataService.get(player) :: any).CurrentZone)
+			or &quot;street&quot;
+		if session then
+			SurvivalService.stop(player, &quot;death&quot;)
+		end
+		EconomyService.applyDeath(player, zoneId)
+	end)
+end
+
+return SurvivalService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
+-- §3 — accès aux zones. Une zone ne se débloque jamais sans que ses conditions
+-- soient remplies (CDC §15), et la vérification est faite ici, côté serveur,
+-- à chaque entrée — pas seulement au moment du déblocage.
+
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
+
+local ZoneService = {}
+
+local function statsOf(profile): {
+	LifetimeBanked: number, MainMissions: number, NightsSurvived: number,
+	SurvivalSeconds: number, Quests: { [string]: boolean },
+}
+	return {
+		LifetimeBanked = profile.LifetimeBanked,
+		MainMissions = profile.MainMissions,
+		NightsSurvived = profile.NightsSurvived,
+		SurvivalSeconds = profile.SurvivalSeconds,
+		Quests = profile.Quests,
+	}
+end
+
+-- Appelée après chaque dépôt / mission : débloque ce qui peut l'être.
+-- Renvoie la liste des zones nouvellement ouvertes.
+function ZoneService.refresh(player: Player): { string }
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return {}
+	end
+	local opened = {}
+	for _, zone in ipairs(ZoneConfig.List) do
+		if not profile.Zones[zone.Id] then
+			local can = ZoneConfig.canEnter(zone, statsOf(profile))
+			if can then
+				profile.Zones[zone.Id] = true
+				table.insert(opened, zone.Name)
+			end
+		end
+	end
+	if #opened &gt; 0 then
+		PlayerDataService.markDirty(player)
+	end
+	return opened
+end
+
+function ZoneService.canEnter(player: Player, zoneId: string): (boolean, string)
+	local profile = PlayerDataService.get(player)
+	local zone = ZoneConfig.get(zoneId)
+	if not profile or not zone then
+		return false, &quot;Zone inconnue.&quot;
+	end
+	if profile.Zones[zoneId] then
+		return true, &quot;&quot;
+	end
+	local ok, reason = ZoneConfig.canEnter(zone, statsOf(profile))
+	if ok then
+		profile.Zones[zoneId] = true
+		PlayerDataService.markDirty(player)
+		return true, &quot;&quot;
+	end
+	return false, reason or &quot;Pas encore accessible.&quot;
+end
+
+function ZoneService.enter(player: Player, zoneId: string): (boolean, string)
+	local ok, reason = ZoneService.canEnter(player, zoneId)
+	if not ok then
+		return false, reason
+	end
+	local profile = PlayerDataService.get(player)
+	if profile then
+		profile.CurrentZone = zoneId
+		PlayerDataService.markDirty(player)
+	end
+	local zone = ZoneConfig.get(zoneId) :: ZoneConfig.Zone
+	return true, zone.Name
+end
+
+-- Vue des zones pour le HUD : nom, taux, état, et ce qui manque.
+function ZoneService.overview(player: Player)
+	local profile = PlayerDataService.get(player)
+	local out = {}
+	if not profile then
+		return out
+	end
+	for _, zone in ipairs(ZoneConfig.List) do
+		local unlocked = profile.Zones[zone.Id] == true
+		local _, reason = ZoneConfig.canEnter(zone, statsOf(profile))
+		table.insert(out, {
+			Id = zone.Id, Name = zone.Name, Rate = zone.Rate, Order = zone.Order,
+			Unlocked = unlocked, Reason = unlocked and &quot;&quot; or (reason or &quot;&quot;),
+			Blurb = zone.Blurb, Mechanic = zone.Mechanic,
+		})
+	end
+	return out
+end
+
+return ZoneService
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX32"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX30"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX31"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX29"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX28"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX27"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
+-- Point d'entrée client. Il ne décide de rien : il affiche ce que le serveur
+-- envoie et transmet les demandes du joueur.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local ContextActionService = game:GetService(&quot;ContextActionService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+local UserInputService = game:GetService(&quot;UserInputService&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Format = require(Shared.Format)
+local Net = require(Shared.Net)
+
+local Hud = require(script.Hud)
+local Panels = require(script.Panels)
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild(&quot;PlayerGui&quot;)
+
+local screen = Instance.new(&quot;ScreenGui&quot;)
+screen.Name = &quot;SleepOrDie&quot;
+screen.ResetOnSpawn = false
+screen.IgnoreGuiInset = true
+screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screen.Parent = playerGui
+
+Hud.build(screen)
+Panels.build(screen, {
+	buy = function(itemId)
+		Net.get(&quot;RequestBuy&quot;):FireServer(itemId)
+	end,
+	place = function(itemId)
+		Net.get(&quot;RequestPlace&quot;):FireServer(itemId)
+	end,
+})
+
+local state: any = nil
+local lastReport: any = nil
+
+Net.get(&quot;StateChanged&quot;).OnClientEvent:Connect(function(payload)
+	state = payload
+	Hud.update(state)
+	-- Si un panneau est ouvert, on le redessine avec les nouvelles données.
+	local kind = Panels.currentKind()
+	if kind == &quot;shop&quot; then
+		Panels.openShop(state)
+	elseif kind == &quot;defenses&quot; then
+		Panels.openDefenses(state)
+	elseif kind == &quot;missions&quot; then
+		Panels.openMissions(state)
+	elseif kind == &quot;zones&quot; then
+		Panels.openZones(state)
+	end
+end)
+
+Net.get(&quot;Alert&quot;).OnClientEvent:Connect(function(text, kind)
+	Hud.toast(text, kind or &quot;info&quot;)
+	if kind == &quot;danger&quot; then
+		Hud.flash(0.25)
+	end
+end)
+
+Net.get(&quot;DeathReport&quot;).OnClientEvent:Connect(function(report)
+	lastReport = report
+	if state then
+		Panels.openDeath(report, state)
+	end
+end)
+
+Net.get(&quot;MonsterSignal&quot;).OnClientEvent:Connect(function(_monsterId, kind, position)
+	local character = player.Character
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	if not root then
+		return
+	end
+	local distance = (root.Position - position).Magnitude
+	if distance &gt; 140 then
+		return
+	end
+	if kind == &quot;spotted&quot; then
+		Hud.toast(&quot;Il t'a vu.&quot;, &quot;danger&quot;)
+		Hud.flash(0.3)
+	elseif kind == &quot;assault&quot; then
+		Hud.toast(&quot;Quelque chose frappe le refuge.&quot;, &quot;danger&quot;)
+		Hud.flash(0.2)
+	end
+end)
+
+-- ── santé ─────────────────────────────────────────────────────────────────
+local function watchCharacter(character: Model)
+	local humanoid = character:WaitForChild(&quot;Humanoid&quot;, 10) :: Humanoid?
+	if not humanoid then
+		return
+	end
+	Hud.setHealth(humanoid.Health, humanoid.MaxHealth)
+	humanoid.HealthChanged:Connect(function(value)
+		Hud.setHealth(value, humanoid.MaxHealth)
+		if value &lt; humanoid.MaxHealth * 0.4 then
+			Hud.flash(0.2)
+		end
+	end)
+end
+
+if player.Character then
+	watchCharacter(player.Character)
+end
+player.CharacterAdded:Connect(watchCharacter)
+
+-- ── interactions de proximité ─────────────────────────────────────────────
+-- Le serveur a déjà posé des ProximityPrompt sur le coffre, la boutique, les
+-- PNJ et la porte des égouts. On s'y branche sans en créer de nouveaux.
+local function bindPrompts()
+	for _, prompt in ipairs(Workspace:GetDescendants()) do
+		if prompt:IsA(&quot;ProximityPrompt&quot;) and not prompt:GetAttribute(&quot;Bound&quot;) then
+			prompt:SetAttribute(&quot;Bound&quot;, true)
+			prompt.Triggered:Connect(function(triggering)
+				if triggering ~= player then
+					return
+				end
+				local target = prompt.Parent
+				if not target then
+					return
+				end
+				if CollectionService:HasTag(target, &quot;Vault&quot;) then
+					Net.get(&quot;RequestBank&quot;):FireServer()
+				elseif CollectionService:HasTag(target, &quot;Shop&quot;) then
+					if state then
+						Panels.openShop(state)
+					end
+				elseif CollectionService:HasTag(target, &quot;ZoneGate&quot;) then
+					Net.get(&quot;RequestEnterZone&quot;):FireServer(target:GetAttribute(&quot;Zone&quot;))
+				elseif target.Parent and CollectionService:HasTag(target.Parent, &quot;Npc&quot;) then
+					if state then
+						Panels.openMissions(state)
+					end
+				end
+			end)
+		end
+	end
+end
+bindPrompts()
+Workspace.DescendantAdded:Connect(function(instance)
+	if instance:IsA(&quot;ProximityPrompt&quot;) then
+		task.defer(bindPrompts)
+	end
+end)
+
+-- ── refuge le plus proche + invite contextuelle ───────────────────────────
+local function nearestShelter(): (Model?, number)
+	local character = player.Character
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	if not root then
+		return nil, math.huge
+	end
+	local best, bestDistance = nil, math.huge
+	for _, model in ipairs(CollectionService:GetTagged(&quot;Shelter&quot;)) do
+		if model:IsA(&quot;Model&quot;) and model.PrimaryPart then
+			local distance = (model.PrimaryPart.Position - root.Position).Magnitude
+			if distance &lt; bestDistance then
+				best, bestDistance = model, distance
+			end
+		end
+	end
+	return best, bestDistance
+end
+
+RunService.RenderStepped:Connect(function()
+	if not state then
+		return
+	end
+	local shelter, distance = nearestShelter()
+	if state.Sleeping then
+		Hud.setPrompt(&quot;Espace — se réveiller&quot;)
+		return
+	end
+	if shelter and distance &lt; 16 then
+		local owner = shelter:GetAttribute(&quot;OwnerName&quot;)
+		if owner == player.Name then
+			Hud.setPrompt(&quot;E — dormir ici  ·  B défenses&quot;)
+		elseif owner == &quot;&quot; or owner == nil then
+			Hud.setPrompt(&quot;E — réserver ce refuge&quot;)
+		else
+			Hud.setPrompt(&quot;Occupé par &quot; .. tostring(owner))
+		end
+	else
+		Hud.setPrompt(nil)
+	end
+end)
+
+-- ── commandes ─────────────────────────────────────────────────────────────
+local function interact()
+	if not state then
+		return
+	end
+	local shelter, distance = nearestShelter()
+	if shelter and distance &lt; 16 then
+		local owner = shelter:GetAttribute(&quot;OwnerName&quot;)
+		if owner == player.Name then
+			Net.get(&quot;RequestSleep&quot;):FireServer()
+		else
+			Net.get(&quot;RequestClaim&quot;):FireServer(shelter:GetAttribute(&quot;ShelterId&quot;))
+		end
+	end
+end
+
+local function attack()
+	local character = player.Character
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	if not root then
+		return
+	end
+	local best, bestDistance = nil, 9
+	for _, model in ipairs(CollectionService:GetTagged(&quot;Monster&quot;)) do
+		if model:IsA(&quot;Model&quot;) and model.PrimaryPart then
+			local distance = (model.PrimaryPart.Position - root.Position).Magnitude
+			if distance &lt; bestDistance then
+				best, bestDistance = model, distance
+			end
+		end
+	end
+	if best then
+		Net.get(&quot;RequestAttack&quot;):FireServer(best)
+	end
+end
+
+local function onAction(name: string, inputState: Enum.UserInputState)
+	if inputState ~= Enum.UserInputState.Begin then
+		return Enum.ContextActionResult.Pass
+	end
+	if name == &quot;Interact&quot; then
+		interact()
+	elseif name == &quot;Wake&quot; then
+		Net.get(&quot;RequestWake&quot;):FireServer()
+	elseif name == &quot;Defenses&quot; then
+		if state then
+			Panels.openDefenses(state)
+		end
+	elseif name == &quot;Missions&quot; then
+		if state then
+			Panels.openMissions(state)
+		end
+	elseif name == &quot;Zones&quot; then
+		if state then
+			Panels.openZones(state)
+		end
+	elseif name == &quot;Attack&quot; then
+		attack()
+	elseif name == &quot;Close&quot; then
+		Panels.close()
+	end
+	return Enum.ContextActionResult.Sink
+end
+
+ContextActionService:BindAction(&quot;Interact&quot;, onAction, true, Enum.KeyCode.E)
+ContextActionService:BindAction(&quot;Wake&quot;, onAction, false, Enum.KeyCode.Space)
+ContextActionService:BindAction(&quot;Defenses&quot;, onAction, true, Enum.KeyCode.B)
+ContextActionService:BindAction(&quot;Missions&quot;, onAction, true, Enum.KeyCode.M)
+ContextActionService:BindAction(&quot;Zones&quot;, onAction, true, Enum.KeyCode.N)
+ContextActionService:BindAction(&quot;Attack&quot;, onAction, true, Enum.KeyCode.F,
+	Enum.UserInputType.MouseButton1)
+ContextActionService:BindAction(&quot;Close&quot;, onAction, false, Enum.KeyCode.Escape)
+
+ContextActionService:SetTitle(&quot;Interact&quot;, &quot;E&quot;)
+ContextActionService:SetTitle(&quot;Defenses&quot;, &quot;DÉFENSES&quot;)
+ContextActionService:SetTitle(&quot;Missions&quot;, &quot;MISSIONS&quot;)
+ContextActionService:SetTitle(&quot;Attack&quot;, &quot;FRAPPER&quot;)
+
+Hud.toast(&quot;Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.&quot;, &quot;info&quot;)
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
+-- §9 — l'interface. Tout ce que le cahier des charges demande d'afficher :
+-- argent sécurisé et non sécurisé, zone, santé, objectifs, état du refuge,
+-- alertes, temps de survie, inventaire, carte, écran de mort, paramètres.
+--
+-- Contrainte du CDC : « lisible sur ordinateur et mobile ». Les panneaux sont
+-- donc dimensionnés en échelle, pas en pixels, et se réorganisent sous 600 px.
+
+local Players = game:GetService(&quot;Players&quot;)
+local TweenService = game:GetService(&quot;TweenService&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Format = require(Shared.Format)
+
+local Hud = {}
+
+local INK = Color3.fromRGB(236, 237, 240)
+local DIM = Color3.fromRGB(150, 152, 162)
+local PANEL = Color3.fromRGB(14, 14, 19)
+local CASH = Color3.fromRGB(110, 226, 150)
+local DANGER = Color3.fromRGB(255, 86, 72)
+local ACCENT = Color3.fromRGB(120, 160, 255)
+
+local gui: ScreenGui
+local refs: { [string]: any } = {}
+local toasts: { Frame } = {}
+
+local function corner(parent: Instance, radius: number)
+	local c = Instance.new(&quot;UICorner&quot;)
+	c.CornerRadius = UDim.new(0, radius)
+	c.Parent = parent
+end
+
+local function panel(name: string, size: UDim2, position: UDim2, anchor: Vector2?): Frame
+	local frame = Instance.new(&quot;Frame&quot;)
+	frame.Name = name
+	frame.Size = size
+	frame.Position = position
+	frame.AnchorPoint = anchor or Vector2.new(0, 0)
+	frame.BackgroundColor3 = PANEL
+	frame.BackgroundTransparency = 0.12
+	frame.BorderSizePixel = 0
+	corner(frame, 10)
+	frame.Parent = gui
+	return frame
+end
+
+local function label(parent: Instance, text: string, size: number, color: Color3,
+	position: UDim2, width: UDim2?): TextLabel
+	local l = Instance.new(&quot;TextLabel&quot;)
+	l.BackgroundTransparency = 1
+	l.Text = text
+	l.TextSize = size
+	l.TextColor3 = color
+	l.Font = Enum.Font.GothamMedium
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.Position = position
+	l.Size = width or UDim2.new(1, -16, 0, size + 6)
+	l.Parent = parent
+	return l
+end
+
+function Hud.build(screen: ScreenGui)
+	gui = screen
+
+	-- Argent (haut gauche)
+	local wallet = panel(&quot;Wallet&quot;, UDim2.new(0, 220, 0, 86), UDim2.new(0, 14, 0, 14))
+	refs.cash = label(wallet, &quot;0 $&quot;, 13, DIM, UDim2.new(0, 12, 0, 8))
+	refs.unbanked = label(wallet, &quot;0 $&quot;, 26, DIM, UDim2.new(0, 12, 0, 26))
+	refs.unbanked.Font = Enum.Font.GothamBold
+	refs.hint = label(wallet, &quot;sur toi&quot;, 11, DIM, UDim2.new(0, 12, 0, 60))
+
+	-- Zone et session (haut centre)
+	local status = panel(&quot;Status&quot;, UDim2.new(0, 230, 0, 70), UDim2.new(0.5, 0, 0, 14), Vector2.new(0.5, 0))
+	refs.zone = label(status, &quot;LA RUE&quot;, 12, ACCENT, UDim2.new(0, 12, 0, 8))
+	refs.zone.Font = Enum.Font.GothamBold
+	refs.session = label(status, &quot;éveillé&quot;, 18, INK, UDim2.new(0, 12, 0, 26))
+	refs.sessionBarBg = Instance.new(&quot;Frame&quot;)
+	refs.sessionBarBg.Size = UDim2.new(1, -24, 0, 5)
+	refs.sessionBarBg.Position = UDim2.new(0, 12, 0, 54)
+	refs.sessionBarBg.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+	refs.sessionBarBg.BorderSizePixel = 0
+	corner(refs.sessionBarBg, 3)
+	refs.sessionBarBg.Parent = status
+	refs.sessionBar = Instance.new(&quot;Frame&quot;)
+	refs.sessionBar.Size = UDim2.new(0, 0, 1, 0)
+	refs.sessionBar.BackgroundColor3 = CASH
+	refs.sessionBar.BorderSizePixel = 0
+	corner(refs.sessionBar, 3)
+	refs.sessionBar.Parent = refs.sessionBarBg
+
+	-- Santé et refuge (haut droite)
+	local state = panel(&quot;State&quot;, UDim2.new(0, 210, 0, 86), UDim2.new(1, -14, 0, 14), Vector2.new(1, 0))
+	refs.health = label(state, &quot;100 / 100&quot;, 16, INK, UDim2.new(0, 12, 0, 8))
+	refs.shelter = label(state, &quot;aucun refuge&quot;, 12, DIM, UDim2.new(0, 12, 0, 32))
+	refs.event = label(state, &quot;&quot;, 11, Color3.fromRGB(200, 140, 255), UDim2.new(0, 12, 0, 54))
+
+	-- Objectif courant (bas centre)
+	local objective = panel(&quot;Objective&quot;, UDim2.new(0, 330, 0, 54), UDim2.new(0.5, 0, 1, -16), Vector2.new(0.5, 1))
+	refs.objectiveTitle = label(objective, &quot;Objectif&quot;, 13, INK, UDim2.new(0, 12, 0, 7))
+	refs.objectiveTitle.Font = Enum.Font.GothamBold
+	refs.objectiveText = label(objective, &quot;&quot;, 11.5, DIM, UDim2.new(0, 12, 0, 27))
+
+	-- Invite d'action (au-dessus de l'objectif)
+	refs.prompt = panel(&quot;Prompt&quot;, UDim2.new(0, 300, 0, 32), UDim2.new(0.5, 0, 1, -82), Vector2.new(0.5, 1))
+	refs.promptText = label(refs.prompt, &quot;&quot;, 13, INK, UDim2.new(0, 12, 0, 6))
+	refs.prompt.Visible = false
+
+	-- Zone des alertes (bas gauche)
+	refs.toasts = Instance.new(&quot;Frame&quot;)
+	refs.toasts.Name = &quot;Toasts&quot;
+	refs.toasts.Size = UDim2.new(0, 320, 0, 200)
+	refs.toasts.Position = UDim2.new(0, 14, 1, -14)
+	refs.toasts.AnchorPoint = Vector2.new(0, 1)
+	refs.toasts.BackgroundTransparency = 1
+	refs.toasts.Parent = gui
+	local list = Instance.new(&quot;UIListLayout&quot;)
+	list.Padding = UDim.new(0, 6)
+	list.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Parent = refs.toasts
+
+	-- Voile rouge de danger
+	refs.tint = Instance.new(&quot;Frame&quot;)
+	refs.tint.Size = UDim2.fromScale(1, 1)
+	refs.tint.BackgroundColor3 = DANGER
+	refs.tint.BackgroundTransparency = 1
+	refs.tint.BorderSizePixel = 0
+	refs.tint.ZIndex = 0
+	refs.tint.Parent = gui
+end
+
+function Hud.toast(text: string, kind: string)
+	local colors = {
+		info = INK, warn = Color3.fromRGB(255, 196, 92),
+		danger = DANGER, cash = CASH, unlock = Color3.fromRGB(190, 130, 255),
+		event = Color3.fromRGB(200, 140, 255),
+	}
+	local frame = Instance.new(&quot;Frame&quot;)
+	frame.Size = UDim2.new(1, 0, 0, 34)
+	frame.BackgroundColor3 = PANEL
+	frame.BackgroundTransparency = 0.1
+	frame.BorderSizePixel = 0
+	corner(frame, 8)
+	frame.Parent = refs.toasts
+
+	local l = label(frame, text, 12.5, colors[kind] or INK, UDim2.new(0, 10, 0, 0))
+	l.Size = UDim2.new(1, -20, 1, 0)
+	l.TextWrapped = true
+
+	table.insert(toasts, frame)
+	task.delay(5, function()
+		local tween = TweenService:Create(frame, TweenInfo.new(0.3),
+			{ BackgroundTransparency = 1 })
+		tween:Play()
+		TweenService:Create(l, TweenInfo.new(0.3), { TextTransparency = 1 }):Play()
+		tween.Completed:Wait()
+		frame:Destroy()
+	end)
+end
+
+function Hud.setPrompt(text: string?)
+	refs.prompt.Visible = text ~= nil
+	if text then
+		refs.promptText.Text = text
+	end
+end
+
+function Hud.flash(amount: number)
+	refs.tint.BackgroundTransparency = 1 - math.clamp(amount, 0, 0.35)
+	TweenService:Create(refs.tint, TweenInfo.new(0.6),
+		{ BackgroundTransparency = 1 }):Play()
+end
+
+function Hud.update(state)
+	refs.cash.Text = &quot;En banque  &quot; .. Format.money(state.Cash)
+	refs.unbanked.Text = Format.money(state.Unbanked)
+	refs.unbanked.TextColor3 = state.Unbanked &gt; 0 and CASH or DIM
+	refs.hint.Text = state.Unbanked &gt; 0 and &quot;sur toi — perdu s'il t'attrape&quot; or &quot;sur toi&quot;
+	refs.hint.TextColor3 = state.Unbanked &gt; 0 and DANGER or DIM
+
+	for _, zone in ipairs(state.Zones) do
+		if zone.Id == state.Zone then
+			refs.zone.Text = string.upper(zone.Name) .. &quot;  ·  &quot; .. Format.rate(zone.Rate)
+		end
+	end
+
+	if state.Sleeping then
+		refs.session.Text = Format.money(state.SessionEarned) .. &quot; gagnés&quot;
+		refs.session.TextColor3 = CASH
+		local ratio = state.SessionMax &gt; 0 and state.SessionSeconds / state.SessionMax or 0
+		refs.sessionBar.Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0)
+	else
+		refs.session.Text = &quot;éveillé&quot;
+		refs.session.TextColor3 = INK
+		refs.sessionBar.Size = UDim2.new(0, 0, 1, 0)
+	end
+
+	refs.shelter.Text = state.ShelterId ~= &quot;&quot; and (&quot;refuge : &quot; .. state.ShelterId)
+		or &quot;aucun refuge&quot;
+
+	if state.Multiplier &gt; 1 then
+		refs.event.Text = &quot;gains x&quot; .. state.Multiplier
+	elseif state.Event then
+		refs.event.Text = state.Event.Name
+	else
+		refs.event.Text = &quot;&quot;
+	end
+
+	-- Objectif : la première mission non terminée, principales d'abord.
+	local best = nil
+	for _, mission in ipairs(state.Missions) do
+		if not mission.Done then
+			if not best or (mission.Kind == &quot;main&quot; and best.Kind ~= &quot;main&quot;) then
+				best = mission
+			end
+		end
+	end
+	if best then
+		refs.objectiveTitle.Text = best.Name .. &quot;  (&quot; .. best.Progress .. &quot;/&quot; .. best.Target .. &quot;)&quot;
+		refs.objectiveText.Text = best.Text
+	else
+		refs.objectiveTitle.Text = &quot;Tout est fait&quot;
+		refs.objectiveText.Text = &quot;Reviens demain pour les quotidiennes.&quot;
+	end
+end
+
+function Hud.setHealth(current: number, max: number)
+	refs.health.Text = math.floor(current) .. &quot; / &quot; .. math.floor(max)
+	refs.health.TextColor3 = current &lt; max * 0.35 and DANGER or INK
+end
+
+return Hud
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
+-- Boutique, missions, carte, écran de mort et paramètres (§9).
+-- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Format = require(Shared.Format)
+
+local Panels = {}
+
+local INK = Color3.fromRGB(236, 237, 240)
+local DIM = Color3.fromRGB(150, 152, 162)
+local BACK = Color3.fromRGB(10, 10, 14)
+local CARD = Color3.fromRGB(18, 18, 24)
+local ROW = Color3.fromRGB(26, 26, 34)
+local CASH = Color3.fromRGB(110, 226, 150)
+local DANGER = Color3.fromRGB(255, 86, 72)
+
+local gui: ScreenGui
+local overlay: Frame
+local card: ScrollingFrame
+local titleLabel: TextLabel
+local current: string? = nil
+local onBuy: ((string) -&gt; ())? = nil
+local onPlace: ((string) -&gt; ())? = nil
+
+local function corner(parent: Instance, radius: number)
+	local c = Instance.new(&quot;UICorner&quot;)
+	c.CornerRadius = UDim.new(0, radius)
+	c.Parent = parent
+end
+
+local function clear()
+	for _, child in ipairs(card:GetChildren()) do
+		if not child:IsA(&quot;UIListLayout&quot;) and not child:IsA(&quot;UIPadding&quot;) then
+			child:Destroy()
+		end
+	end
+end
+
+function Panels.build(screen: ScreenGui, callbacks: { buy: (string) -&gt; (), place: (string) -&gt; () })
+	gui = screen
+	onBuy = callbacks.buy
+	onPlace = callbacks.place
+
+	overlay = Instance.new(&quot;Frame&quot;)
+	overlay.Name = &quot;Overlay&quot;
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = BACK
+	overlay.BackgroundTransparency = 0.15
+	overlay.BorderSizePixel = 0
+	overlay.Visible = false
+	overlay.ZIndex = 5
+	overlay.Parent = gui
+
+	local box = Instance.new(&quot;Frame&quot;)
+	box.Size = UDim2.new(0.5, 0, 0.7, 0)
+	box.Position = UDim2.fromScale(0.5, 0.5)
+	box.AnchorPoint = Vector2.new(0.5, 0.5)
+	box.BackgroundColor3 = CARD
+	box.BorderSizePixel = 0
+	box.ZIndex = 6
+	corner(box, 14)
+	box.Parent = overlay
+
+	local constraint = Instance.new(&quot;UISizeConstraint&quot;)
+	constraint.MinSize = Vector2.new(280, 300)
+	constraint.MaxSize = Vector2.new(560, 720)
+	constraint.Parent = box
+
+	titleLabel = Instance.new(&quot;TextLabel&quot;)
+	titleLabel.Size = UDim2.new(1, -28, 0, 40)
+	titleLabel.Position = UDim2.new(0, 18, 0, 10)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 22
+	titleLabel.TextColor3 = INK
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.ZIndex = 7
+	titleLabel.Parent = box
+
+	local close = Instance.new(&quot;TextButton&quot;)
+	close.Size = UDim2.new(0, 34, 0, 34)
+	close.Position = UDim2.new(1, -44, 0, 12)
+	close.BackgroundColor3 = ROW
+	close.Text = &quot;✕&quot;
+	close.TextColor3 = INK
+	close.Font = Enum.Font.GothamBold
+	close.TextSize = 16
+	close.ZIndex = 7
+	corner(close, 8)
+	close.Parent = box
+	close.Activated:Connect(function()
+		Panels.close()
+	end)
+
+	card = Instance.new(&quot;ScrollingFrame&quot;)
+	card.Size = UDim2.new(1, -28, 1, -70)
+	card.Position = UDim2.new(0, 14, 0, 56)
+	card.BackgroundTransparency = 1
+	card.BorderSizePixel = 0
+	card.ScrollBarThickness = 4
+	card.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	card.CanvasSize = UDim2.new()
+	card.ZIndex = 7
+	card.Parent = box
+
+	local list = Instance.new(&quot;UIListLayout&quot;)
+	list.Padding = UDim.new(0, 8)
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Parent = card
+end
+
+local function row(height: number): Frame
+	local frame = Instance.new(&quot;Frame&quot;)
+	frame.Size = UDim2.new(1, -8, 0, height)
+	frame.BackgroundColor3 = ROW
+	frame.BorderSizePixel = 0
+	frame.ZIndex = 7
+	corner(frame, 9)
+	frame.Parent = card
+	return frame
+end
+
+local function text(parent: Instance, content: string, size: number, color: Color3,
+	position: UDim2, width: UDim2?): TextLabel
+	local l = Instance.new(&quot;TextLabel&quot;)
+	l.BackgroundTransparency = 1
+	l.Text = content
+	l.TextSize = size
+	l.TextColor3 = color
+	l.Font = Enum.Font.GothamMedium
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.TextWrapped = true
+	l.Position = position
+	l.Size = width or UDim2.new(1, -120, 0, size + 6)
+	l.ZIndex = 8
+	l.Parent = parent
+	return l
+end
+
+local function button(parent: Instance, content: string, enabled: boolean): TextButton
+	local b = Instance.new(&quot;TextButton&quot;)
+	b.Size = UDim2.new(0, 104, 0, 32)
+	b.Position = UDim2.new(1, -112, 0.5, -16)
+	b.BackgroundColor3 = enabled and INK or Color3.fromRGB(44, 44, 52)
+	b.TextColor3 = enabled and Color3.fromRGB(12, 12, 16) or DIM
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 12
+	b.Text = content
+	b.AutoButtonColor = enabled
+	b.Active = enabled
+	b.ZIndex = 8
+	corner(b, 8)
+	b.Parent = parent
+	return b
+end
+
+function Panels.openShop(state)
+	current = &quot;shop&quot;
+	titleLabel.Text = &quot;Boutique  ·  &quot; .. Format.money(state.Cash)
+	clear()
+	for _, item in ipairs(state.Shop) do
+		local frame = row(66)
+		text(frame, item.Name, 14, INK, UDim2.new(0, 12, 0, 8)).Font = Enum.Font.GothamBold
+		text(frame, item.Desc, 11.5, DIM, UDim2.new(0, 12, 0, 28))
+		text(frame, (item.Owned &gt; 0 and (&quot;possédé x&quot; .. item.Owned .. &quot;  ·  &quot;) or &quot;&quot;)
+			.. item.Zone, 10.5, Color3.fromRGB(120, 122, 134), UDim2.new(0, 12, 0, 46))
+
+		local affordable = item.Available and state.Cash &gt;= item.Price
+		local b = button(frame, item.Available and Format.money(item.Price) or &quot;verrouillé&quot;, affordable)
+		if affordable and onBuy then
+			b.Activated:Connect(function()
+				(onBuy :: any)(item.Id)
+			end)
+		end
+	end
+	overlay.Visible = true
+end
+
+function Panels.openDefenses(state)
+	current = &quot;defenses&quot;
+	titleLabel.Text = &quot;Défenses du refuge&quot;
+	clear()
+	local any = false
+	for _, item in ipairs(state.Shop) do
+		local owned = state.Inventory[item.Id] or 0
+		if item.Kind == &quot;defense&quot; and owned &gt; 0 then
+			any = true
+			local placed = state.Placed[item.Id] or 0
+			local frame = row(58)
+			text(frame, item.Name, 14, INK, UDim2.new(0, 12, 0, 8)).Font = Enum.Font.GothamBold
+			text(frame, (&quot;posées %d / %d possédées&quot;):format(placed, owned), 11.5, DIM,
+				UDim2.new(0, 12, 0, 30))
+			local b = button(frame, &quot;Poser&quot;, placed &lt; owned)
+			if placed &lt; owned and onPlace then
+				b.Activated:Connect(function()
+					(onPlace :: any)(item.Id)
+				end)
+			end
+		end
+	end
+	if not any then
+		local frame = row(54)
+		text(frame, &quot;Aucune défense en stock. Passe à la boutique.&quot;, 13, DIM,
+			UDim2.new(0, 12, 0, 16), UDim2.new(1, -24, 0, 30))
+	end
+	overlay.Visible = true
+end
+
+function Panels.openMissions(state)
+	current = &quot;missions&quot;
+	titleLabel.Text = &quot;Missions&quot;
+	clear()
+	local order = { main = 1, side = 2, daily = 3, weekly = 4 }
+	local sorted = table.clone(state.Missions)
+	table.sort(sorted, function(a, b)
+		if a.Done ~= b.Done then
+			return not a.Done
+		end
+		return (order[a.Kind] or 9) &lt; (order[b.Kind] or 9)
+	end)
+	for _, mission in ipairs(sorted) do
+		local frame = row(64)
+		local kindText = ({ main = &quot;PRINCIPALE&quot;, side = &quot;SECONDAIRE&quot;,
+			daily = &quot;QUOTIDIENNE&quot;, weekly = &quot;HEBDOMADAIRE&quot; })[mission.Kind] or &quot;&quot;
+		text(frame, kindText, 9.5, Color3.fromRGB(120, 122, 134), UDim2.new(0, 12, 0, 6))
+		text(frame, mission.Name, 14, mission.Done and DIM or INK,
+			UDim2.new(0, 12, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, mission.Text, 11, DIM, UDim2.new(0, 12, 0, 40))
+		local status = mission.Done and &quot;terminée&quot;
+			or (mission.Progress .. &quot; / &quot; .. mission.Target)
+		local b = button(frame, status, false)
+		b.TextColor3 = mission.Done and CASH or DIM
+	end
+	overlay.Visible = true
+end
+
+function Panels.openZones(state)
+	current = &quot;zones&quot;
+	titleLabel.Text = &quot;Les sept zones&quot;
+	clear()
+	for _, zone in ipairs(state.Zones) do
+		local frame = row(72)
+		text(frame, zone.Order .. &quot;. &quot; .. zone.Name, 14,
+			zone.Unlocked and INK or DIM, UDim2.new(0, 12, 0, 8)).Font = Enum.Font.GothamBold
+		text(frame, Format.rate(zone.Rate) .. &quot;  ·  &quot; .. zone.Mechanic, 11, DIM,
+			UDim2.new(0, 12, 0, 28))
+		text(frame, zone.Unlocked and zone.Blurb or (&quot;Verrouillée — &quot; .. zone.Reason),
+			10.5, zone.Unlocked and Color3.fromRGB(120, 122, 134) or DANGER,
+			UDim2.new(0, 12, 0, 48))
+	end
+	overlay.Visible = true
+end
+
+function Panels.openDeath(report, state)
+	current = &quot;death&quot;
+	titleLabel.Text = &quot;Tu es mort&quot;
+	clear()
+	local frame = row(120)
+	text(frame, &quot;Il t'a eu dans &quot; .. (report.Zone or &quot;la rue&quot;) .. &quot;.&quot;, 15, DANGER,
+		UDim2.new(0, 12, 0, 12), UDim2.new(1, -24, 0, 22)).Font = Enum.Font.GothamBold
+	text(frame, (&quot;Session : %s gagnés en %s.&quot;):format(
+		Format.money(report.Earned or 0), Format.clock(report.Seconds or 0)),
+		13, INK, UDim2.new(0, 12, 0, 40), UDim2.new(1, -24, 0, 20))
+	text(frame, (&quot;Tu gardes %s en banque. Une partie de ce que tu avais sur toi est perdue.&quot;)
+		:format(Format.money(state.Cash)), 11.5, DIM,
+		UDim2.new(0, 12, 0, 66), UDim2.new(1, -24, 0, 40))
+	overlay.Visible = true
+end
+
+function Panels.close()
+	overlay.Visible = false
+	current = nil
+end
+
+function Panels.isOpen(): boolean
+	return overlay ~= nil and overlay.Visible
+end
+
+function Panels.currentKind(): string?
+	return current
+end
+
+return Panels
+</ProtectedString></Properties></Item></Item></Item></Item></roblox>
