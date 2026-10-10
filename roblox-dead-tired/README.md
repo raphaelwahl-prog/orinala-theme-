@@ -25,6 +25,17 @@ quand quelqu'un dort profond. Les créatures grandissent, accélèrent, voient p
 loin, le brouillard se referme. Au dernier stade, L'AFFAMÉ sort de sa chambre.
 Ta cupidité met toute la partie en danger.
 
+## Jouer tout de suite
+
+| Où | Quoi |
+|---|---|
+| **[`DeadTired.rbxlx`](DeadTired.rbxlx)** | la vraie place Roblox. Double-clic → Studio s'ouvre avec les 27 scripts en place → F5. |
+| **[`web/dead-tired-3d.html`](web/dead-tired-3d.html)** | le même jeu en 3D dans le navigateur, perso blocky, sans rien installer. Chiffres identiques à ceux du Luau. |
+| **[`web/dead-tired-2d.html`](web/dead-tired-2d.html)** | vue de dessus, pratique pour voir les trajets des créatures. |
+
+Les deux versions navigateur passent 66 vérifications automatiques jouées dans
+un vrai Chromium — voir [`web/README.md`](web/README.md).
+
 ## Les documents
 
 | Fichier | Pour quoi |

@@ -1,0 +1,1123 @@
+<title>Dead Tired 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Jeu plein écran, thème sombre assumé : c'est un jeu d'horreur. */
+:root {
+  color-scheme: dark;
+  --ink: #ecedf0; --dim: #8e8e99; --faint: #5c5c67;
+  --panel: rgba(16,16,22,.88); --panel2: #1c1c24; --line: #2a2a34;
+  --cash: #78e196; --danger: #ff5648; --unlock: #be82ff; --accent: #78a0ff;
+  --display: 'Anton','Arial Narrow',Impact,sans-serif;
+  --body: 'IBM Plex Sans',system-ui,sans-serif;
+  --mono: 'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: #05050a; color: var(--ink); font-family: var(--body); overflow: hidden; }
+#stage { position: relative; width: 100%; height: 100%; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.hud { position: absolute; inset: 0; pointer-events: none; font-size: 14px; }
+.pane { position: absolute; background: var(--panel); border-radius: 10px; padding: 11px 13px; }
+.wallet { left: 14px; top: 14px; width: 204px; }
+.wallet .cash { font-size: 12.5px; color: var(--dim); }
+.wallet .unb { font-size: 25px; font-weight: 700; color: var(--faint); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.wallet .unb.live { color: var(--cash); }
+.wallet .hint { font-size: 11.5px; color: var(--faint); }
+.wallet .hint.live { color: var(--danger); }
+.clock { left: 50%; top: 14px; transform: translateX(-50%); width: 166px; text-align: center; }
+.clock .ph { font-size: 11.5px; font-weight: 600; letter-spacing: .1em; color: var(--danger); }
+.clock .ph.day { color: var(--accent); }
+.clock .tm { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.awake { right: 14px; top: 14px; width: 188px; }
+.awake .lb { font-size: 10px; letter-spacing: .1em; color: var(--faint); }
+.awake .st { font-size: 18px; font-weight: 700; }
+.awake .sg { display: flex; gap: 4px; margin-top: 5px; }
+.awake .sg i { flex: 1; height: 6px; border-radius: 3px; background: var(--panel2); }
+.awake .ft { font-size: 10.5px; color: var(--faint); margin-top: 5px; }
+.sleep { left: 50%; bottom: 18px; transform: translateX(-50%); width: min(360px, calc(100vw - 32px)); }
+.sleep .sp { font-size: 17px; font-weight: 700; }
+.sleep .ra { font-size: 13px; color: var(--cash); font-variant-numeric: tabular-nums; }
+.sleep .ri { font-size: 13px; color: var(--danger); font-variant-numeric: tabular-nums; }
+.sleep .bar { height: 5px; background: var(--panel2); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.sleep .bar i { display: block; height: 100%; background: var(--danger); }
+.sleep .ft { font-size: 11px; color: var(--faint); margin-top: 5px; }
+.toasts { position: absolute; left: 14px; bottom: 14px; width: min(320px, 70vw); display: flex; flex-direction: column; gap: 6px; }
+.toast { background: var(--panel); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.toast.cash { color: var(--cash); } .toast.danger { color: var(--danger); }
+.toast.unlock { color: var(--unlock); } .toast.info { color: var(--ink); }
+.prompt { position: absolute; left: 50%; bottom: 152px; transform: translateX(-50%); background: var(--panel); border-radius: 8px; padding: 8px 14px; font-size: 13.5px; white-space: nowrap; }
+.prompt b { color: var(--accent); font-family: var(--mono); }
+.tint { position: absolute; inset: 0; background: var(--danger); opacity: 0; transition: opacity .12s; }
+.shout { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); font-family: var(--display); font-size: clamp(26px,5.4vw,50px); color: #fff; text-shadow: 0 0 18px #000; white-space: nowrap; }
+.crosshair { position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; background: rgba(255,255,255,.4); }
+
+.sheet { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(4,4,7,.85); pointer-events: auto; padding: 20px; overflow-y: auto; }
+/* `display:grid` bat la règle [hidden]{display:none} du navigateur : sans
+   cette ligne, le voile noir du panneau reste devant le jeu en permanence
+   et avale les clics destinés au canvas. */
+.sheet[hidden] { display: none; }
+.card { background: #101016; border: 1px solid var(--line); border-radius: 14px; padding: clamp(18px,4vw,30px); width: min(560px,100%); display: flex; flex-direction: column; gap: 15px; }
+.card h1 { font-family: var(--display); font-size: clamp(36px,9vw,60px); line-height: .9; margin: 0; }
+.card h1 em { font-style: normal; color: var(--danger); }
+.card h2 { font-family: var(--display); font-size: 24px; margin: 0; }
+.card p { margin: 0; color: var(--dim); font-size: 14.5px; line-height: 1.6; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13.5px; align-items: baseline; }
+.keys b { font-family: var(--mono); color: var(--accent); }
+.keys span { color: var(--dim); }
+button { font-family: var(--body); font-size: 15px; font-weight: 600; cursor: pointer; background: var(--ink); color: #0a0a0e; border: 0; border-radius: 9px; padding: 13px 18px; }
+button.ghost { background: var(--panel2); color: var(--ink); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.shop-list { display: flex; flex-direction: column; gap: 8px; max-height: min(44vh,320px); overflow-y: auto; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; background: var(--panel2); border-radius: 9px; padding: 11px 13px; }
+.item .n { font-weight: 600; font-size: 14px; }
+.item .d { font-size: 12.5px; color: var(--dim); }
+.item .l { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.item button { padding: 9px 13px; font-size: 13px; font-family: var(--mono); min-width: 92px; }
+.bc .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--faint); }
+.bc .n { font-family: var(--display); font-size: clamp(30px,7vw,44px); line-height: 1; }
+.bc .t { font-size: 15px; font-style: italic; }
+.bc .c { font-size: 15px; font-weight: 600; color: var(--cash); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(110px,1fr)); gap: 10px; }
+.stat { background: var(--panel2); border-radius: 9px; padding: 11px; }
+.stat .t { font-family: var(--mono); font-size: 9.5px; letter-spacing: .09em; color: var(--faint); }
+.stat .v { font-family: var(--mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.err { color: var(--danger); font-size: 14px; }
+
+.touch { position: absolute; inset: 0; pointer-events: none; display: none; }
+.touch.on { display: block; }
+.stick { position: absolute; left: 20px; bottom: 20px; width: 124px; height: 124px; border-radius: 50%; background: rgba(255,255,255,.05); border: 1px solid var(--line); pointer-events: auto; }
+.stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(255,255,255,.17); }
+.tb { position: absolute; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+.tb button { width: 76px; height: 54px; font-family: var(--mono); font-size: 13px; background: var(--panel2); color: var(--ink); }
+/* Téléphone : les trois panneaux du HUD font 558 px de large à eux trois, ils
+   se chevauchaient sur un écran de 390. On les réorganise, et le panneau de
+   sommeil monte en haut pour laisser le bas au joystick. */
+@media (max-width: 560px) {
+  .hud { font-size: 13px; }
+  .pane { padding: 8px 10px; border-radius: 9px; }
+  .wallet { width: 142px; }
+  .wallet .unb { font-size: 20px; }
+  .wallet .cash, .wallet .hint { font-size: 10.5px; }
+  .clock { left: auto; right: 14px; transform: none; width: auto; min-width: 84px; }
+  .clock .tm { font-size: 18px; }
+  .awake { left: 14px; right: 14px; top: 100px; width: auto; }
+  .awake .st { font-size: 15px; }
+  .sleep { left: 14px; right: 14px; top: 180px; bottom: auto; transform: none; width: auto; }
+  .prompt { bottom: 212px; font-size: 12.5px; white-space: normal; text-align: center; max-width: calc(100vw - 28px); }
+  .toasts { bottom: 156px; width: min(230px, 58vw); }
+  .toast { font-size: 12px; padding: 7px 9px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div class="hud" id="hud" hidden>
+    <div class="pane wallet"><div class="cash">En banque&nbsp; <span id="w-cash">0 $</span></div>
+      <div class="unb" id="w-unb">0 $</div><div class="hint" id="w-hint">sur toi</div></div>
+    <div class="pane clock"><div class="ph" id="c-ph">JOUR</div><div class="tm" id="c-tm">0:06</div></div>
+    <div class="pane awake"><div class="lb">ÉVEIL DE LA MAISON</div><div class="st" id="a-st">CALME</div>
+      <div class="sg" id="a-sg"><i></i><i></i><i></i><i></i></div><div class="ft" id="a-ft">dormir profond la réveille</div></div>
+    <div class="pane sleep" id="sleep" hidden><div class="sp" id="s-sp">—</div><div class="ra" id="s-ra">—</div>
+      <div class="ri" id="s-ri">—</div><div class="bar"><i id="s-bar"></i></div>
+      <div class="ft">Espace pour te réveiller</div></div>
+    <div class="prompt" id="prompt" hidden></div>
+    <div class="toasts" id="toasts"></div>
+    <div class="tint" id="tint"></div>
+    <div class="shout" id="shout" hidden></div>
+    <div class="crosshair" id="cross" hidden></div>
+  </div>
+  <div class="touch" id="touch">
+    <div class="stick" id="stick"><i id="knob"></i></div>
+    <div class="tb"><button type="button" id="tb-e">E</button><button type="button" id="tb-sp">RÉVEIL</button></div>
+  </div>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
+<script>
+"use strict";
+// ═══════════════════════════════════════════════════════════════════════════
+// DEAD TIRED 3D — prototype jouable, perso blocky à la Roblox.
+//
+// Les chiffres d'économie (gains, risques, tirage à 6 s, nuit de 180 s) et les
+// vitesses des créatures sont EXACTEMENT ceux du jeu Roblox du dépôt. Les
+// distances de vision sont adaptées au rendu navigateur.
+//
+// Une unité = un stud Roblox.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (id) => document.getElementById(id);
+
+if (!window.THREE) {
+  $("sheet").innerHTML = `<div class="card"><h2>La 3D n'a pas pu se charger</h2>
+    <p class="err">La bibliothèque Three.js a été bloquée par le réseau. Recharge la
+    page ; si ça persiste, essaie un autre navigateur ou une autre connexion.</p></div>`;
+  throw new Error("THREE indisponible");
+}
+
+// ─── réglages (copiés de GameConfig.luau / EntityCatalog.luau) ─────────────
+const TICK_RISK = 6, NIGHT = 180, DAWN = 25, WARNING_LEAD = 4.5;
+const PLAYER_SPEED = 16, TILE = 5;
+
+const TIERS = {
+  1: { name: "Dortoir", rate: 1, p: 0, unlock: 0, color: 0x008db8, risk: "Aucun risque" },
+  2: { name: "Couloir de service", rate: 3, p: 0.015, unlock: 0, color: 0x22a56a, risk: "Faible" },
+  3: { name: "Cave", rate: 8, p: 0.045, unlock: 2500, color: 0xad8700, risk: "Élevé" },
+  4: { name: "Chambre froide", rate: 18, p: 0.10, unlock: 12000, color: 0xc43922, risk: "Très élevé" },
+  5: { name: "Le Nid", rate: 45, p: 0.22, unlock: 40000, color: 0x9f3dae, risk: "Suicidaire" },
+};
+
+const BEASTS = {
+  2: { id: "watchman", name: "LE VEILLEUR", speed: 11, catch: 5.5, sight: 42, timeout: 24, height: 7.5,
+       tag: "Il fait sa ronde. Il n'est pas pressé.",
+       counter: "Casse sa ligne de vue trois secondes et il te perd.",
+       losesTrack: 3, lantern: true, body: 0x262422, eye: 0xffc45c, eyes: 1, arm: 3.2 },
+  3: { id: "crawler", name: "LA RAMPANTE", speed: 18, catch: 5, sight: 30, timeout: 30, height: 3.6,
+       tag: "Elle n'a pas d'yeux. Elle n'en a pas besoin.",
+       counter: "Elle ne suit que le mouvement. Arrête-toi net et deviens invisible.",
+       blind: 1.1, body: 0xc4baaa, eye: 0xe63c46, eyes: 0, arm: 4.6 },
+  4: { id: "mimic", name: "LE MIME", speed: 13, catch: 6, sight: 38, timeout: 34, height: 6.2,
+       tag: "Il y avait un lit de plus que la veille.",
+       counter: "Garde-le dans ton champ de vision : regardé, il ne peut pas sauter.",
+       teleports: 6, body: 0x4a3034, eye: 0x78ffb4, eyes: 2, arm: 3.8 },
+  5: { id: "starved", name: "L'AFFAMÉ", speed: 15, catch: 6.5, sight: 70, timeout: 1e9, height: 11,
+       tag: "Tu dors dans sa chambre.",
+       counter: "Aucune. Cours, et compte tes secondes.",
+       relentless: true, body: 0x161214, eye: 0xff2a24, eyes: 6, arm: 6.5 },
+};
+
+const STAGES = [
+  { name: "CALME",   speed: 1.00, sight: 1.00, size: 1.00, fog: 62, color: "#22a56a" },
+  { name: "AGITÉ",   speed: 1.08, sight: 1.25, size: 1.06, fog: 52, color: "#ad8700" },
+  { name: "ÉVEILLÉ", speed: 1.16, sight: 1.60, size: 1.14, fog: 43, color: "#c43922" },
+  { name: "AFFAMÉ",  speed: 1.24, sight: 2.00, size: 1.24, fog: 34, color: "#9f3dae" },
+];
+const THRESHOLDS = [0, 14, 34, 64];
+
+const SHOP = [
+  { id: "earplugs", name: "Bouchons d'oreille", desc: "−15 % de chance d'être repéré par niveau.", price: 400, growth: 2.1, max: 4 },
+  { id: "alarm", name: "Réveil à vibration", desc: "+1,2 s de fenêtre de fuite par niveau.", price: 650, growth: 2.3, max: 3 },
+  { id: "blanket", name: "Couverture lestée", desc: "+12 % de gains par niveau.", price: 900, growth: 2.4, max: 5 },
+  { id: "shoes", name: "Baskets de contrebande", desc: "+2 de vitesse par niveau.", price: 750, growth: 2.2, max: 4 },
+  { id: "medkit", name: "Trousse de secours", desc: "Te relève une fois. Consommée à l'usage.", price: 1200, growth: 1, max: 3 },
+];
+
+// ─── état ──────────────────────────────────────────────────────────────────
+const G = {
+  running: false, phase: "dawn", phaseLeft: 6, night: 0, time: 0,
+  cash: 0, unbanked: 0, totalBanked: 0, nights: 0, deepest: 1, items: {}, seen: {},
+  awaken: 0, stage: 0,
+  px: 0, pz: 0, yaw: 0, pitch: -0.22, moving: false, dead: 0, walk: 0,
+  sleeping: null, nextRoll: 0, earnedHere: 0,
+  beasts: [], toasts: [], shoutUntil: 0, shoutText: "",
+};
+
+const SAVE = "deadtired3d.v1";
+function save() {
+  try { localStorage.setItem(SAVE, JSON.stringify({
+    cash: G.cash, totalBanked: G.totalBanked, nights: G.nights,
+    deepest: G.deepest, items: G.items, seen: G.seen })); } catch (e) {}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE) || "null");
+    if (!d) return;
+    G.cash = d.cash || 0; G.totalBanked = d.totalBanked || 0; G.nights = d.nights || 0;
+    G.deepest = d.deepest || 1; G.items = d.items || {}; G.seen = d.seen || {};
+  } catch (e) {}
+}
+
+// ─── carte ─────────────────────────────────────────────────────────────────
+const MW = 78, MH = 62;
+let grid = [];
+const beds = [], patrol = [];
+let vault = null, shop = null, spawn = null;
+
+function carve(x0, y0, w, h) {
+  for (let y = y0; y < y0 + h; y++)
+    for (let x = x0; x < x0 + w; x++)
+      if (x > 0 && y > 0 && x < MW - 1 && y < MH - 1) grid[y][x] = 1;
+}
+function corridor(ax, ay, bx, by, w) {
+  const half = Math.floor(w / 2);
+  for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) carve(x, ay - half, 1, w);
+  for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) carve(bx - half, y, w, 1);
+}
+const ctr = (r) => ({ x: (r.x + r.w / 2) * TILE, z: (r.y + r.h / 2) * TILE });
+
+function buildMap() {
+  grid = Array.from({ length: MH }, () => new Array(MW).fill(0));
+  beds.length = 0; patrol.length = 0;
+
+  const lobby = { x: 31, y: 26, w: 16, h: 12 };
+  carve(lobby.x, lobby.y, lobby.w, lobby.h);
+  const lc = ctr(lobby);
+  spawn = { x: lc.x, z: lc.z + 14 };
+  vault = { x: (lobby.x + 2) * TILE, z: lc.z };
+  shop  = { x: (lobby.x + lobby.w - 2) * TILE, z: lc.z };
+
+  // Plus ça paie, plus la salle est loin du coffre.
+  const rooms = {
+    1: { x: 22, y: 27, w: 8,  h: 8  },
+    2: { x: 49, y: 26, w: 9,  h: 9  },
+    3: { x: 33, y: 4,  w: 13, h: 9  },
+    4: { x: 6,  y: 45, w: 13, h: 10 },
+    5: { x: 59, y: 47, w: 14, h: 11 },
+  };
+  for (const t in rooms) {
+    const r = rooms[t];
+    carve(r.x, r.y, r.w, r.h);
+    const c = ctr(r);
+    corridor(Math.floor(lc.x / TILE), Math.floor(lc.z / TILE), Math.floor(c.x / TILE), Math.floor(c.z / TILE), 3);
+    beds.push({ tier: +t, x: c.x, z: c.z, w: 9, d: 12 });
+    patrol.push({ x: c.x, z: c.z + r.h * TILE * 0.32 });
+    patrol.push({ x: c.x - r.w * TILE * 0.3, z: c.z - r.h * TILE * 0.28 });
+  }
+  patrol.push({ x: lc.x, z: lc.z });
+  for (const b of beds) {
+    patrol.push({ x: (b.x + lc.x) / 2, z: lc.z });
+    patrol.push({ x: b.x, z: (b.z + lc.z) / 2 });
+  }
+  for (let i = patrol.length - 1; i >= 0; i--) {
+    const p = patrol[i];
+    if (solid(p.x, p.z) || patrol.some((q, j) => j < i && Math.hypot(q.x - p.x, q.z - p.z) < TILE))
+      patrol.splice(i, 1);
+  }
+}
+
+const solid = (x, z) => {
+  const tx = Math.floor(x / TILE), tz = Math.floor(z / TILE);
+  return tx < 0 || tz < 0 || tx >= MW || tz >= MH || grid[tz][tx] === 0;
+};
+
+function los(ax, az, bx, bz) {
+  const dx = bx - ax, dz = bz - az, d = Math.hypot(dx, dz);
+  if (d < 0.01) return true;
+  const steps = Math.ceil(d / (TILE * 0.4));
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    if (solid(ax + dx * t, az + dz * t)) return false;
+  }
+  return true;
+}
+
+function findPath(from, to) {
+  const sx = Math.floor(from.x / TILE), sz = Math.floor(from.z / TILE);
+  const gx = Math.floor(to.x / TILE), gz = Math.floor(to.z / TILE);
+  if (sx === gx && sz === gz) return [];
+  if (gx < 0 || gz < 0 || gx >= MW || gz >= MH || grid[gz][gx] === 0) return [];
+  const prev = new Int32Array(MW * MH).fill(-1), seen = new Uint8Array(MW * MH);
+  const q = [sz * MW + sx]; seen[sz * MW + sx] = 1;
+  const goal = gz * MW + gx;
+  let head = 0;
+  while (head < q.length) {
+    const cur = q[head++];
+    if (cur === goal) break;
+    const cx = cur % MW, cz = (cur - cx) / MW;
+    for (const [ox, oz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = cx + ox, nz = cz + oz;
+      if (nx < 0 || nz < 0 || nx >= MW || nz >= MH) continue;
+      const ni = nz * MW + nx;
+      if (seen[ni] || grid[nz][nx] === 0) continue;
+      seen[ni] = 1; prev[ni] = cur; q.push(ni);
+    }
+  }
+  if (!seen[goal]) return [];
+  const path = [];
+  let cur = goal;
+  while (cur !== -1 && cur !== sz * MW + sx) {
+    const cx = cur % MW, cz = (cur - cx) / MW;
+    path.push({ x: (cx + 0.5) * TILE, z: (cz + 0.5) * TILE });
+    cur = prev[cur];
+  }
+  return path.reverse();
+}
+
+// ─── modificateurs ─────────────────────────────────────────────────────────
+const lvl = (id) => G.items[id] || 0;
+const mods = () => ({
+  earn: 1 + 0.12 * lvl("blanket"),
+  detect: Math.max(0.2, 1 - 0.15 * lvl("earplugs")),
+  warning: 1.2 * lvl("alarm"),
+  speed: PLAYER_SPEED + 2 * lvl("shoes"),
+});
+const priceOf = (it) => Math.floor(it.price * Math.pow(it.growth, lvl(it.id)));
+const maxTier = () => { let b = 1; for (const t in TIERS) if (G.totalBanked >= TIERS[t].unlock) b = Math.max(b, +t); return b; };
+
+// ═══ rendu 3D ══════════════════════════════════════════════════════════════
+const THREE = window.THREE;
+const renderer = new THREE.WebGLRenderer({ canvas: $("cv"), antialias: true });
+// Sans ça, Three.js sort des couleurs linéaires : tout paraît quatre fois trop
+// sombre à l'écran. Mesuré : luminance moyenne 13,7 sans, 44,8 avec.
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setClearColor(0x05050a);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x05050a, 10, 62);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.1, 400);
+
+// Lumière : presque rien en ambiance, une torche sur le joueur. Tout l'effet
+// d'horreur vient de là — on ne voit que ce qui est près de soi.
+scene.add(new THREE.AmbientLight(0x14141e, 1.0));
+const torch = new THREE.PointLight(0xffe2b0, 2.3, 58, 1.25);
+scene.add(torch);
+const moon = new THREE.DirectionalLight(0x2a3550, 0.3);
+moon.position.set(-0.4, 1, 0.3);
+scene.add(moon);
+// Petite lampe collée à la caméra : sans elle on ne voit que le dessus du
+// personnage, la torche étant pile au-dessus de sa tête.
+const fill = new THREE.PointLight(0xa8b2d6, 0.5, 46, 1.2);
+scene.add(fill);
+
+const MAT = {
+  floor: new THREE.MeshLambertMaterial({ color: 0x2b2b38 }),
+  floorAlt: new THREE.MeshLambertMaterial({ color: 0x22222e }),
+  wall:  new THREE.MeshLambertMaterial({ color: 0x3a3a49 }),
+  vault: new THREE.MeshLambertMaterial({ color: 0x2f6b45 }),
+  shop:  new THREE.MeshLambertMaterial({ color: 0x3a4470 }),
+  lockedBed: new THREE.MeshLambertMaterial({ color: 0x33333c }),
+};
+
+// Deux groupes : `world` ne contient que le décor (il est vidé et reconstruit
+// à chaque nuit), `actors` contient le joueur et les créatures. Les mélanger
+// faisait disparaître le personnage au premier appel de buildWorldMeshes().
+const world = new THREE.Group();
+scene.add(world);
+const actors = new THREE.Group();
+scene.add(actors);
+
+function box(w, h, d, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  return m;
+}
+
+// On fusionne les cases en bandes horizontales : un mur de salle devient un
+// seul bloc au lieu de huit. Sans ça on a des centaines d'objets pour rien.
+function buildWorldMeshes() {
+  world.clear();
+
+  for (let z = 0; z < MH; z++) {
+    let run = 0;
+    for (let x = 0; x <= MW; x++) {
+      const isFloor = x < MW && grid[z][x] === 1;
+      if (isFloor) { run++; continue; }
+      if (run > 0) {
+        const w = run * TILE;
+        world.add(box(w, 1, TILE, z % 2 ? MAT.floorAlt : MAT.floor, (x - run / 2) * TILE, -0.5, (z + 0.5) * TILE));
+        run = 0;
+      }
+    }
+  }
+
+  // Murs : seules les cases pleines qui touchent du sol sont visibles.
+  const visible = (x, z) => {
+    if (grid[z][x] !== 0) return false;
+    for (const [ox, oz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x + ox, nz = z + oz;
+      if (nx >= 0 && nz >= 0 && nx < MW && nz < MH && grid[nz][nx] === 1) return true;
+    }
+    return false;
+  };
+  const H = 13;
+  for (let z = 0; z < MH; z++) {
+    let run = 0;
+    for (let x = 0; x <= MW; x++) {
+      const isWall = x < MW && visible(x, z);
+      if (isWall) { run++; continue; }
+      if (run > 0) {
+        world.add(box(run * TILE, H, TILE, MAT.wall, (x - run / 2) * TILE, H / 2, (z + 0.5) * TILE));
+        run = 0;
+      }
+    }
+  }
+
+  // Coffre et boutique
+  const v = box(7, 8, 4, MAT.vault, vault.x, 4, vault.z); world.add(v);
+  const vl = new THREE.PointLight(0x58d98a, 0.8, 26); vl.position.set(vault.x, 7, vault.z); world.add(vl);
+  const s = box(7, 8, 4, MAT.shop, shop.x, 4, shop.z); world.add(s);
+  const sl = new THREE.PointLight(0x6f86ff, 0.8, 26); sl.position.set(shop.x, 7, shop.z); world.add(sl);
+
+  // Lits : la couleur du palier, et une veilleuse de la même teinte.
+  for (const b of beds) {
+    const t = TIERS[b.tier];
+    const locked = b.tier > maxTier();
+    b.mesh = box(b.w, 2, b.d, locked ? MAT.lockedBed : new THREE.MeshLambertMaterial({ color: t.color }), b.x, 1, b.z);
+    world.add(b.mesh);
+    const l = new THREE.PointLight(t.color, locked ? 0.25 : 0.95, 30);
+    l.position.set(b.x, 9, b.z);
+    world.add(l);
+    b.light = l;
+  }
+}
+
+function refreshBeds() {
+  for (const b of beds) {
+    const locked = b.tier > maxTier();
+    if (b.mesh) b.mesh.material = locked ? MAT.lockedBed : new THREE.MeshLambertMaterial({ color: TIERS[b.tier].color });
+    if (b.light) b.light.intensity = locked ? 0.25 : 0.95;
+  }
+}
+
+// ─── personnages blocky, proportions R6 de Roblox ──────────────────────────
+function makeAvatar(opts) {
+  const g = new THREE.Group();
+  const scale = opts.scale || 1;
+  const mat = (c) => new THREE.MeshLambertMaterial({ color: c });
+
+  const torso = box(2 * scale, 2 * scale, 1 * scale, mat(opts.shirt), 0, 0, 0);
+  g.add(torso);
+  const head = box(1.6 * scale, 1.6 * scale, 1.6 * scale, mat(opts.skin), 0, 1.8 * scale, 0);
+  g.add(head);
+
+  // Bras et jambes : le pivot est en haut du membre, sinon la rotation donne
+  // l'impression que le membre pousse depuis le sol.
+  const limbs = {};
+  const mkLimb = (name, w, h, d, c, x, y) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, y, 0);
+    const m = box(w, h, d, mat(c), 0, -h / 2, 0);
+    pivot.add(m);
+    g.add(pivot);
+    limbs[name] = pivot;
+  };
+  const armLen = (opts.armLen || 2) * scale;
+  mkLimb("armL", 1 * scale, armLen, 1 * scale, opts.shirt, -1.5 * scale, 0.9 * scale);
+  mkLimb("armR", 1 * scale, armLen, 1 * scale, opts.shirt, 1.5 * scale, 0.9 * scale);
+  mkLimb("legL", 1 * scale, 2 * scale, 1 * scale, opts.pants, -0.5 * scale, -1 * scale);
+  mkLimb("legR", 1 * scale, 2 * scale, 1 * scale, opts.pants, 0.5 * scale, -1 * scale);
+
+  // Yeux lumineux : pour les créatures, c'est la seule chose qu'on voit.
+  if (opts.eyes > 0) {
+    const eyeMat = new THREE.MeshBasicMaterial({ color: opts.eye });
+    for (let i = 0; i < opts.eyes; i++) {
+      let ex, ey;
+      if (opts.eyes === 1) { ex = 0; ey = 0; }
+      else if (opts.eyes === 2) { ex = i === 0 ? -0.38 : 0.38; ey = 0; }
+      else { const a = i / opts.eyes * Math.PI * 2; ex = Math.cos(a) * 0.45; ey = Math.sin(a) * 0.38; }
+      const e = box(0.3 * scale, 0.16 * scale, 0.12 * scale, eyeMat,
+        ex * scale, 1.8 * scale + ey * scale, -0.85 * scale);
+      g.add(e);
+    }
+    const glow = new THREE.PointLight(opts.eye, 0.9, 20);
+    glow.position.set(0, 1.8 * scale, -1 * scale);
+    g.add(glow);
+    g.userData.glow = glow;
+  } else if (opts.eye) {
+    // La Rampante n'a pas d'yeux : une bouche claire à la place.
+    const m = box(1.1 * scale, 0.22 * scale, 0.12 * scale,
+      new THREE.MeshBasicMaterial({ color: opts.eye }), 0, 1.5 * scale, -0.85 * scale);
+    g.add(m);
+  }
+
+  g.userData.limbs = limbs;
+  g.userData.scale = scale;
+  return g;
+}
+
+// Joueur : couleurs classiques Roblox (chemise bleue, jambes vertes, tête jaune).
+const player = makeAvatar({ shirt: 0x3f7fbf, pants: 0x4b9b4b, skin: 0xf2cf52, eyes: 0, scale: 1 });
+actors.add(player);
+
+function animateLimbs(g, phase, amount) {
+  const l = g.userData.limbs;
+  if (!l) return;
+  const s = Math.sin(phase) * amount;
+  l.armL.rotation.x = s; l.armR.rotation.x = -s;
+  l.legL.rotation.x = -s; l.legR.rotation.x = s;
+}
+
+// ─── interface ─────────────────────────────────────────────────────────────
+const money = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[  ]/g, " ") + " $";
+const mmss = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+function toast(text, kind) { G.toasts.push({ text, kind: kind || "info", until: G.time + 5 }); drawToasts(); }
+function drawToasts() {
+  $("toasts").innerHTML = G.toasts.slice(-4).map(t => `<div class="toast ${t.kind}">${t.text}</div>`).join("");
+}
+
+function syncHud() {
+  $("w-cash").textContent = money(G.cash);
+  const u = $("w-unb"); u.textContent = money(G.unbanked); u.classList.toggle("live", G.unbanked > 0);
+  const h = $("w-hint");
+  h.textContent = G.unbanked > 0 ? "sur toi — perdu s'il t'attrape" : "sur toi";
+  h.classList.toggle("live", G.unbanked > 0);
+  const ph = $("c-ph");
+  ph.textContent = G.phase === "night" ? "NUIT " + G.night : "JOUR";
+  ph.classList.toggle("day", G.phase !== "night");
+  $("c-tm").textContent = mmss(G.phaseLeft);
+
+  const st = STAGES[G.stage];
+  $("a-st").textContent = st.name; $("a-st").style.color = st.color;
+  const sg = $("a-sg").children;
+  for (let i = 0; i < sg.length; i++) sg[i].style.background = i <= G.stage ? st.color : "var(--panel2)";
+  const nx = THRESHOLDS[G.stage + 1];
+  $("a-ft").textContent = nx === undefined ? "maximum — il est dehors" : `stade suivant dans ${Math.max(0, nx - G.awaken)} pts`;
+
+  const sp = $("sleep");
+  if (G.sleeping) {
+    sp.hidden = false;
+    const t = TIERS[G.sleeping.tier], m = mods();
+    $("s-sp").textContent = t.name;
+    $("s-ra").textContent = `+${(t.rate * m.earn).toFixed(1).replace(".", ",")} $/s · ${money(G.earnedHere)} gagnés ici`;
+    const c = t.p * m.detect * 100;
+    $("s-ri").textContent = c <= 0 ? "aucun risque — mais ça ne paie rien"
+      : `risque ${c.toFixed(1).replace(".", ",")} % à chaque tirage (toutes les ${TICK_RISK} s)`;
+    $("s-bar").style.width = Math.max(0, Math.min(1, (G.nextRoll - G.time) / TICK_RISK)) * 100 + "%";
+  } else sp.hidden = true;
+}
+
+// ─── panneaux ──────────────────────────────────────────────────────────────
+let sheet = null;
+function closeSheet() { sheet = null; $("sheet").innerHTML = ""; $("sheet").hidden = true; }
+function openSheet(kind, html) { sheet = kind; $("sheet").hidden = false; $("sheet").innerHTML = html; }
+
+function title() {
+  openSheet("title", `<div class="card">
+    <h1>DEAD<br><em>TIRED</em></h1>
+    <p><strong>Tu es payé pour dormir.</strong> Plus la planque est dangereuse, plus
+    elle paie. L'argent gagné en dormant reste <em>sur toi</em> : si une créature
+    t'attrape, tu perds tout. Ramène-le au coffre avant le jour.</p>
+    <div class="keys">
+      <b>ZQSD / WASD</b><span>se déplacer</span>
+      <b>souris</b><span>regarder — deux créatures y réagissent</span>
+      <b>E</b><span>dormir · déposer · boutique</span>
+      <b>Espace</b><span>se réveiller</span>
+      <b>Échap</b><span>pause</span>
+    </div>
+    ${G.totalBanked > 0 ? `<p style="color:var(--cash)">Reprise : ${money(G.cash)} en banque · ${money(G.totalBanked)} déposés à vie · ${G.nights} nuits</p>` : ""}
+    <div class="row"><button type="button" id="b-play">${G.totalBanked > 0 ? "Continuer" : "Commencer la nuit 1"}</button>
+    ${G.totalBanked > 0 ? '<button type="button" class="ghost" id="b-reset">Repartir de zéro</button>' : ""}</div></div>`);
+  $("b-play").onclick = () => { closeSheet(); start(); };
+  const r = $("b-reset");
+  if (r) r.onclick = () => {
+    try { localStorage.removeItem(SAVE); } catch (e) {}
+    G.cash = 0; G.totalBanked = 0; G.nights = 0; G.deepest = 1; G.items = {}; G.seen = {};
+    refreshBeds(); title();
+  };
+}
+
+function pause() {
+  G.running = false;
+  openSheet("pause", `<div class="card"><h2>Pause</h2>
+    <div class="stats">
+      <div class="stat"><div class="t">EN BANQUE</div><div class="v" style="color:var(--cash)">${money(G.cash)}</div></div>
+      <div class="stat"><div class="t">SUR TOI</div><div class="v">${money(G.unbanked)}</div></div>
+      <div class="stat"><div class="t">NUITS</div><div class="v">${G.nights}</div></div>
+      <div class="stat"><div class="t">PALIER MAX</div><div class="v">${maxTier()}</div></div>
+    </div>
+    <p>Paliers débloqués par le total déposé à vie : Cave 2 500 $, Chambre froide
+    12 000 $, Le Nid 40 000 $. Tu en as déposé ${money(G.totalBanked)}.</p>
+    <div class="row"><button type="button" id="b-res">Reprendre</button></div></div>`);
+  $("b-res").onclick = () => { closeSheet(); G.running = true; };
+}
+
+function shopSheet() {
+  G.running = false;
+  const rows = SHOP.map(it => {
+    const o = lvl(it.id), maxed = o >= it.max, p = priceOf(it), can = !maxed && G.cash >= p;
+    return `<div class="item"><div><div class="n">${it.name}</div><div class="d">${it.desc}</div>
+      <div class="l">${it.id === "medkit" ? `stock ${o}/${it.max}` : `niveau ${o}/${it.max}`}</div></div>
+      <button type="button" data-buy="${it.id}" ${can ? "" : "disabled"}>${maxed ? "MAX" : money(p)}</button></div>`;
+  }).join("");
+  openSheet("shop", `<div class="card"><h2>Boutique</h2>
+    <p>${money(G.cash)} en banque. Les achats se paient avec l'argent <em>déposé</em>.</p>
+    <div class="shop-list">${rows}</div>
+    <div class="row"><button type="button" id="b-cl">Fermer</button></div></div>`);
+  $("b-cl").onclick = () => { closeSheet(); G.running = true; };
+  for (const b of document.querySelectorAll("[data-buy]")) b.onclick = () => {
+    const it = SHOP.find(i => i.id === b.dataset.buy), p = priceOf(it);
+    if (G.cash < p || lvl(it.id) >= it.max) return;
+    G.cash -= p; G.items[it.id] = lvl(it.id) + 1;
+    save(); toast(`${it.name} acheté — ${money(p)}.`, "cash"); shopSheet();
+  };
+}
+
+function reveal(def) {
+  G.running = false;
+  openSheet("reveal", `<div class="card bc">
+    <div class="k">TU VIENS D'EN RÉVEILLER UN</div>
+    <div class="n" style="color:#${def.body === 0x161214 ? "9f3dae" : def.eye.toString(16).padStart(6,"0")}">${def.name}</div>
+    <div class="t">${def.tag}</div>
+    <div class="k" style="margin-top:4px">COMMENT T'EN SORTIR</div>
+    <div class="c">${def.counter}</div>
+    <div class="row"><button type="button" id="b-go">J'ai compris — cours</button></div></div>`);
+  $("b-go").onclick = () => { closeSheet(); G.running = true; };
+}
+
+// ─── économie et cycle ─────────────────────────────────────────────────────
+function bank() {
+  if (G.unbanked <= 0) return 0;
+  const a = Math.floor(G.unbanked);
+  G.cash += a; G.totalBanked += a; G.unbanked = 0;
+  save();
+  for (const t in TIERS) {
+    if (TIERS[t].unlock > 0 && G.totalBanked >= TIERS[t].unlock && !G.seen["u" + t]) {
+      G.seen["u" + t] = true; toast(`${TIERS[t].name} débloquée.`, "unlock"); refreshBeds();
+    }
+  }
+  return a;
+}
+function beginNight() {
+  G.night++; G.phase = "night"; G.phaseLeft = NIGHT; G.awaken = 0; G.stage = 0;
+  clearBeasts(); spawnBeast(BEASTS[2], null, true);
+  toast(`Nuit ${G.night}. Va dormir — plus c'est moche, plus ça paie.`, "danger");
+}
+function beginDawn() {
+  G.phase = "dawn"; G.phaseLeft = DAWN;
+  if (G.sleeping) wake("dawn");
+  clearBeasts();
+  const got = bank(); G.nights++; save();
+  toast(got > 0 ? `Le jour se lève. +${money(got)} déposés.` : "Le jour se lève.", got > 0 ? "cash" : "info");
+}
+function feedAwakening(tier) {
+  const g = Math.max(0, tier - 1);
+  if (!g) return;
+  G.awaken += g;
+  let st = 0;
+  for (let i = 0; i < THRESHOLDS.length; i++) if (G.awaken >= THRESHOLDS[i]) st = i;
+  if (st !== G.stage) {
+    G.stage = st;
+    toast(`La maison se réveille — ${STAGES[st].name}.`, st >= 2 ? "danger" : "info");
+    if (st === 3) { toast("Quelque chose est sorti du Nid.", "danger"); spawnBeast(BEASTS[5], null, true); }
+  }
+}
+
+// ─── sommeil ───────────────────────────────────────────────────────────────
+function nearBed() {
+  for (const b of beds)
+    if (Math.abs(G.px - b.x) < b.w * 0.9 && Math.abs(G.pz - b.z) < b.d * 0.8) return b;
+  return null;
+}
+function trySleep(b) {
+  if (G.phase !== "night") { toast("C'est le jour. Dépose, achète, attends la nuit.", "info"); return; }
+  if (b.tier > maxTier()) { toast(`Il te faut ${money(TIERS[b.tier].unlock)} déposés au total.`, "info"); return; }
+  G.sleeping = b; G.earnedHere = 0; G.nextRoll = G.time + TICK_RISK;
+  G.px = b.x; G.pz = b.z;
+  if (b.tier > G.deepest) { G.deepest = b.tier; save(); }
+}
+function wake(reason) {
+  if (!G.sleeping) return;
+  G.sleeping = null;
+  if (reason === "manual") toast(`Réveillé. ${money(G.unbanked)} sur toi — au coffre.`, "info");
+}
+function rollRisk() {
+  const b = G.sleeping, t = TIERS[b.tier];
+  feedAwakening(b.tier);
+  if (t.p <= 0) return;
+  if (Math.random() >= t.p * mods().detect) return;
+  const win = WARNING_LEAD + mods().warning;
+  const def = BEASTS[b.tier];
+  wake("alert");
+  G.shoutText = "IL ARRIVE — COURS"; G.shoutUntil = G.time + win;
+  toast("Un bruit. Il vient par ici — BOUGE.", "danger");
+  spawnBeast(def, win);
+  if (!G.seen[def.id]) { G.seen[def.id] = true; save(); reveal(def); }
+}
+
+// ─── créatures ─────────────────────────────────────────────────────────────
+function statsOf(def) {
+  const s = STAGES[G.stage];
+  return { speed: def.speed * s.speed, sight: def.sight * s.sight, catch: def.catch + G.stage * 0.5, size: s.size };
+}
+function clearBeasts() {
+  for (const b of G.beasts) despawn(b);
+  G.beasts.length = 0;
+}
+function despawn(b) {
+  actors.remove(b.obj);
+  if (b.lamp) actors.remove(b.lamp);
+}
+function spawnBeast(def, win, patrolMode) {
+  let inst = G.beasts.find(b => b.def.id === def.id);
+  if (!inst) {
+    const scale = def.height / 5;
+    inst = { def, obj: makeAvatar({
+      shirt: def.body, pants: def.body, skin: def.body,
+      eyes: def.eyes, eye: def.eye, scale, armLen: def.arm / scale }) };
+    if (def.lantern) {
+      // La lampe vit dans la scène, pas dans le corps : le corps se cache
+      // derrière les murs, la lueur continue de passer par les portes. C'est
+      // ce qui annonce le Veilleur avant qu'on le voie.
+      inst.lamp = new THREE.PointLight(0xffc478, 2.2, 46);
+      actors.add(inst.lamp);
+      inst.obj.add(box(0.8, 1, 0.8, new THREE.MeshBasicMaterial({ color: 0xffc478 }), 1.6 * scale, 0.2, 0));
+    }
+    actors.add(inst.obj);
+    G.beasts.push(inst);
+  }
+  let at;
+  if (win) {
+    const want = Math.max(22, win * statsOf(def).speed);
+    let best = patrol[0], err = Infinity;
+    for (const p of patrol) {
+      const d = Math.hypot(p.x - G.px, p.z - G.pz);
+      if (d > 14 && Math.abs(d - want) < err) { err = Math.abs(d - want); best = p; }
+    }
+    at = best;
+  } else {
+    // En ronde : n'importe quel point, mais jamais sur le dos du joueur.
+    const far = patrol.filter(p => Math.hypot(p.x - G.px, p.z - G.pz) > 45);
+    const pool = far.length ? far : patrol;
+    at = pool[Math.floor(Math.random() * pool.length)];
+  }
+  inst.x = at.x; inst.z = at.z;
+  inst.mode = patrolMode ? "patrol" : "hunt";
+  inst.last = { x: G.px, z: G.pz };
+  inst.path = []; inst.repath = 0; inst.lost = 0; inst.still = 0;
+  inst.nextTp = G.time + (def.teleports || 1e9);
+  inst.ends = G.time + def.timeout;
+  inst.pi = 0; inst.walk = 0; inst.angle = 0;
+}
+
+// Le joueur le regarde-t-il ? (Le Mime ne saute pas sous le regard.)
+function observed(b) {
+  const dx = b.x - G.px, dz = b.z - G.pz, d = Math.hypot(dx, dz);
+  if (d < 0.1) return true;
+  if (d > 110) return false;
+  // yaw 0 regarde vers -Z, comme la caméra.
+  const fx = -Math.sin(G.yaw), fz = -Math.cos(G.yaw);
+  return (fx * dx + fz * dz) / d > 0.35 && los(G.px, G.pz, b.x, b.z);
+}
+
+function updateBeast(b, dt) {
+  const s = statsOf(b.def);
+  const d = Math.hypot(b.x - G.px, b.z - G.pz);
+  const canSee = d <= s.sight && (b.def.blind ? true : los(b.x, b.z, G.px, G.pz));
+
+  if (b.mode === "patrol") {
+    const spots = b.def.blind ? G.moving : los(b.x, b.z, G.px, G.pz);
+    if (d <= s.sight * 0.6 && spots) {
+      b.mode = "hunt"; b.ends = G.time + b.def.timeout; b.lost = 0; b.still = 0; b.path = []; b.repath = 0;
+      toast(`${b.def.name} t'a vu.`, "danger");
+      G.shoutText = "IL T'A VU"; G.shoutUntil = G.time + 1.6;
+      if (!G.seen[b.def.id]) { G.seen[b.def.id] = true; save(); reveal(b.def); }
+    }
+  }
+
+  if (b.mode === "hunt") {
+    if (b.def.blind) {
+      if (!G.moving) { b.still += dt; if (b.still >= b.def.blind) { b.mode = "search"; b.last = { x: G.px, z: G.pz }; b.path = []; } }
+      else b.still = 0;
+    }
+    if (b.def.losesTrack && !b.def.relentless) {
+      if (canSee) b.lost = 0;
+      else { b.lost += dt; if (b.lost >= b.def.losesTrack) { b.mode = "search"; b.path = []; } }
+    }
+    if (b.def.teleports && G.time >= b.nextTp) {
+      if (!observed(b)) {
+        let best = null, bd = d;
+        for (const p of patrol) {
+          const pd = Math.hypot(p.x - G.px, p.z - G.pz);
+          if (pd < bd && pd > 12) { bd = pd; best = p; }
+        }
+        if (best) { b.x = best.x; b.z = best.z; b.path = []; b.repath = 0; }
+      }
+      b.nextTp = G.time + b.def.teleports;
+    }
+    if (canSee || b.def.relentless) b.last = { x: G.px, z: G.pz };
+    if (!b.def.relentless && G.time >= b.ends) { b.mode = "search"; b.path = []; toast("Il a lâché la piste.", "info"); }
+  }
+
+  if (b.mode === "search") {
+    const toLast = b.last ? Math.hypot(b.x - b.last.x, b.z - b.last.z) : 0;
+    if (!b.last || toLast < 6) {
+      if (b.def.id === "watchman" || b.def.relentless) { b.mode = "patrol"; b.path = []; }
+      else {
+        despawn(b);
+        G.beasts.splice(G.beasts.indexOf(b), 1);
+        return;
+      }
+    }
+  }
+
+  let target = null;
+  if (b.mode === "hunt") target = b.last || { x: G.px, z: G.pz };
+  else if (b.mode === "search") target = b.last;
+  else {
+    if (!b.pt || Math.hypot(b.x - b.pt.x, b.z - b.pt.z) < 6) {
+      b.pi = (b.pi + 1) % patrol.length; b.pt = patrol[b.pi]; b.path = []; b.repath = 0;
+    }
+    target = b.pt;
+  }
+  if (target && G.time >= b.repath) { b.repath = G.time + 0.4; b.path = findPath(b, target); }
+
+  const speed = b.mode === "patrol" ? s.speed * 0.6 : s.speed;
+  let n = b.path[0];
+  while (n && Math.hypot(n.x - b.x, n.z - b.z) < TILE * 0.5) { b.path.shift(); n = b.path[0]; }
+  if (n) {
+    const dx = n.x - b.x, dz = n.z - b.z, len = Math.hypot(dx, dz) || 1;
+    b.x += dx / len * speed * dt; b.z += dz / len * speed * dt;
+    b.walk += dt * speed * 0.55;
+    b.angle = Math.atan2(dx, dz);
+  }
+
+  // Rendu : on cache la créature si elle n'est pas en ligne de vue, sinon on
+  // la verrait à travers les murs.
+  b.obj.visible = los(G.px, G.pz, b.x, b.z) && d < STAGES[G.stage].fog * 1.6;
+  b.obj.position.set(b.x, b.def.height * 0.52 * s.size, b.z);
+  if (b.lamp) b.lamp.position.set(b.x, b.def.height * 0.5, b.z);
+  b.obj.scale.setScalar(s.size);
+  b.obj.rotation.y = b.angle + Math.PI;
+  animateLimbs(b.obj, b.walk, n ? 0.75 : 0.08);
+  if (b.obj.userData.glow) b.obj.userData.glow.intensity = (b.mode === "hunt" ? 1.9 : 0.8) + Math.sin(G.time * 6) * 0.25;
+
+  if (d <= s.catch) caught(b);
+}
+
+function caught(b) {
+  if (G.dead > 0) return;
+  wake("caught");
+  const lost = Math.floor(G.unbanked);
+  if (lvl("medkit") > 0) {
+    G.items.medkit = lvl("medkit") - 1;
+    G.unbanked = Math.floor(lost * 0.5); save();
+    toast(`${b.def.name} t'a eu. Trousse utilisée — tu gardes ${money(G.unbanked)}.`, "cash");
+  } else {
+    G.unbanked = 0;
+    toast(`${b.def.name} t'a eu. −${money(lost)}.`, "danger");
+  }
+  G.dead = 2.4;
+  G.shoutText = "IL T'A EU"; G.shoutUntil = G.time + 2.4;
+  if (b.def.id === "watchman" || b.def.relentless) { b.mode = "patrol"; b.path = []; }
+  else { despawn(b); G.beasts.splice(G.beasts.indexOf(b), 1); }
+}
+
+// ─── entrées ───────────────────────────────────────────────────────────────
+const keys = {};
+let tv = { x: 0, y: 0, on: false };
+const isTouch = matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === " ") { e.preventDefault(); if (G.sleeping) wake("manual"); }
+  if (k === "e") { e.preventDefault(); interact(); }
+  if (k === "escape") {
+    if (sheet) { closeSheet(); G.running = true; }
+    else if (G.running) pause();
+  }
+});
+addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+const cv = $("cv");
+let locked = false;
+cv.addEventListener("click", () => {
+  if (!G.running || isTouch) return;
+  if (cv.requestPointerLock) { try { cv.requestPointerLock(); } catch (e) {} }
+});
+document.addEventListener("pointerlockchange", () => {
+  locked = document.pointerLockElement === cv;
+  $("cross").hidden = !locked;
+});
+addEventListener("mousemove", (e) => {
+  if (!G.running) return;
+  if (locked) {
+    G.yaw -= e.movementX * 0.0022;
+    G.pitch = Math.max(-0.75, Math.min(0.42, G.pitch - e.movementY * 0.0018));
+  } else if (dragging) {
+    G.yaw -= (e.clientX - dragX) * 0.005;
+    G.pitch = Math.max(-0.75, Math.min(0.42, G.pitch - (e.clientY - dragY) * 0.004));
+    dragX = e.clientX; dragY = e.clientY;
+  }
+});
+let dragging = false, dragX = 0, dragY = 0;
+cv.addEventListener("mousedown", (e) => { if (!locked) { dragging = true; dragX = e.clientX; dragY = e.clientY; } });
+addEventListener("mouseup", () => { dragging = false; });
+
+function interact() {
+  if (sheet || G.sleeping || G.dead > 0) return;
+  if (Math.hypot(G.px - vault.x, G.pz - vault.z) < 12) {
+    const got = bank();
+    toast(got > 0 ? `+${money(got)} déposés. C'est à toi pour de bon.` : "Tu n'as rien sur toi.", got > 0 ? "cash" : "info");
+    return;
+  }
+  if (Math.hypot(G.px - shop.x, G.pz - shop.z) < 12) { shopSheet(); return; }
+  const b = nearBed(); if (b) trySleep(b);
+}
+
+if (isTouch) {
+  $("touch").classList.add("on");
+  const st = $("stick"), kn = $("knob");
+  let o = null;
+  const begin = (e) => { const r = st.getBoundingClientRect(); o = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; mv(e); };
+  const mv = (e) => {
+    if (!o) return; e.preventDefault();
+    const t = e.touches[0];
+    let dx = t.clientX - o.x, dy = t.clientY - o.y;
+    const len = Math.hypot(dx, dy), max = 46;
+    if (len > max) { dx = dx / len * max; dy = dy / len * max; }
+    kn.style.transform = `translate(${dx}px,${dy}px)`;
+    tv = { x: dx / max, y: dy / max, on: len > 6 };
+  };
+  const end = () => { o = null; kn.style.transform = ""; tv = { x: 0, y: 0, on: false }; };
+  st.addEventListener("touchstart", begin, { passive: false });
+  st.addEventListener("touchmove", mv, { passive: false });
+  st.addEventListener("touchend", end); st.addEventListener("touchcancel", end);
+  $("tb-e").onclick = interact;
+  $("tb-sp").onclick = () => { if (G.sleeping) wake("manual"); };
+  // Glisser sur la vue fait tourner la caméra.
+  let lx = null;
+  cv.addEventListener("touchstart", (e) => { lx = e.touches[0].clientX; }, { passive: true });
+  cv.addEventListener("touchmove", (e) => {
+    if (lx === null) return;
+    G.yaw -= (e.touches[0].clientX - lx) * 0.006;
+    lx = e.touches[0].clientX;
+  }, { passive: true });
+  cv.addEventListener("touchend", () => { lx = null; });
+}
+
+// ─── déplacement ───────────────────────────────────────────────────────────
+function movePlayer(dt) {
+  let ix = 0, iz = 0;
+  if (keys["w"] || keys["z"] || keys["arrowup"]) iz -= 1;
+  if (keys["s"] || keys["arrowdown"]) iz += 1;
+  if (keys["a"] || keys["q"] || keys["arrowleft"]) ix -= 1;
+  if (keys["d"] || keys["arrowright"]) ix += 1;
+  if (tv.on) { ix = tv.x; iz = tv.y; }
+
+  const len = Math.hypot(ix, iz);
+  G.moving = len > 0.08 && !G.sleeping && G.dead <= 0;
+  if (!G.moving) return;
+  ix /= len; iz /= len;
+
+  // Déplacement relatif à la caméra : avancer, c'est aller là où on regarde.
+  const sin = Math.sin(G.yaw), cos = Math.cos(G.yaw);
+  const dx = ix * cos - iz * sin;
+  const dz = ix * sin + iz * cos;
+
+  const step = mods().speed * dt;
+  const R = 1.6;
+  // Glissement le long des murs : chaque axe est testé séparément, avec un
+  // rayon pour que le personnage ne rentre pas dans la géométrie.
+  if (!solid(G.px + dx * step + Math.sign(dx) * R, G.pz)) G.px += dx * step;
+  if (!solid(G.px, G.pz + dz * step + Math.sign(dz) * R)) G.pz += dz * step;
+  G.walk += dt * mods().speed * 0.5;
+}
+
+// ─── boucle ────────────────────────────────────────────────────────────────
+function start() {
+  buildMap();
+  buildWorldMeshes();
+  G.px = spawn.x; G.pz = spawn.z; G.dead = 0;
+  G.phase = "dawn"; G.phaseLeft = 6; G.night = 0;
+  G.unbanked = 0; G.sleeping = null; G.awaken = 0; G.stage = 0; G.toasts = [];
+  clearBeasts();
+  $("hud").hidden = false;
+  G.running = true;
+  toast("Trouve une planque. E pour dormir.", "info");
+}
+
+function promptLine() {
+  if (G.sleeping || G.dead > 0) return false;
+  const p = $("prompt");
+  if (Math.hypot(G.px - vault.x, G.pz - vault.z) < 12) { p.innerHTML = `<b>E</b> déposer ${money(G.unbanked)} au coffre`; return true; }
+  if (Math.hypot(G.px - shop.x, G.pz - shop.z) < 12) { p.innerHTML = `<b>E</b> ouvrir la boutique`; return true; }
+  const b = nearBed();
+  if (b) {
+    const t = TIERS[b.tier];
+    p.innerHTML = b.tier > maxTier()
+      ? `🔒 ${t.name} — ${money(t.unlock)} déposés requis`
+      : `<b>E</b> dormir · ${t.name} · ${t.rate} $/s · ${t.risk.toLowerCase()}`;
+    return true;
+  }
+  return false;
+}
+
+function resize() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / Math.max(1, h);
+  // En portrait, un champ vertical fixe écrase le champ horizontal : on ne voit
+  // plus que le dos du personnage. On élargit jusqu'à 94° pour compenser.
+  const base = 72 * Math.PI / 180;
+  camera.fov = camera.aspect < 1
+    ? Math.min(94, 2 * Math.atan(Math.tan(base / 2) / camera.aspect) * 180 / Math.PI)
+    : 72;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  if (G.running) {
+    G.time += dt;
+    if (G.dead > 0) { G.dead -= dt; if (G.dead <= 0) { G.px = spawn.x; G.pz = spawn.z; } }
+    movePlayer(dt);
+
+    if (G.sleeping) {
+      const t = TIERS[G.sleeping.tier];
+      const gain = t.rate * mods().earn * dt;
+      G.unbanked += gain; G.earnedHere += gain;
+      if (G.time >= G.nextRoll) { G.nextRoll = G.time + TICK_RISK; rollRisk(); }
+    }
+
+    for (const b of G.beasts.slice()) updateBeast(b, dt);
+
+    G.phaseLeft -= dt;
+    if (G.phaseLeft <= 0) { if (G.phase === "night") beginDawn(); else beginNight(); }
+
+    const before = G.toasts.length;
+    G.toasts = G.toasts.filter(t => t.until > G.time);
+    if (G.toasts.length !== before) drawToasts();
+    syncHud();
+
+    const sh = $("shout");
+    if (G.time < G.shoutUntil) {
+      sh.hidden = false;
+      const left = G.shoutUntil - G.time;
+      sh.textContent = G.shoutText + (G.shoutText === "IL ARRIVE — COURS" ? "  " + left.toFixed(1).replace(".", ",") + " s" : "");
+      $("tint").style.opacity = String(0.1 + 0.07 * Math.abs(Math.sin(G.time * 7)));
+    } else { sh.hidden = true; $("tint").style.opacity = "0"; }
+    $("prompt").hidden = !promptLine();
+
+    // Ambiance : le brouillard se resserre quand l'éveil monte. C'est ce qui
+    // fait sentir le stade sans lire la jauge.
+    const fog = STAGES[G.stage].fog;
+    scene.fog.far += (fog - scene.fog.far) * Math.min(1, dt * 2);
+    scene.fog.near = scene.fog.far * 0.12;
+    torch.distance = fog * 0.95;
+  }
+
+  // Personnage et caméra
+  const bodyY = G.sleeping ? 1.6 : 3.2;
+  player.position.set(G.px, bodyY, G.pz);
+  player.rotation.y = G.yaw + Math.PI;
+  player.rotation.x = G.sleeping ? -Math.PI / 2.1 : 0;
+  player.visible = G.dead <= 0;
+  animateLimbs(player, G.walk, G.moving ? 0.8 : 0.05);
+  torch.position.set(G.px, 6, G.pz);
+
+  // La caméra se rapproche quand un mur se met derrière le joueur, sinon on
+  // se retrouve à jouer face à une paroi grise.
+  const sy = Math.sin(G.yaw), cy = Math.cos(G.yaw);
+  // Écran étroit : on recule un peu plus, sinon le personnage mange la vue.
+  const base = (G.sleeping ? 13 : 17) * (camera.aspect < 1 ? 1.22 : 1);
+  let dist = base;
+  while (dist > 5 && solid(G.px + sy * (dist + 2.5), G.pz + cy * (dist + 2.5))) dist -= 1.5;
+  const height = (7 + G.pitch * -10) * (0.42 + 0.58 * (dist / base));
+  camera.position.set(G.px + sy * dist, bodyY + height, G.pz + cy * dist);
+  fill.position.set(camera.position.x, camera.position.y, camera.position.z);
+  camera.lookAt(G.px, bodyY + 1.4, G.pz);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+// ─── départ ────────────────────────────────────────────────────────────────
+load();
+buildMap();
+buildWorldMeshes();
+G.px = spawn.x; G.pz = spawn.z;
+resize();
+title();
+requestAnimationFrame(frame);
+</script>

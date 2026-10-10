@@ -1,0 +1,1185 @@
+<title>Dead Tired</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Jeu plein écran : un canvas, un HUD en surimpression, rien d'autre.
+   Thème sombre assumé — c'est un jeu d'horreur, il n'a pas de version claire. */
+:root {
+  color-scheme: dark;
+  --bg:      #07070a;
+  --ink:     #ecedf0;
+  --ink-dim: #8e8e99;
+  --faint:   #5c5c67;
+  --panel:   rgba(16,16,22,0.88);
+  --panel-2: #1c1c24;
+  --line:    #2a2a34;
+  --cash:    #78e196;
+  --danger:  #ff5648;
+  --unlock:  #be82ff;
+  --accent:  #78a0ff;
+  --t1: #008db8; --t2: #22a56a; --t3: #ad8700; --t4: #c43922; --t5: #9f3dae;
+  --display: 'Anton', 'Arial Narrow', Impact, sans-serif;
+  --body:    'IBM Plex Sans', system-ui, sans-serif;
+  --mono:    'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); margin: 0; overflow: hidden; }
+
+#stage { position: relative; width: 100%; height: 100%; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; background: #06060a; }
+
+/* ── HUD ──────────────────────────────────────────────────────────────── */
+.hud { position: absolute; inset: 0; pointer-events: none; font-size: 14px; }
+.pane { position: absolute; background: var(--panel); border-radius: 10px; padding: 11px 13px; backdrop-filter: blur(3px); }
+
+.wallet { left: 14px; top: 14px; width: 206px; }
+.wallet .cash { font-size: 12.5px; color: var(--ink-dim); }
+.wallet .unbanked { font-size: 25px; font-weight: 700; color: var(--faint); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.wallet .unbanked.live { color: var(--cash); }
+.wallet .hint { font-size: 11.5px; color: var(--faint); }
+.wallet .hint.live { color: var(--danger); }
+
+.clock { left: 50%; top: 14px; transform: translateX(-50%); width: 168px; text-align: center; }
+.clock .phase { font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; color: var(--danger); }
+.clock .phase.day { color: var(--accent); }
+.clock .time { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+
+.awake { right: 14px; top: 14px; width: 190px; }
+.awake .label { font-size: 10px; letter-spacing: 0.1em; color: var(--faint); }
+.awake .stage { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.awake .segs { display: flex; gap: 4px; margin-top: 5px; }
+.awake .segs i { flex: 1; height: 6px; border-radius: 3px; background: var(--panel-2); }
+.awake .foot { font-size: 10.5px; color: var(--faint); margin-top: 5px; }
+
+.sleep { left: 50%; bottom: 18px; transform: translateX(-50%); width: min(360px, calc(100vw - 32px)); }
+.sleep .spot { font-size: 17px; font-weight: 700; }
+.sleep .rate { font-size: 13px; color: var(--cash); font-variant-numeric: tabular-nums; }
+.sleep .risk { font-size: 13px; color: var(--danger); font-variant-numeric: tabular-nums; }
+.sleep .bar { height: 5px; background: var(--panel-2); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.sleep .bar i { display: block; height: 100%; background: var(--danger); border-radius: 3px; }
+.sleep .foot { font-size: 11px; color: var(--faint); margin-top: 5px; }
+
+.toasts { position: absolute; left: 14px; bottom: 14px; width: min(320px, 70vw); display: flex; flex-direction: column; gap: 6px; }
+.toast { background: var(--panel); border-radius: 8px; padding: 8px 10px; font-size: 13px; animation: pop .18s ease-out; }
+.toast.cash { color: var(--cash); } .toast.danger { color: var(--danger); }
+.toast.unlock { color: var(--unlock); } .toast.info { color: var(--ink); }
+@keyframes pop { from { opacity: 0; transform: translateY(6px); } }
+
+.prompt {
+  position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%);
+  background: var(--panel); border-radius: 8px; padding: 8px 14px; font-size: 13.5px;
+  white-space: nowrap;
+}
+.prompt b { color: var(--accent); font-family: var(--mono); }
+
+/* alerte */
+.alert-tint { position: absolute; inset: 0; background: var(--danger); opacity: 0; transition: opacity .12s; }
+.shout {
+  position: absolute; left: 50%; top: 24%; transform: translateX(-50%);
+  font-family: var(--display); font-size: clamp(26px, 5.6vw, 52px); color: #fff;
+  text-shadow: 0 0 18px rgba(0,0,0,.9); white-space: nowrap; letter-spacing: .02em;
+}
+
+/* ── panneaux ─────────────────────────────────────────────────────────── */
+.sheet {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(4,4,7,.82); pointer-events: auto; padding: 20px; overflow-y: auto;
+}
+.card {
+  background: #101016; border: 1px solid var(--line); border-radius: 14px;
+  padding: clamp(18px, 4vw, 30px); width: min(560px, 100%);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.card h1 { font-family: var(--display); font-size: clamp(38px, 10vw, 64px); line-height: .9; margin: 0; letter-spacing: .01em; }
+.card h1 em { font-style: normal; color: var(--danger); }
+.card h2 { font-family: var(--display); font-size: 24px; margin: 0; line-height: 1; }
+.card p { margin: 0; color: var(--ink-dim); font-size: 14.5px; line-height: 1.6; }
+.card .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13.5px; align-items: baseline; }
+.card .keys b { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+.card .keys span { color: var(--ink-dim); }
+
+button {
+  font-family: var(--body); font-size: 15px; font-weight: 600; cursor: pointer;
+  background: var(--ink); color: #0a0a0e; border: 0; border-radius: 9px; padding: 13px 18px;
+}
+button.ghost { background: var(--panel-2); color: var(--ink); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* boutique */
+.shop-list { display: flex; flex-direction: column; gap: 8px; max-height: min(46vh, 340px); overflow-y: auto; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; background: var(--panel-2); border-radius: 9px; padding: 11px 13px; }
+.item .n { font-weight: 600; font-size: 14px; }
+.item .d { font-size: 12.5px; color: var(--ink-dim); }
+.item .lvl { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.item button { padding: 9px 13px; font-size: 13px; font-family: var(--mono); min-width: 92px; }
+
+/* fiche créature */
+.beast-card .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--faint); }
+.beast-card .n { font-family: var(--display); font-size: clamp(30px, 7vw, 46px); line-height: 1; }
+.beast-card .tag { font-size: 15px; font-style: italic; color: var(--ink); }
+.beast-card .c { font-size: 15px; font-weight: 600; color: var(--cash); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+.stat { background: var(--panel-2); border-radius: 9px; padding: 11px; }
+.stat .t { font-family: var(--mono); font-size: 9.5px; letter-spacing: .09em; color: var(--faint); }
+.stat .v { font-family: var(--mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ── commandes tactiles ───────────────────────────────────────────────── */
+.touch { position: absolute; inset: 0; pointer-events: none; display: none; }
+.touch.on { display: block; }
+.stick {
+  position: absolute; left: 20px; bottom: 20px; width: 128px; height: 128px;
+  border-radius: 50%; background: rgba(255,255,255,.05); border: 1px solid var(--line);
+  pointer-events: auto;
+}
+.stick i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(255,255,255,.17); }
+.tbtns { position: absolute; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+.tbtns button { width: 78px; height: 56px; font-family: var(--mono); font-size: 13px; background: var(--panel-2); color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+
+  <div class="hud" id="hud" hidden>
+    <div class="pane wallet">
+      <div class="cash">En banque&nbsp; <span id="w-cash">0 $</span></div>
+      <div class="unbanked" id="w-unbanked">0 $</div>
+      <div class="hint" id="w-hint">sur toi</div>
+    </div>
+    <div class="pane clock">
+      <div class="phase" id="c-phase">JOUR</div>
+      <div class="time" id="c-time">0:25</div>
+    </div>
+    <div class="pane awake">
+      <div class="label">ÉVEIL DE LA MAISON</div>
+      <div class="stage" id="a-stage">CALME</div>
+      <div class="segs" id="a-segs"><i></i><i></i><i></i><i></i></div>
+      <div class="foot" id="a-foot">dormir profond la réveille</div>
+    </div>
+    <div class="pane sleep" id="sleep" hidden>
+      <div class="spot" id="s-spot">—</div>
+      <div class="rate" id="s-rate">—</div>
+      <div class="risk" id="s-risk">—</div>
+      <div class="bar"><i id="s-bar"></i></div>
+      <div class="foot" id="s-foot">Espace pour te réveiller</div>
+    </div>
+    <div class="prompt" id="prompt" hidden></div>
+    <div class="toasts" id="toasts"></div>
+    <div class="alert-tint" id="tint"></div>
+    <div class="shout" id="shout" hidden></div>
+  </div>
+
+  <div class="touch" id="touch">
+    <div class="stick" id="stick"><i id="knob"></i></div>
+    <div class="tbtns">
+      <button type="button" id="tb-e">E</button>
+      <button type="button" id="tb-space">RÉVEIL</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+"use strict";
+// ═════════════════════════════════════════════════════════════════════════
+// DEAD TIRED — prototype jouable
+//
+// Les chiffres d'économie (gains, risques, tirage à 6 s, nuit de 180 s) et les
+// vitesses des créatures sont EXACTEMENT ceux du jeu Roblox. Les distances de
+// vision ont été retouchées pour la vue de dessus : 110 studs de brouillard
+// n'ont pas le même sens en 2D qu'en 3D.
+// ═════════════════════════════════════════════════════════════════════════
+
+// ─── réglages ──────────────────────────────────────────────────────────────
+const TICK_RISK = 6, NIGHT = 180, DAWN = 25, WARNING_LEAD = 4.5;
+const PLAYER_SPEED = 16;          // studs/s, comme dans le jeu
+const TILE = 5;                   // studs par case
+const UNBANKED_LOSS = 1.0;
+
+const TIERS = {
+  1: { name: "Dortoir",            rate: 1,  p: 0.000, unlock: 0,     color: "#008db8", risk: "Aucun risque" },
+  2: { name: "Couloir de service", rate: 3,  p: 0.015, unlock: 0,     color: "#22a56a", risk: "Faible" },
+  3: { name: "Cave",               rate: 8,  p: 0.045, unlock: 2500,  color: "#ad8700", risk: "Élevé" },
+  4: { name: "Chambre froide",     rate: 18, p: 0.100, unlock: 12000, color: "#c43922", risk: "Très élevé" },
+  5: { name: "Le Nid",             rate: 45, p: 0.220, unlock: 40000, color: "#9f3dae", risk: "Suicidaire" },
+};
+
+const BEASTS = {
+  2: { id: "watchman", name: "LE VEILLEUR", speed: 11, catch: 5.5, sight: 42, timeout: 24,
+       tag: "Il fait sa ronde. Il n'est pas pressé.",
+       counter: "Casse sa ligne de vue trois secondes et il te perd.",
+       losesTrack: 3, lantern: true, color: "#22a56a", eye: "#ffc45c", r: 2.6 },
+  3: { id: "crawler", name: "LA RAMPANTE", speed: 18, catch: 5, sight: 30, timeout: 30,
+       tag: "Elle n'a pas d'yeux. Elle n'en a pas besoin.",
+       counter: "Elle ne suit que le mouvement. Arrête-toi net et deviens invisible.",
+       blind: 1.1, color: "#ad8700", eye: "#ffffff", r: 2.2 },
+  4: { id: "mimic", name: "LE MIME", speed: 13, catch: 6, sight: 38, timeout: 34,
+       tag: "Il y avait un lit de plus que la veille.",
+       counter: "Garde-le dans ton champ de vision : regardé, il ne peut pas sauter.",
+       teleports: 6, color: "#c43922", eye: "#78ffb4", r: 2.8 },
+  5: { id: "starved", name: "L'AFFAMÉ", speed: 15, catch: 6.5, sight: 70, timeout: 1e9,
+       tag: "Tu dors dans sa chambre.",
+       counter: "Aucune. Cours, et compte tes secondes.",
+       relentless: true, color: "#9f3dae", eye: "#ff2a24", r: 3.6 },
+};
+
+const STAGES = [
+  { name: "CALME",   speed: 1.00, sight: 1.00, size: 1.00, vision: 46, color: "#22a56a" },
+  { name: "AGITÉ",   speed: 1.08, sight: 1.25, size: 1.06, vision: 40, color: "#ad8700" },
+  { name: "ÉVEILLÉ", speed: 1.16, sight: 1.60, size: 1.14, vision: 34, color: "#c43922" },
+  { name: "AFFAMÉ",  speed: 1.24, sight: 2.00, size: 1.24, vision: 27, color: "#9f3dae" },
+];
+const THRESHOLDS = [0, 14, 34, 64];
+
+const SHOP = [
+  { id: "earplugs", name: "Bouchons d'oreille", desc: "−15 % de chance d'être repéré par niveau.",
+    price: 400, growth: 2.1, max: 4 },
+  { id: "alarm", name: "Réveil à vibration", desc: "+1,2 s de fenêtre de fuite par niveau.",
+    price: 650, growth: 2.3, max: 3 },
+  { id: "blanket", name: "Couverture lestée", desc: "+12 % de gains par niveau.",
+    price: 900, growth: 2.4, max: 5 },
+  { id: "shoes", name: "Baskets de contrebande", desc: "+2 de vitesse par niveau.",
+    price: 750, growth: 2.2, max: 4 },
+  { id: "medkit", name: "Trousse de secours", desc: "Te relève une fois. Consommée à l'usage.",
+    price: 1200, growth: 1, max: 3 },
+];
+
+// ─── état ──────────────────────────────────────────────────────────────────
+const G = {
+  running: false, phase: "dawn", phaseLeft: DAWN, night: 0,
+  cash: 0, unbanked: 0, totalBanked: 0, nights: 0, deepest: 1,
+  items: {}, awaken: 0, stage: 0,
+  player: { x: 0, y: 0, vx: 0, vy: 0, face: 0, moving: false, dead: 0 },
+  sleeping: null, nextRoll: 0, earnedHere: 0,
+  beasts: [], seen: {}, toasts: [], shoutUntil: 0, shoutText: "",
+  nearest: null, time: 0,
+};
+
+const SAVE_KEY = "deadtired.v1";
+function save() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      cash: G.cash, totalBanked: G.totalBanked, nights: G.nights,
+      deepest: G.deepest, items: G.items, seen: G.seen,
+    }));
+  } catch (e) { /* navigation privée, données bloquées : on joue sans sauvegarde */ }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    G.cash = d.cash || 0; G.totalBanked = d.totalBanked || 0;
+    G.nights = d.nights || 0; G.deepest = d.deepest || 1;
+    G.items = d.items || {}; G.seen = d.seen || {};
+  } catch (e) { /* sauvegarde illisible : on repart de zéro */ }
+}
+
+// ─── carte ─────────────────────────────────────────────────────────────────
+// 0 = mur, 1 = sol. Tout est construit en code : rien à dessiner à la main.
+const MW = 78, MH = 62;
+let grid = [];
+const beds = [], patrol = [];
+let vault = null, shop = null, spawn = null;
+
+function carve(x0, y0, w, h) {
+  for (let y = y0; y < y0 + h; y++) {
+    for (let x = x0; x < x0 + w; x++) {
+      if (x > 0 && y > 0 && x < MW - 1 && y < MH - 1) grid[y][x] = 1;
+    }
+  }
+}
+function corridor(ax, ay, bx, by, w) {
+  // En L : horizontal puis vertical. Simple et toujours connecté.
+  const half = Math.floor(w / 2);
+  const x0 = Math.min(ax, bx), x1 = Math.max(ax, bx);
+  for (let x = x0; x <= x1; x++) carve(x, ay - half, 1, w);
+  const y0 = Math.min(ay, by), y1 = Math.max(ay, by);
+  for (let y = y0; y <= y1; y++) carve(bx - half, y, w, 1);
+}
+const center = (r) => ({ x: (r.x + r.w / 2) * TILE, y: (r.y + r.h / 2) * TILE });
+
+function buildMap() {
+  grid = Array.from({ length: MH }, () => new Array(MW).fill(0));
+  beds.length = 0; patrol.length = 0;
+
+  const lobby = { x: 31, y: 26, w: 16, h: 12 };
+  carve(lobby.x, lobby.y, lobby.w, lobby.h);
+  const lc = center(lobby);
+  spawn = { x: lc.x, y: lc.y + 14 };
+  vault = { x: (lobby.x + 2) * TILE, y: lc.y, r: 5 };
+  shop  = { x: (lobby.x + lobby.w - 2) * TILE, y: lc.y, r: 5 };
+
+  // Plus le palier paie, plus sa salle est LOIN du coffre : le trajet de retour
+  // avec l'argent sur soi fait partie du risque. L'ordre des distances est
+  // vérifié par un test, pas supposé.
+  const rooms = {
+    1: { x: 22, y: 27, w: 8,  h: 8  },
+    2: { x: 49, y: 26, w: 9,  h: 9  },
+    3: { x: 33, y: 4,  w: 13, h: 9  },
+    4: { x: 6,  y: 45, w: 13, h: 10 },
+    5: { x: 59, y: 47, w: 14, h: 11 },
+  };
+  for (const t in rooms) {
+    const r = rooms[t];
+    carve(r.x, r.y, r.w, r.h);
+    const c = center(r);
+    corridor(Math.floor(lc.x / TILE), Math.floor(lc.y / TILE), Math.floor(c.x / TILE), Math.floor(c.y / TILE), 3);
+    beds.push({ tier: +t, x: c.x, y: c.y, w: 9, h: 12, occupied: false });
+    // Deux points de ronde par salle : les créatures y apparaissent quand elles
+    // viennent chercher un dormeur, donc il en faut assez pour que la distance
+    // « fenêtre de fuite × vitesse » soit atteignable partout.
+    patrol.push({ x: c.x, y: c.y + r.h * TILE * 0.32 });
+    patrol.push({ x: c.x - r.w * TILE * 0.3, y: c.y - r.h * TILE * 0.28 });
+  }
+  // Points de ronde le long des couloirs et dans le hall : ils densifient la
+  // carte pour que l'apparition tombe juste.
+  patrol.push({ x: lc.x, y: lc.y });
+  for (const b of beds) {
+    patrol.push({ x: (b.x + lc.x) / 2, y: lc.y });
+    patrol.push({ x: b.x, y: (b.y + lc.y) / 2 });
+  }
+  // On ne garde que ceux qui sont sur du sol, et on retire les doublons : deux
+  // points dans la même case ne servent à rien et faussent le choix du point
+  // d'apparition.
+  for (let i = patrol.length - 1; i >= 0; i--) {
+    const p = patrol[i];
+    const bad = solid(p.x, p.y)
+      || patrol.some((q, j) => j < i && Math.hypot(q.x - p.x, q.y - p.y) < TILE);
+    if (bad) patrol.splice(i, 1);
+  }
+}
+
+const solid = (x, y) => {
+  const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
+  return tx < 0 || ty < 0 || tx >= MW || ty >= MH || grid[ty][tx] === 0;
+};
+
+// Ligne de vue : DDA sur la grille. Deux créatures sur quatre en dépendent.
+function los(ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 0.01) return true;
+  const steps = Math.ceil(dist / (TILE * 0.4));
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    if (solid(ax + dx * t, ay + dy * t)) return false;
+  }
+  return true;
+}
+
+// Chemin : BFS sur la grille, recalculé toutes les 0,4 s par créature.
+function findPath(from, to) {
+  const sx = Math.floor(from.x / TILE), sy = Math.floor(from.y / TILE);
+  const gx = Math.floor(to.x / TILE), gy = Math.floor(to.y / TILE);
+  if (sx === gx && sy === gy) return [];
+  if (gx < 0 || gy < 0 || gx >= MW || gy >= MH || grid[gy][gx] === 0) return [];
+
+  const prev = new Int32Array(MW * MH).fill(-1);
+  const seen = new Uint8Array(MW * MH);
+  const q = [sy * MW + sx];
+  seen[sy * MW + sx] = 1;
+  let head = 0;
+  const goal = gy * MW + gx;
+
+  while (head < q.length) {
+    const cur = q[head++];
+    if (cur === goal) break;
+    const cx = cur % MW, cy = (cur - cx) / MW;
+    for (const [ox, oy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = cx + ox, ny = cy + oy;
+      if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue;
+      const ni = ny * MW + nx;
+      if (seen[ni] || grid[ny][nx] === 0) continue;
+      seen[ni] = 1; prev[ni] = cur; q.push(ni);
+    }
+  }
+  if (!seen[goal]) return [];
+
+  const path = [];
+  let cur = goal;
+  while (cur !== -1 && cur !== sy * MW + sx) {
+    const cx = cur % MW, cy = (cur - cx) / MW;
+    path.push({ x: (cx + 0.5) * TILE, y: (cy + 0.5) * TILE });
+    cur = prev[cur];
+  }
+  return path.reverse();
+}
+
+// ─── modificateurs d'équipement ────────────────────────────────────────────
+const lvl = (id) => G.items[id] || 0;
+const mods = () => ({
+  earn: 1 + 0.12 * lvl("blanket"),
+  detect: Math.max(0.2, 1 - 0.15 * lvl("earplugs")),
+  warning: 1.2 * lvl("alarm"),
+  speed: PLAYER_SPEED + 2 * lvl("shoes"),
+});
+const priceOf = (it) => Math.floor(it.price * Math.pow(it.growth, lvl(it.id)));
+const maxTier = () => { let b = 1; for (const t in TIERS) if (G.totalBanked >= TIERS[t].unlock) b = Math.max(b, +t); return b; };
+
+// ─── interface ─────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const money = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[  ]/g, " ") + " $";
+const mmss = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+function toast(text, kind) {
+  G.toasts.push({ text, kind: kind || "info", until: G.time + 5 });
+  renderToasts();
+}
+function renderToasts() {
+  $("toasts").innerHTML = G.toasts.slice(-4)
+    .map(t => `<div class="toast ${t.kind}">${t.text}</div>`).join("");
+}
+
+function syncHud() {
+  $("w-cash").textContent = money(G.cash);
+  const u = $("w-unbanked");
+  u.textContent = money(G.unbanked);
+  u.classList.toggle("live", G.unbanked > 0);
+  const h = $("w-hint");
+  h.textContent = G.unbanked > 0 ? "sur toi — perdu s'il t'attrape" : "sur toi";
+  h.classList.toggle("live", G.unbanked > 0);
+
+  const ph = $("c-phase");
+  ph.textContent = G.phase === "night" ? "NUIT " + G.night : "JOUR";
+  ph.classList.toggle("day", G.phase !== "night");
+  $("c-time").textContent = mmss(G.phaseLeft);
+
+  const st = STAGES[G.stage];
+  $("a-stage").textContent = st.name;
+  $("a-stage").style.color = st.color;
+  const segs = $("a-segs").children;
+  for (let i = 0; i < segs.length; i++) {
+    segs[i].style.background = i <= G.stage ? st.color : "var(--panel-2)";
+  }
+  const next = THRESHOLDS[G.stage + 1];
+  $("a-foot").textContent = next === undefined
+    ? "maximum — il est dehors"
+    : `stade suivant dans ${Math.max(0, next - G.awaken)} pts`;
+
+  const sp = $("sleep");
+  if (G.sleeping) {
+    sp.hidden = false;
+    const t = TIERS[G.sleeping.tier], m = mods();
+    $("s-spot").textContent = t.name;
+    $("s-rate").textContent = `+${(t.rate * m.earn).toFixed(1).replace(".", ",")} $/s · ${money(G.earnedHere)} gagnés ici`;
+    const chance = t.p * m.detect * 100;
+    $("s-risk").textContent = chance <= 0
+      ? "aucun risque — mais ça ne paie rien"
+      : `risque ${chance.toFixed(1).replace(".", ",")} % à chaque tirage (toutes les ${TICK_RISK} s)`;
+    $("s-bar").style.width = Math.max(0, Math.min(1, (G.nextRoll - G.time) / TICK_RISK)) * 100 + "%";
+  } else sp.hidden = true;
+}
+
+// ─── panneaux ──────────────────────────────────────────────────────────────
+let sheetOpen = null;
+function closeSheet() { sheetOpen = null; $("sheet").innerHTML = ""; $("sheet").hidden = true; }
+function openSheet(kind, html) {
+  sheetOpen = kind;
+  $("sheet").hidden = false;
+  $("sheet").innerHTML = html;
+}
+
+function titleScreen() {
+  const best = G.totalBanked;
+  openSheet("title", `
+    <div class="card">
+      <h1>DEAD<br><em>TIRED</em></h1>
+      <p><strong>Tu es payé pour dormir.</strong> Plus la planque est dangereuse, plus
+      elle paie. L'argent gagné en dormant reste <em>sur toi</em> : si une créature
+      t'attrape, tu perds tout. Ramène-le au coffre avant le lever du jour.</p>
+      <div class="keys">
+        <b>ZQSD / WASD</b><span>se déplacer</span>
+        <b>souris</b><span>regarder — deux créatures y réagissent</span>
+        <b>E</b><span>dormir · déposer au coffre · ouvrir la boutique</span>
+        <b>Espace</b><span>se réveiller</span>
+        <b>Échap</b><span>pause</span>
+      </div>
+      ${best > 0 ? `<p style="color:var(--cash)">Reprise : ${money(G.cash)} en banque · ${money(best)} déposés à vie · ${G.nights} nuits survécues</p>` : ""}
+      <div class="row"><button type="button" id="btn-play">${best > 0 ? "Continuer" : "Commencer la nuit 1"}</button>
+      ${best > 0 ? '<button type="button" class="ghost" id="btn-reset">Repartir de zéro</button>' : ""}</div>
+    </div>`);
+  $("btn-play").onclick = () => { closeSheet(); startGame(); };
+  const r = $("btn-reset");
+  if (r) r.onclick = () => {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    G.cash = 0; G.totalBanked = 0; G.nights = 0; G.deepest = 1; G.items = {}; G.seen = {};
+    titleScreen();
+  };
+}
+
+function pauseScreen() {
+  G.running = false;
+  openSheet("pause", `
+    <div class="card">
+      <h2>Pause</h2>
+      <div class="stats">
+        <div class="stat"><div class="t">EN BANQUE</div><div class="v" style="color:var(--cash)">${money(G.cash)}</div></div>
+        <div class="stat"><div class="t">SUR TOI</div><div class="v">${money(G.unbanked)}</div></div>
+        <div class="stat"><div class="t">NUITS</div><div class="v">${G.nights}</div></div>
+        <div class="stat"><div class="t">PALIER MAX</div><div class="v">${maxTier()}</div></div>
+      </div>
+      <p>Paliers débloqués par le total déposé à vie : Cave à 2 500 $, Chambre froide
+      à 12 000 $, Le Nid à 40 000 $. Tu en as déposé ${money(G.totalBanked)}.</p>
+      <div class="row"><button type="button" id="btn-resume">Reprendre</button></div>
+    </div>`);
+  $("btn-resume").onclick = () => { closeSheet(); G.running = true; };
+}
+
+function shopScreen() {
+  G.running = false;
+  const rows = SHOP.map(it => {
+    const owned = lvl(it.id);
+    const maxed = owned >= it.max;
+    const price = priceOf(it);
+    const can = !maxed && G.cash >= price;
+    return `<div class="item">
+      <div><div class="n">${it.name}</div><div class="d">${it.desc}</div>
+      <div class="lvl">${it.id === "medkit" ? `stock ${owned}/${it.max}` : `niveau ${owned}/${it.max}`}</div></div>
+      <button type="button" data-buy="${it.id}" ${can ? "" : "disabled"}>${maxed ? "MAX" : money(price)}</button>
+    </div>`;
+  }).join("");
+  openSheet("shop", `
+    <div class="card">
+      <h2>Boutique</h2>
+      <p>${money(G.cash)} en banque. Les achats se paient avec l'argent <em>déposé</em>.</p>
+      <div class="shop-list">${rows}</div>
+      <div class="row"><button type="button" id="btn-close">Fermer</button></div>
+    </div>`);
+  $("btn-close").onclick = () => { closeSheet(); G.running = true; };
+  for (const b of document.querySelectorAll("[data-buy]")) {
+    b.onclick = () => {
+      const it = SHOP.find(i => i.id === b.dataset.buy);
+      const price = priceOf(it);
+      if (G.cash < price || lvl(it.id) >= it.max) return;
+      G.cash -= price;
+      G.items[it.id] = lvl(it.id) + 1;
+      save(); toast(`${it.name} acheté — ${money(price)}.`, "cash");
+      shopScreen();
+    };
+  }
+}
+
+function revealScreen(beast) {
+  G.running = false;
+  openSheet("reveal", `
+    <div class="card beast-card">
+      <div class="k">TU VIENS D'EN RÉVEILLER UN</div>
+      <div class="n" style="color:${beast.color}">${beast.name}</div>
+      <div class="tag">${beast.tag}</div>
+      <div class="k" style="margin-top:4px">COMMENT T'EN SORTIR</div>
+      <div class="c">${beast.counter}</div>
+      <div class="row"><button type="button" id="btn-go">J'ai compris — cours</button></div>
+    </div>`);
+  $("btn-go").onclick = () => { closeSheet(); G.running = true; };
+}
+
+// ─── cycle jour / nuit ─────────────────────────────────────────────────────
+function bank() {
+  if (G.unbanked <= 0) return 0;
+  const amount = Math.floor(G.unbanked);
+  G.cash += amount; G.totalBanked += amount; G.unbanked = 0;
+  save();
+  for (const t in TIERS) {
+    if (TIERS[t].unlock > 0 && G.totalBanked >= TIERS[t].unlock && !G.seen["unlock" + t]) {
+      G.seen["unlock" + t] = true;
+      toast(`${TIERS[t].name} débloquée.`, "unlock");
+    }
+  }
+  return amount;
+}
+
+function beginNight() {
+  G.night++; G.phase = "night"; G.phaseLeft = NIGHT;
+  G.awaken = 0; G.stage = 0;
+  G.beasts = [];
+  spawnPatroller();
+  toast(`Nuit ${G.night}. Va dormir — plus c'est moche, plus ça paie.`, "danger");
+}
+function beginDawn() {
+  G.phase = "dawn"; G.phaseLeft = DAWN;
+  if (G.sleeping) wake("dawn");
+  G.beasts = [];
+  const got = bank();
+  G.nights++; save();
+  toast(got > 0 ? `Le jour se lève. +${money(got)} déposés.` : "Le jour se lève.", got > 0 ? "cash" : "info");
+}
+
+function feedAwakening(tier) {
+  const gain = Math.max(0, tier - 1);
+  if (!gain) return;
+  G.awaken += gain;
+  let st = 0;
+  for (let i = 0; i < THRESHOLDS.length; i++) if (G.awaken >= THRESHOLDS[i]) st = i;
+  if (st !== G.stage) {
+    G.stage = st;
+    toast(`La maison se réveille — ${STAGES[st].name}.`, st >= 2 ? "danger" : "info");
+    if (st === 3) {
+      toast("Quelque chose est sorti du Nid.", "danger");
+      spawnBeast(BEASTS[5], null, true);
+    }
+  }
+}
+
+// ─── sommeil ───────────────────────────────────────────────────────────────
+function nearBed() {
+  for (const b of beds) {
+    if (Math.abs(G.player.x - b.x) < b.w && Math.abs(G.player.y - b.y) < b.h) return b;
+  }
+  return null;
+}
+function trySleep(bed) {
+  if (G.phase !== "night") { toast("C'est le jour. Dépose, achète, attends la nuit.", "info"); return; }
+  if (bed.tier > maxTier()) {
+    toast(`Il te faut ${money(TIERS[bed.tier].unlock)} déposés au total pour dormir ici.`, "info");
+    return;
+  }
+  G.sleeping = bed;
+  G.earnedHere = 0;
+  G.nextRoll = G.time + TICK_RISK;
+  G.player.x = bed.x; G.player.y = bed.y;
+  if (bed.tier > G.deepest) { G.deepest = bed.tier; save(); }
+}
+function wake(reason) {
+  if (!G.sleeping) return;
+  G.sleeping = null;
+  if (reason === "manual") toast(`Réveillé. ${money(G.unbanked)} sur toi — ramène-les au coffre.`, "info");
+}
+
+function rollRisk() {
+  const bed = G.sleeping;
+  const t = TIERS[bed.tier];
+  feedAwakening(bed.tier);
+  if (t.p <= 0) return;
+  if (Math.random() >= t.p * mods().detect) return;
+
+  const window = WARNING_LEAD + mods().warning;
+  const beast = BEASTS[bed.tier];
+  wake("alert");
+  G.shoutText = "IL ARRIVE — COURS";
+  G.shoutUntil = G.time + window;
+  toast("Un bruit. Il vient par ici — BOUGE.", "danger");
+  spawnBeast(beast, window);
+
+  if (!G.seen[beast.id]) { G.seen[beast.id] = true; save(); revealScreen(beast); }
+}
+
+// ─── créatures ─────────────────────────────────────────────────────────────
+function statsOf(beast) {
+  const st = STAGES[G.stage];
+  return {
+    speed: beast.speed * st.speed,
+    sight: beast.sight * st.sight,
+    catch: beast.catch + G.stage * 0.5,
+    size: beast.r * st.size,
+  };
+}
+
+function spawnPatroller() {
+  spawnBeast(BEASTS[2], null, true);
+}
+
+function spawnBeast(beast, window, patrolMode) {
+  // Une seule instance par créature à la fois.
+  const existing = G.beasts.find(b => b.def.id === beast.id);
+  const inst = existing || { def: beast };
+  if (!existing) G.beasts.push(inst);
+
+  let at;
+  if (window) {
+    // Apparition à « fenêtre × vitesse » studs : le danger est réel mais la
+    // fuite reste possible, et le joueur la voit arriver.
+    const want = Math.max(22, window * statsOf(beast).speed);
+    let best = patrol[0], bestErr = Infinity;
+    for (const p of patrol) {
+      const d = Math.hypot(p.x - G.player.x, p.y - G.player.y);
+      if (d > 14 && Math.abs(d - want) < bestErr) { bestErr = Math.abs(d - want); best = p; }
+    }
+    at = best;
+  } else {
+    at = patrol[Math.floor(Math.random() * patrol.length)];
+  }
+
+  inst.x = at.x; inst.y = at.y;
+  inst.mode = patrolMode ? "patrol" : "hunt";
+  inst.lastKnown = { x: G.player.x, y: G.player.y };
+  inst.path = []; inst.repathAt = 0;
+  inst.lostFor = 0; inst.stillFor = 0;
+  inst.nextTeleport = G.time + (beast.teleports || 1e9);
+  inst.endsAt = G.time + beast.timeout;
+  inst.patrolIndex = 0;
+  inst.walk = 0;
+}
+
+// Le joueur le regarde-t-il ? (Le Mime ne peut pas sauter sous le regard.)
+function observed(b) {
+  const dx = b.x - G.player.x, dy = b.y - G.player.y;
+  const d = Math.hypot(dx, dy);
+  if (d < 0.1) return true;
+  if (d > 110) return false;
+  const dot = (Math.cos(G.player.face) * dx + Math.sin(G.player.face) * dy) / d;
+  return dot > 0.35 && los(G.player.x, G.player.y, b.x, b.y);
+}
+
+function updateBeast(b, dt) {
+  const s = statsOf(b.def);
+  const d = Math.hypot(b.x - G.player.x, b.y - G.player.y);
+  const canSee = d <= s.sight && (b.def.blind ? true : los(b.x, b.y, G.player.x, G.player.y));
+
+  if (b.mode === "patrol") {
+    // En ronde : si elle te croise d'assez près, elle te prend en chasse.
+    const spots = b.def.blind ? G.player.moving : los(b.x, b.y, G.player.x, G.player.y);
+    if (d <= s.sight * 0.6 && spots) {
+      b.mode = "hunt"; b.endsAt = G.time + b.def.timeout;
+      b.lostFor = 0; b.stillFor = 0; b.path = []; b.repathAt = 0;
+      toast(`${b.def.name} t'a vu.`, "danger");
+      G.shoutText = "IL T'A VU"; G.shoutUntil = G.time + 1.6;
+      if (!G.seen[b.def.id]) { G.seen[b.def.id] = true; save(); revealScreen(b.def); }
+    }
+  }
+
+  if (b.mode === "hunt") {
+    // LA RAMPANTE : aveugle. Elle ne suit que le mouvement.
+    if (b.def.blind) {
+      if (!G.player.moving) {
+        b.stillFor += dt;
+        if (b.stillFor >= b.def.blind) {
+          b.mode = "search"; b.lastKnown = { x: G.player.x, y: G.player.y }; b.path = [];
+        }
+      } else b.stillFor = 0;
+    }
+    // LE VEILLEUR : perd la trace si on casse sa ligne de vue.
+    if (b.def.losesTrack && !b.def.relentless) {
+      if (canSee) b.lostFor = 0;
+      else {
+        b.lostFor += dt;
+        if (b.lostFor >= b.def.losesTrack) { b.mode = "search"; b.path = []; }
+      }
+    }
+    // LE MIME : se rapproche par sauts, seulement hors du regard.
+    if (b.def.teleports && G.time >= b.nextTeleport) {
+      if (!observed(b)) {
+        let best = null, bestD = d;
+        for (const p of patrol) {
+          const pd = Math.hypot(p.x - G.player.x, p.y - G.player.y);
+          if (pd < bestD && pd > 12) { bestD = pd; best = p; }
+        }
+        if (best) { b.x = best.x; b.y = best.y; b.path = []; b.repathAt = 0; }
+      }
+      b.nextTeleport = G.time + b.def.teleports;
+    }
+    if (canSee || b.def.relentless) b.lastKnown = { x: G.player.x, y: G.player.y };
+    if (!b.def.relentless && G.time >= b.endsAt) {
+      b.mode = "search"; b.path = [];
+      toast("Il a lâché la piste.", "info");
+    }
+  }
+
+  if (b.mode === "search") {
+    const toLast = b.lastKnown ? Math.hypot(b.x - b.lastKnown.x, b.y - b.lastKnown.y) : 0;
+    if (!b.lastKnown || toLast < 6) {
+      b.mode = (b.def.id === "watchman" || b.def.relentless) ? "patrol" : "gone";
+      b.path = [];
+    }
+  }
+  if (b.mode === "gone") {
+    const i = G.beasts.indexOf(b);
+    if (i >= 0) G.beasts.splice(i, 1);
+    return;
+  }
+
+  // Cible du déplacement
+  let target = null;
+  if (b.mode === "hunt") target = b.lastKnown || { x: G.player.x, y: G.player.y };
+  else if (b.mode === "search") target = b.lastKnown;
+  else {
+    if (!b.patrolTarget || Math.hypot(b.x - b.patrolTarget.x, b.y - b.patrolTarget.y) < 6) {
+      b.patrolIndex = (b.patrolIndex + 1) % patrol.length;
+      b.patrolTarget = patrol[b.patrolIndex];
+      b.path = []; b.repathAt = 0;
+    }
+    target = b.patrolTarget;
+  }
+
+  if (target && G.time >= b.repathAt) {
+    b.repathAt = G.time + 0.4;
+    b.path = findPath(b, target);
+  }
+
+  const speed = b.mode === "patrol" ? s.speed * 0.6 : s.speed;
+  let node = b.path[0];
+  while (node && Math.hypot(node.x - b.x, node.y - b.y) < TILE * 0.5) { b.path.shift(); node = b.path[0]; }
+  if (node) {
+    const dx = node.x - b.x, dy = node.y - b.y;
+    const len = Math.hypot(dx, dy) || 1;
+    b.x += dx / len * speed * dt;
+    b.y += dy / len * speed * dt;
+    b.walk += dt * speed * 0.3;
+    b.angle = Math.atan2(dy, dx);
+  }
+
+  // Capture
+  if (d <= s.catch) caught(b);
+}
+
+function caught(b) {
+  if (G.player.dead > 0) return;
+  wake("caught");
+  const lost = Math.floor(G.unbanked * UNBANKED_LOSS);
+
+  if (lvl("medkit") > 0) {
+    G.items.medkit = lvl("medkit") - 1;
+    G.unbanked = Math.floor(lost * 0.5);
+    save();
+    toast(`${b.def.name} t'a eu. Trousse de secours utilisée — tu gardes ${money(G.unbanked)}.`, "cash");
+  } else {
+    G.unbanked = 0;
+    toast(`${b.def.name} t'a eu. −${money(lost)}.`, "danger");
+  }
+
+  G.player.dead = 2.2;
+  G.shoutText = "IL T'A EU"; G.shoutUntil = G.time + 2.2;
+  // La créature retourne en ronde : pas d'acharnement sur un joueur au sol.
+  b.mode = (b.def.id === "watchman" || b.def.relentless) ? "patrol" : "gone";
+  b.path = [];
+}
+
+// ─── entrées ───────────────────────────────────────────────────────────────
+const keys = {};
+let mouse = { x: 0, y: 0, has: false };
+let touchVec = { x: 0, y: 0, active: false };
+
+addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === " ") { e.preventDefault(); if (G.sleeping) wake("manual"); }
+  if (k === "e") { e.preventDefault(); interact(); }
+  if (k === "escape") {
+    if (sheetOpen === "pause") { closeSheet(); G.running = true; }
+    else if (sheetOpen) { closeSheet(); G.running = true; }
+    else if (G.running) pauseScreen();
+  }
+});
+addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+const cv = $("cv");
+cv.addEventListener("mousemove", (e) => {
+  const r = cv.getBoundingClientRect();
+  mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.has = true;
+});
+
+function interact() {
+  if (sheetOpen) return;
+  if (G.sleeping) return;
+  if (G.player.dead > 0) return;
+  if (Math.hypot(G.player.x - vault.x, G.player.y - vault.y) < 11) {
+    const got = bank();
+    toast(got > 0 ? `+${money(got)} déposés. C'est à toi pour de bon.` : "Tu n'as rien sur toi.",
+      got > 0 ? "cash" : "info");
+    return;
+  }
+  if (Math.hypot(G.player.x - shop.x, G.player.y - shop.y) < 11) { shopScreen(); return; }
+  const bed = nearBed();
+  if (bed) trySleep(bed);
+}
+
+// commandes tactiles
+const isTouch = matchMedia("(hover: none) and (pointer: coarse)").matches;
+if (isTouch) {
+  $("touch").classList.add("on");
+  const stick = $("stick"), knob = $("knob");
+  let origin = null;
+  const start = (e) => {
+    const t = e.touches ? e.touches[0] : e;
+    const r = stick.getBoundingClientRect();
+    origin = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    move(e);
+  };
+  const move = (e) => {
+    if (!origin) return;
+    e.preventDefault();
+    const t = e.touches ? e.touches[0] : e;
+    let dx = t.clientX - origin.x, dy = t.clientY - origin.y;
+    const len = Math.hypot(dx, dy), max = 48;
+    if (len > max) { dx = dx / len * max; dy = dy / len * max; }
+    knob.style.transform = `translate(${dx}px,${dy}px)`;
+    touchVec = { x: dx / max, y: dy / max, active: len > 6 };
+  };
+  const end = () => { origin = null; knob.style.transform = ""; touchVec = { x: 0, y: 0, active: false }; };
+  stick.addEventListener("touchstart", start, { passive: false });
+  stick.addEventListener("touchmove", move, { passive: false });
+  stick.addEventListener("touchend", end);
+  stick.addEventListener("touchcancel", end);
+  $("tb-e").onclick = interact;
+  $("tb-space").onclick = () => { if (G.sleeping) wake("manual"); };
+}
+
+// ─── boucle ────────────────────────────────────────────────────────────────
+function startGame() {
+  buildMap();
+  G.player.x = spawn.x; G.player.y = spawn.y;
+  G.player.dead = 0;
+  G.phase = "dawn"; G.phaseLeft = 6; G.night = 0;
+  G.unbanked = 0; G.beasts = []; G.sleeping = null;
+  G.awaken = 0; G.stage = 0; G.toasts = [];
+  $("hud").hidden = false;
+  G.running = true;
+  toast("Trouve une planque. E pour dormir.", "info");
+}
+
+function movePlayer(dt) {
+  const m = mods();
+  let ix = 0, iy = 0;
+  if (keys["w"] || keys["z"] || keys["arrowup"]) iy -= 1;
+  if (keys["s"] || keys["arrowdown"]) iy += 1;
+  if (keys["a"] || keys["q"] || keys["arrowleft"]) ix -= 1;
+  if (keys["d"] || keys["arrowright"]) ix += 1;
+  if (touchVec.active) { ix = touchVec.x; iy = touchVec.y; }
+
+  const len = Math.hypot(ix, iy);
+  G.player.moving = len > 0.08 && !G.sleeping && G.player.dead <= 0;
+  if (!G.player.moving) return;
+
+  ix /= len; iy /= len;
+  const step = m.speed * dt;
+  // Glissement le long des murs : on teste chaque axe séparément.
+  if (!solid(G.player.x + ix * step, G.player.y)) G.player.x += ix * step;
+  if (!solid(G.player.x, G.player.y + iy * step)) G.player.y += iy * step;
+  if (!mouse.has && !isTouch) G.player.face = Math.atan2(iy, ix);
+  if (isTouch) G.player.face = Math.atan2(iy, ix);
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  if (G.running) {
+    G.time += dt;
+
+    if (G.player.dead > 0) {
+      G.player.dead -= dt;
+      if (G.player.dead <= 0) { G.player.x = spawn.x; G.player.y = spawn.y; }
+    }
+
+    movePlayer(dt);
+
+    if (mouse.has && !isTouch) {
+      const cx = cv.clientWidth / 2, cy = cv.clientHeight / 2;
+      G.player.face = Math.atan2(mouse.y - cy, mouse.x - cx);
+    }
+
+    // Sommeil : gains et tirages
+    if (G.sleeping) {
+      const t = TIERS[G.sleeping.tier];
+      const gain = t.rate * mods().earn * dt;
+      G.unbanked += gain; G.earnedHere += gain;
+      if (G.time >= G.nextRoll) { G.nextRoll = G.time + TICK_RISK; rollRisk(); }
+    }
+
+    for (const b of G.beasts.slice()) updateBeast(b, dt);
+
+    // Cycle
+    G.phaseLeft -= dt;
+    if (G.phaseLeft <= 0) { if (G.phase === "night") beginDawn(); else beginNight(); }
+
+    G.toasts = G.toasts.filter(t => t.until > G.time);
+    if (G.toasts.length !== +($("toasts").dataset.n || -1)) {
+      $("toasts").dataset.n = G.toasts.length; renderToasts();
+    }
+    syncHud();
+
+    const sh = $("shout");
+    if (G.time < G.shoutUntil) {
+      sh.hidden = false;
+      const left = G.shoutUntil - G.time;
+      sh.textContent = G.shoutText + (G.shoutText === "IL ARRIVE — COURS" ? "  " + left.toFixed(1).replace(".", ",") + " s" : "");
+      $("tint").style.opacity = String(0.1 + 0.08 * Math.abs(Math.sin(G.time * 7)));
+    } else { sh.hidden = true; $("tint").style.opacity = "0"; }
+
+    $("prompt").hidden = !updatePrompt();
+  }
+
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function updatePrompt() {
+  if (G.sleeping || G.player.dead > 0) return false;
+  const p = $("prompt");
+  if (Math.hypot(G.player.x - vault.x, G.player.y - vault.y) < 11) {
+    p.innerHTML = `<b>E</b> déposer ${money(G.unbanked)} au coffre`; return true;
+  }
+  if (Math.hypot(G.player.x - shop.x, G.player.y - shop.y) < 11) {
+    p.innerHTML = `<b>E</b> ouvrir la boutique`; return true;
+  }
+  const bed = nearBed();
+  if (bed) {
+    const t = TIERS[bed.tier];
+    const locked = bed.tier > maxTier();
+    p.innerHTML = locked
+      ? `🔒 ${t.name} — ${money(t.unlock)} déposés requis`
+      : `<b>E</b> dormir · ${t.name} · ${t.rate} $/s · ${t.risk.toLowerCase()}`;
+    return true;
+  }
+  return false;
+}
+
+// ─── rendu ─────────────────────────────────────────────────────────────────
+const ctx = cv.getContext("2d");
+let DPR = 1;
+function resize() {
+  DPR = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.floor(cv.clientWidth * DPR);
+  cv.height = Math.floor(cv.clientHeight * DPR);
+}
+addEventListener("resize", resize);
+
+function draw() {
+  const W = cv.width, H = cv.height;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "#06060a";
+  ctx.fillRect(0, 0, W, H);
+  if (!grid.length) return;
+
+  const zoom = Math.max(4.2, Math.min(7.6, Math.min(W, H) / (DPR * 120))) * DPR;
+  const camX = G.player.x, camY = G.player.y;
+  ctx.setTransform(zoom, 0, 0, zoom, W / 2 - camX * zoom, H / 2 - camY * zoom);
+
+  const vision = STAGES[G.stage].vision;
+  const viewR = Math.max(W, H) / zoom;
+
+  // Sol et murs
+  const x0 = Math.max(0, Math.floor((camX - viewR) / TILE)), x1 = Math.min(MW - 1, Math.ceil((camX + viewR) / TILE));
+  const y0 = Math.max(0, Math.floor((camY - viewR) / TILE)), y1 = Math.min(MH - 1, Math.ceil((camY + viewR) / TILE));
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      if (grid[ty][tx] === 1) {
+        ctx.fillStyle = "#15151d";
+        ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
+      }
+    }
+  }
+  ctx.strokeStyle = "#23232e";
+  ctx.lineWidth = 0.7;
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      if (grid[ty][tx] === 1) {
+        if (ty > 0 && grid[ty - 1][tx] === 0) { ctx.beginPath(); ctx.moveTo(tx * TILE, ty * TILE); ctx.lineTo(tx * TILE + TILE, ty * TILE); ctx.stroke(); }
+        if (ty < MH - 1 && grid[ty + 1][tx] === 0) { ctx.beginPath(); ctx.moveTo(tx * TILE, (ty + 1) * TILE); ctx.lineTo(tx * TILE + TILE, (ty + 1) * TILE); ctx.stroke(); }
+        if (tx > 0 && grid[ty][tx - 1] === 0) { ctx.beginPath(); ctx.moveTo(tx * TILE, ty * TILE); ctx.lineTo(tx * TILE, (ty + 1) * TILE); ctx.stroke(); }
+        if (tx < MW - 1 && grid[ty][tx + 1] === 0) { ctx.beginPath(); ctx.moveTo((tx + 1) * TILE, ty * TILE); ctx.lineTo((tx + 1) * TILE, (ty + 1) * TILE); ctx.stroke(); }
+      }
+    }
+  }
+
+  // Coffre et boutique
+  const marker = (o, color, label) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(o.x - 4, o.y - 5, 8, 10);
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.font = "600 4px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(label, o.x, o.y - 7.5);
+  };
+  marker(vault, "#2f6b45", "COFFRE");
+  marker(shop, "#3a4470", "BOUTIQUE");
+
+  // Lits
+  for (const b of beds) {
+    const t = TIERS[b.tier];
+    const locked = b.tier > maxTier();
+    ctx.globalAlpha = locked ? 0.3 : 1;
+    ctx.fillStyle = t.color;
+    ctx.fillRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "rgba(255,255,255,.8)";
+    ctx.font = "600 3.4px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(locked ? "🔒 " + t.name : t.name + " · " + t.rate + " $/s", b.x, b.y - b.h / 2 - 2);
+  }
+
+  // Créatures : seulement si en ligne de vue et dans la portée de vision
+  for (const b of G.beasts) {
+    const d = Math.hypot(b.x - G.player.x, b.y - G.player.y);
+    const visible = d < vision * 1.25 && los(G.player.x, G.player.y, b.x, b.y);
+    const s = statsOf(b.def);
+
+    // La lanterne du Veilleur se voit même à travers l'obscurité : on le voit venir.
+    if (b.def.lantern) {
+      const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, 26);
+      g.addColorStop(0, "rgba(255,196,120,.30)");
+      g.addColorStop(1, "rgba(255,196,120,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(b.x, b.y, 26, 0, Math.PI * 2); ctx.fill();
+    }
+    if (!visible) continue;
+
+    const bob = Math.sin(b.walk || 0) * 0.6;
+    ctx.fillStyle = "#0c0c10";
+    ctx.beginPath(); ctx.ellipse(b.x, b.y + bob, s.size, s.size * 1.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = b.def.color; ctx.lineWidth = 0.6; ctx.stroke();
+    // Les yeux : la seule chose qui brille.
+    ctx.fillStyle = b.def.eye;
+    const ex = Math.cos(b.angle || 0) * s.size * 0.5, ey = Math.sin(b.angle || 0) * s.size * 0.5;
+    ctx.beginPath(); ctx.arc(b.x + ex - 0.7, b.y + ey + bob - s.size * 0.6, 0.55, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(b.x + ex + 0.7, b.y + ey + bob - s.size * 0.6, 0.55, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Joueur
+  if (G.player.dead <= 0) {
+    ctx.save();
+    ctx.translate(G.player.x, G.player.y);
+    // Cône de regard : rend lisible la règle du Mime.
+    ctx.rotate(G.player.face);
+    const cone = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
+    cone.addColorStop(0, "rgba(220,235,255,.10)");
+    cone.addColorStop(1, "rgba(220,235,255,0)");
+    ctx.fillStyle = cone;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 34, -0.62, 0.62); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = G.sleeping ? "#5a6f8a" : "#dfe6f2";
+    ctx.beginPath(); ctx.arc(G.player.x, G.player.y, 2.2, 0, Math.PI * 2); ctx.fill();
+    if (G.sleeping) {
+      ctx.strokeStyle = "rgba(120,225,150,.55)"; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.arc(G.player.x, G.player.y, 3.6 + Math.sin(G.time * 2) * 0.5, 0, Math.PI * 2); ctx.stroke();
+    }
+  } else {
+    ctx.fillStyle = "#6a2a2a";
+    ctx.beginPath(); ctx.arc(G.player.x, G.player.y, 2.6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Obscurité : un trou de lumière autour du joueur, resserré par l'éveil.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const px = W / 2, py = H / 2, rad = vision * zoom;
+  const dark = ctx.createRadialGradient(px, py, rad * 0.35, px, py, rad);
+  dark.addColorStop(0, "rgba(5,5,9,0)");
+  dark.addColorStop(0.75, "rgba(5,5,9,.80)");
+  dark.addColorStop(1, "rgba(5,5,9,.985)");
+  ctx.fillStyle = dark;
+  ctx.fillRect(0, 0, W, H);
+  // Les coins restent noirs même quand le gradient s'arrête.
+  ctx.fillStyle = "rgba(5,5,9,.985)";
+  if (rad < Math.hypot(W, H) / 2) {
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.arc(px, py, rad, 0, Math.PI * 2, true);
+    ctx.fill();
+  }
+}
+
+// ─── départ ────────────────────────────────────────────────────────────────
+load();
+buildMap();
+G.player.x = spawn.x; G.player.y = spawn.y;
+resize();
+titleScreen();
+requestAnimationFrame(frame);
+</script>
