@@ -1,0 +1,2269 @@
+<title>Sleep or Die</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Jeu plein écran, thème sombre assumé : c'est un jeu d'horreur. */
+:root {
+  color-scheme: dark;
+  --ink: #ecedf0; --dim: #8e8e99; --faint: #5c5c67;
+  --panel: rgba(16,16,22,.88); --panel2: #1c1c24; --line: #2a2a34;
+  --cash: #78e196; --danger: #ff5648; --unlock: #be82ff; --accent: #78a0ff;
+  --display: 'Anton','Arial Narrow',Impact,sans-serif;
+  --body: 'IBM Plex Sans',system-ui,sans-serif;
+  --mono: 'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: #05050a; color: var(--ink); font-family: var(--body); overflow: hidden; }
+#stage { position: relative; width: 100%; height: 100%; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.hud { position: absolute; inset: 0; pointer-events: none; font-size: 14px; }
+.pane { position: absolute; background: var(--panel); border-radius: 10px; padding: 11px 13px; }
+.wallet { left: 14px; top: 14px; width: 204px; }
+.wallet .cash { font-size: 12.5px; color: var(--dim); }
+.wallet .unb { font-size: 25px; font-weight: 700; color: var(--faint); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.wallet .unb.live { color: var(--cash); }
+.wallet .hint { font-size: 11.5px; color: var(--faint); }
+.wallet .hint.live { color: var(--danger); }
+.zonebar { left: 50%; top: 14px; transform: translateX(-50%); width: min(300px, calc(100vw - 230px)); text-align: center; }
+.zonebar .nm { font-size: 13px; font-weight: 700; letter-spacing: .07em; }
+.zonebar .rt { font-size: 19px; font-weight: 700; color: var(--cash); font-variant-numeric: tabular-nums; }
+.zonebar .pv { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; color: var(--danger); margin-top: 2px; }
+.awake { right: 14px; top: 14px; width: 188px; }
+.awake .lb { font-size: 10px; letter-spacing: .1em; color: var(--faint); }
+.awake .st { font-size: 18px; font-weight: 700; }
+.awake .sg { display: flex; gap: 4px; margin-top: 5px; }
+.awake .sg i { flex: 1; height: 6px; border-radius: 3px; background: var(--panel2); }
+.awake .ft { font-size: 10.5px; color: var(--faint); margin-top: 5px; }
+.sleep { left: 50%; bottom: 18px; transform: translateX(-50%); width: min(360px, calc(100vw - 32px)); }
+.sleep .sp { font-size: 17px; font-weight: 700; }
+.sleep .ra { font-size: 13px; color: var(--cash); font-variant-numeric: tabular-nums; }
+.sleep .ri { font-size: 13px; color: var(--danger); font-variant-numeric: tabular-nums; }
+.sleep .bar { height: 5px; background: var(--panel2); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.sleep .bar i { display: block; height: 100%; background: var(--danger); }
+.sleep .ft { font-size: 11px; color: var(--faint); margin-top: 5px; }
+.toasts { position: absolute; left: 14px; bottom: 14px; width: min(320px, 70vw); display: flex; flex-direction: column; gap: 6px; }
+.toast { background: var(--panel); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.toast.cash { color: var(--cash); } .toast.danger { color: var(--danger); }
+.toast.unlock { color: var(--unlock); } .toast.info { color: var(--ink); }
+.prompt { position: absolute; left: 50%; bottom: 152px; transform: translateX(-50%); background: var(--panel); border-radius: 8px; padding: 8px 14px; font-size: 13.5px; white-space: nowrap; }
+.prompt b { color: var(--accent); font-family: var(--mono); }
+.tint { position: absolute; inset: 0; background: var(--danger); opacity: 0; transition: opacity .12s; }
+/* Vignette : les bords s'assombrissent. C'est ce qui fait qu'on a l'impression
+   de regarder dans le noir au lieu de regarder un écran gris. */
+.vig { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 72% 62% at 50% 48%, transparent 38%, rgba(0,0,0,.62) 100%); }
+.vig.hot { background: radial-gradient(ellipse 74% 66% at 50% 48%, transparent 40%, rgba(26,0,0,.52) 100%); }
+.stam { position: absolute; left: 14px; top: 86px; width: 204px; height: 5px; border-radius: 3px;
+  background: rgba(16,16,22,.88); overflow: hidden; }
+.stam i { display: block; height: 100%; width: 100%; background: var(--accent); transition: width .08s linear; }
+.stam.low i { background: var(--danger); }
+.snd { position: absolute; right: 14px; bottom: 14px; font-size: 11px; color: var(--faint); font-family: var(--mono); }
+.shout { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); font-family: var(--display); font-size: clamp(26px,5.4vw,50px); color: #fff; text-shadow: 0 0 18px #000; white-space: nowrap; }
+.crosshair { position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; background: rgba(255,255,255,.4); }
+
+.sheet { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(4,4,7,.85); pointer-events: auto; padding: 20px; overflow-y: auto; }
+/* `display:grid` bat la règle [hidden]{display:none} du navigateur : sans
+   cette ligne, le voile noir du panneau reste devant le jeu en permanence
+   et avale les clics destinés au canvas. */
+.sheet[hidden] { display: none; }
+.card { background: #101016; border: 1px solid var(--line); border-radius: 14px; padding: clamp(18px,4vw,30px); width: min(560px,100%); display: flex; flex-direction: column; gap: 15px; }
+.card h1 { font-family: var(--display); font-size: clamp(36px,9vw,60px); line-height: .9; margin: 0; }
+.card h1 em { font-style: normal; color: var(--danger); }
+.card h2 { font-family: var(--display); font-size: 24px; margin: 0; }
+.card p { margin: 0; color: var(--dim); font-size: 14.5px; line-height: 1.6; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13.5px; align-items: baseline; }
+.keys b { font-family: var(--mono); color: var(--accent); }
+.keys span { color: var(--dim); }
+button { font-family: var(--body); font-size: 15px; font-weight: 600; cursor: pointer; background: var(--ink); color: #0a0a0e; border: 0; border-radius: 9px; padding: 13px 18px; }
+button.ghost { background: var(--panel2); color: var(--ink); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.shop-list { display: flex; flex-direction: column; gap: 8px; max-height: min(44vh,320px); overflow-y: auto; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; background: var(--panel2); border-radius: 9px; padding: 11px 13px; }
+.item .n { font-weight: 600; font-size: 14px; }
+.item .d { font-size: 12.5px; color: var(--dim); }
+.item .l { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.item button { padding: 9px 13px; font-size: 13px; font-family: var(--mono); min-width: 92px; }
+.bc .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--faint); }
+.bc .n { font-family: var(--display); font-size: clamp(30px,7vw,44px); line-height: 1; }
+.bc .t { font-size: 15px; font-style: italic; }
+.bc .c { font-size: 15px; font-weight: 600; color: var(--cash); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(110px,1fr)); gap: 10px; }
+.stat { background: var(--panel2); border-radius: 9px; padding: 11px; }
+.stat .t { font-family: var(--mono); font-size: 9.5px; letter-spacing: .09em; color: var(--faint); }
+.stat .v { font-family: var(--mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.err { color: var(--danger); font-size: 14px; }
+
+.touch { position: absolute; inset: 0; pointer-events: none; display: none; }
+.touch.on { display: block; }
+.stick { position: absolute; left: 20px; bottom: 20px; width: 124px; height: 124px; border-radius: 50%; background: rgba(255,255,255,.05); border: 1px solid var(--line); pointer-events: auto; }
+.stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(255,255,255,.17); }
+.tb { position: absolute; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+.tb button { width: 76px; height: 54px; font-family: var(--mono); font-size: 13px; background: var(--panel2); color: var(--ink); }
+/* Téléphone : les trois panneaux du HUD font 558 px de large à eux trois, ils
+   se chevauchaient sur un écran de 390. On les réorganise, et le panneau de
+   sommeil monte en haut pour laisser le bas au joystick. */
+@media (max-width: 560px) {
+  .hud { font-size: 13px; }
+  .pane { padding: 8px 10px; border-radius: 9px; }
+  .wallet { width: 142px; }
+  .wallet .unb { font-size: 20px; }
+  .wallet .cash, .wallet .hint { font-size: 10.5px; }
+  .clock { left: auto; right: 14px; transform: none; width: auto; min-width: 84px; }
+  .clock .tm { font-size: 18px; }
+  .awake { left: 14px; right: 14px; top: 100px; width: auto; }
+  .stam { left: 14px; top: 78px; width: 142px; }
+  .awake .st { font-size: 15px; }
+  .sleep { left: 14px; right: 14px; top: 180px; bottom: auto; transform: none; width: auto; }
+  .prompt { bottom: 212px; font-size: 12.5px; white-space: normal; text-align: center; max-width: calc(100vw - 28px); }
+  .toasts { bottom: 156px; width: min(230px, 58vw); }
+  .toast { font-size: 12px; padding: 7px 9px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div class="hud" id="hud" hidden>
+    <div class="pane wallet"><div class="cash">En banque&nbsp; <span id="w-cash">0 $</span></div>
+      <div class="unb" id="w-unb">0 $</div><div class="hint" id="w-hint">sur toi</div></div>
+    <div class="pane zonebar"><div class="nm" id="z-nm">LA RUE</div>
+      <div class="rt" id="z-rt">10 $/s</div><div class="pv" id="z-pv" hidden></div></div>
+    <div class="pane awake"><div class="lb">ÉVEIL DE LA MAISON</div><div class="st" id="a-st">CALME</div>
+      <div class="sg" id="a-sg"><i></i><i></i><i></i><i></i></div><div class="ft" id="a-ft">dormir profond la réveille</div></div>
+    <div class="pane sleep" id="sleep" hidden><div class="sp" id="s-sp">—</div><div class="ra" id="s-ra">—</div>
+      <div class="ri" id="s-ri">—</div><div class="bar"><i id="s-bar"></i></div>
+      <div class="ft">Espace pour te réveiller</div></div>
+    <div class="prompt" id="prompt" hidden></div>
+    <div class="toasts" id="toasts"></div>
+    <div class="stam" id="stam"><i id="stam-i"></i></div>
+    <div class="tint" id="tint"></div>
+    <div class="vig" id="vig"></div>
+    <div class="snd" id="snd">M · son</div>
+    <div class="shout" id="shout" hidden></div>
+    <div class="crosshair" id="cross" hidden></div>
+  </div>
+  <div class="touch" id="touch">
+    <div class="stick" id="stick"><i id="knob"></i></div>
+    <div class="tb"><button type="button" id="tb-e">E</button><button type="button" id="tb-sp">RÉVEIL</button><button type="button" id="tb-n">ZONES</button></div>
+  </div>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.136.0/three.min.js"></script>
+<script>
+"use strict";
+// ═══════════════════════════════════════════════════════════════════════════
+// SLEEP OR DIE — aperçu jouable dans le navigateur.
+//
+// Ce n'est PAS le jeu Roblox : un .rbxlx ne s'ouvre que dans Roblox Studio.
+// C'est le même jeu porté sur le moteur navigateur du prototype, pour qu'on
+// puisse y jouer sans rien installer. Les sept zones, les sept monstres, leurs
+// sept mécaniques, l'économie et la jauge d'éveil ont les valeurs EXACTES de
+// src/shared/*.luau du dépôt. Rien n'est inventé pour la démo.
+//
+// Ce qui n'y est pas, et qui ne peut pas y être : le multijoueur (l'éveil est
+// une jauge de serveur, ici elle est à toi seul), les achats Robux, les
+// classements, et les refuges disputés entre joueurs.
+//
+// Une unité = un stud Roblox.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (id) => document.getElementById(id);
+
+if (!window.THREE) {
+  $("sheet").innerHTML = `<div class="card"><h2>La 3D n'a pas pu se charger</h2>
+    <p class="err">La bibliothèque Three.js a été bloquée par le réseau. Recharge la
+    page ; si ça persiste, essaie un autre navigateur ou une autre connexion.</p></div>`;
+  throw new Error("THREE indisponible");
+}
+
+// ─── réglages (valeurs exactes de src/shared/*.luau) ───────────────────────
+const TILE = 5, PLAYER_SPEED = 16;
+// GameConfig.Survival
+const GRACE = 3, ASSAULT_BASE = 38, ASSAULT_JITTER = 12;
+// GameConfig.Economy.SoftCapDivisor
+const SOFTCAP_DIV = 4;
+
+// ZoneConfig.List — Rate en $/s, SoftCapPerSession, MaxSessionSeconds,
+// DeathLossRatio, et le coût de déblocage (Unlock.Banked).
+const ZONES = [
+  { id: "street", order: 1, name: "La rue", rate: 10, cap: 4000, max: 300,
+    loss: 0.5, unlock: 0, monster: "prowler", tint: 0x0d1016,
+    blurb: "Des refuges précaires entre deux immeubles. On y apprend à dormir sans mourir.",
+    mech: "Tutoriel : réserver, barricader, dormir, se réveiller à temps." },
+  { id: "sewers", order: 2, name: "Les égouts", rate: 100, cap: 30000, max: 300,
+    loss: 0.5, unlock: 10000, monster: "sewer_thing", tint: 0x0a1410,
+    blurb: "Tunnels étroits, embuscades, ressources cachées.",
+    mech: "Itinéraires : une seule sortie par section, il faut choisir avant de dormir." },
+  { id: "dollhouse", order: 3, name: "La maison des poupées", rate: 500, cap: 120000, max: 360,
+    loss: 0.55, unlock: 200000, monster: "doll", tint: 0x1a1016,
+    blurb: "Elle ne bouge que quand personne ne la regarde.",
+    mech: "Observation : la poupée est figée tant que tu l'as dans ton champ de vision." },
+  { id: "slasher", order: 4, name: "Le quartier du slasher", rate: 1500, cap: 350000, max: 360,
+    loss: 0.6, unlock: 1500000, monster: "slasher", tint: 0x10131a,
+    blurb: "Brume, pavillons, et quelqu'un qui ne s'arrête jamais.",
+    mech: "Lent mais increvable : on ne le combat pas, on gère les raccourcis." },
+  { id: "convent", order: 5, name: "Le couvent maudit", rate: 5000, cap: 1000000, max: 420,
+    loss: 0.65, unlock: 5000000, monster: "demon", tint: 0x14101c,
+    blurb: "Les défenses tiennent. C'est elle qui décide quand elles lâchent.",
+    mech: "Les équipements peuvent être neutralisés : il faut une solution de repli." },
+  { id: "hospital", order: 6, name: "L'hôpital des cauchemars", rate: 12500, cap: 2500000, max: 420,
+    loss: 0.7, unlock: 15000000, monster: "mimic_voice", tint: 0x0e1418,
+    blurb: "Les alarmes mentent. Les voix aussi.",
+    mech: "Fausses alertes : une partie des signaux sonores et visuels est truquée." },
+  { id: "carnival", order: 7, name: "Le carnaval de l'enfer", rate: 100000, cap: 8000000, max: 480,
+    loss: 0.75, unlock: 60000000, monster: "clown_boss", tint: 0x1c0c14,
+    blurb: "Zone finale. Un seul occupant, un seul boss, plusieurs phases.",
+    mech: "Combat de boss en phases : chaque phase reprend une mécanique d'une zone." },
+];
+const ZONE_BY_ID = {};
+for (const z of ZONES) ZONE_BY_ID[z.id] = z;
+
+// MonsterConfig.List. `rule` est la mécanique du CDC §5 ; c'est elle qui
+// change le comportement, pas les dégâts.
+const MONSTERS = {
+  prowler: { id: "prowler", name: "LE RÔDEUR", speed: 13, dmg: 20, sight: 55, hear: 32,
+    catch: 4.5, giveUp: 12, height: 6, rule: "none", body: 0x2b2824, eye: 0xffc45c, eyes: 2, arm: 3.4,
+    tell: "Il traîne les pieds. On l'entend avant de le voir.",
+    counter: "Casse la ligne de vue et reste immobile le temps qu'il passe." },
+  sewer_thing: { id: "sewer_thing", name: "LA CHOSE DES ÉGOUTS", speed: 17, dmg: 28, sight: 34, hear: 48,
+    catch: 4.5, giveUp: 14, height: 4.6, rule: "sound", body: 0x4a5c42, eye: 0xd8ff6a, eyes: 0, arm: 4.6,
+    crawl: true, face: "stitch",
+    tell: "Elle voit mal et entend tout : c'est le bruit qui l'attire.",
+    counter: "Marche. Courir dans un tunnel, c'est l'appeler." },
+  doll: { id: "doll", name: "LA POUPÉE", speed: 22, dmg: 34, sight: 60, hear: 20,
+    catch: 4, giveUp: 20, height: 4.2, rule: "gaze", body: 0xe2d2d6, eye: 0x6a2030, eyes: 2, arm: 3.0,
+    tell: "Elle est toujours un peu plus près qu'au dernier regard.",
+    counter: "Garde-la dans ton champ de vision : regardée, elle ne bouge pas." },
+  slasher: { id: "slasher", name: "LE MASQUE", speed: 11, dmg: 55, sight: 70, hear: 40,
+    catch: 5, giveUp: 45, height: 7.2, rule: "relentless", body: 0x1e2228, eye: 0xff3a2a, eyes: 2, arm: 4.2,
+    hat: 0x14141a,
+    tell: "Il ne court pas. Il ne s'arrête pas non plus.",
+    counter: "Les raccourcis et les pièges. Le combat frontal ne marche pas." },
+  demon: { id: "demon", name: "L'ENTITÉ", speed: 16, dmg: 62, sight: 65, hear: 45,
+    catch: 5, giveUp: 25, height: 9, rule: "disable", body: 0x241426, eye: 0xff6adc, eyes: 4, arm: 5.4,
+    thin: true,
+    tell: "Les alarmes se taisent une par une avant qu'elle entre.",
+    counter: "Prévois une sortie : les défenses ne tiendront pas." },
+  mimic_voice: { id: "mimic_voice", name: "LE MENTEUR", speed: 18, dmg: 70, sight: 55, hear: 55,
+    catch: 5, giveUp: 25, height: 6, rule: "fake_alerts", body: 0x3a3b44, eye: 0x9affd0, eyes: 2, arm: 3.8,
+    mimic: true, lantern: true,
+    tell: "Une alerte sur trois est fausse. Celle qui ne l'est pas arrive sans bruit.",
+    counter: "Ne réagis qu'aux alertes confirmées par deux signaux." },
+  clown_boss: { id: "clown_boss", name: "LE CLOWN", speed: 20, dmg: 90, sight: 90, hear: 90,
+    catch: 7, giveUp: 9999, height: 12, rule: "boss_phases", body: 0xb4284a, eye: 0xffe14a, eyes: 2, arm: 6.5,
+    hat: 0xf0f0f0,
+    tell: "Trois phases. Chacune reprend la mécanique d'une zone précédente.",
+    counter: "Tout ce que les six zones t'ont appris, dans l'ordre." },
+};
+
+// BossService.PHASES — chaque phase rejoue une mécanique déjà vue.
+const BOSS_PHASES = [
+  { rule: "sound", hits: 6, speed: 18, sight: 70,
+    text: "Phase 1 — il suit le bruit. Marche, ne cours pas." },
+  { rule: "gaze", hits: 8, speed: 24, sight: 95,
+    text: "Phase 2 — regardé, il se fige. Ne le quitte pas des yeux." },
+  { rule: "relentless", hits: 10, speed: 26, sight: 120,
+    text: "Phase 3 — il ne lâche plus. Tiens, c'est tout ce qu'il reste." },
+];
+
+// AwakeningConfig : seuils, quatre stades, et l'effet sur TOUS les monstres.
+const THRESHOLDS = [0, 16, 40, 76];
+const STAGES = [
+  { name: "CALME", speed: 1.00, sight: 1.00, reward: 1.00, fog: 62, color: "#6ee296",
+    text: "La maison dort. Pour l'instant." },
+  { name: "AGITÉ", speed: 1.08, sight: 1.25, reward: 1.15, fog: 52, color: "#ffc45c",
+    text: "Quelque chose s'est réveillé. Les gains montent de 15 %." },
+  { name: "ÉVEILLÉ", speed: 1.16, sight: 1.60, reward: 1.35, fog: 43, color: "#ff5648",
+    text: "Ils sont tous debout. +35 % de gains, et ils voient loin." },
+  { name: "AFFAMÉ", speed: 1.24, sight: 2.00, reward: 1.60, fog: 34, color: "#be82ff",
+    text: "La maison a faim. +60 % — si quelqu'un tient jusqu'au matin." },
+];
+const DECAY = 0.22;
+const gainFor = (order) => Math.max(0, order - 1) * 0.09;
+
+// ItemConfig.List — les douze objets, aux prix du cahier des charges.
+const SHOP = [
+  { id: "bat_wood", name: "Batte en bois", kind: "weapon", price: 2500, zone: "street",
+    dmg: 12, stun: 0.8, cd: 0.9, desc: "Repousse. Ne tue pas." },
+  { id: "bat_steel", name: "Batte renforcée", kind: "weapon", price: 100000, zone: "sewers",
+    dmg: 30, stun: 1.2, cd: 0.9, desc: "Assez lourde pour faire reculer ce qui vit sous la ville." },
+  { id: "stun_baton", name: "Matraque électrique", kind: "weapon", price: 1000000, zone: "dollhouse",
+    dmg: 45, stun: 3.0, cd: 2.5, desc: "Trois secondes d'immobilité. C'est long, trois secondes." },
+  { id: "pulse_gun", name: "Arme à impulsion", kind: "weapon", price: 25000000, zone: "convent",
+    dmg: 110, stun: 4.0, cd: 4.0, desc: "Souffle le monstre en arrière. Recharge lente." },
+  { id: "legendary", name: "Arme légendaire", kind: "weapon", price: 150000000, zone: "hospital",
+    dmg: 260, stun: 5.0, cd: 6.0, desc: "Ne tue toujours pas le boss. Elle fait gagner du temps." },
+  { id: "alarm", name: "Alarme de proximité", kind: "defense", price: 5000, zone: "street",
+    slots: 1, dur: 8, warn: 3.5, desc: "Prévient 3,5 s avant l'assaut. Se déclenche 8 fois." },
+  { id: "snare", name: "Piège ralentisseur", kind: "defense", price: 25000, zone: "street",
+    slots: 1, dur: 4, delay: 4, desc: "Retient le monstre 4 s. Quatre usages." },
+  { id: "barricade", name: "Barricade renforcée", kind: "defense", price: 150000, zone: "sewers",
+    slots: 2, dur: 6, delay: 7, desc: "Sept secondes de plus. Elle finit toujours par céder." },
+  { id: "camera", name: "Caméra de surveillance", kind: "defense", price: 750000, zone: "dollhouse",
+    slots: 1, dur: 20, cut: 0.15, warn: 6, desc: "Voir venir vaut mieux que résister." },
+  { id: "steel_door", name: "Porte blindée", kind: "defense", price: 5000000, zone: "slasher",
+    slots: 2, dur: 10, delay: 12, cut: 0.1, desc: "Douze secondes. Dix assauts. Pas un de plus." },
+  { id: "shield", name: "Bouclier anti-monstre", kind: "defense", price: 25000000, zone: "convent",
+    slots: 3, dur: 6, delay: 18, cut: 0.2, desc: "Le couvent sait le neutraliser. Pas partout." },
+  { id: "ultimate", name: "Refuge ultime", kind: "defense", price: 500000000, zone: "hospital",
+    slots: 5, dur: 12, delay: 25, cut: 0.35, desc: "Le meilleur abri du jeu. Il tombe en douze assauts." },
+];
+const SHOP_BY_ID = {};
+for (const it of SHOP) SHOP_BY_ID[it.id] = it;
+// ShelterService : six emplacements de défense par refuge (GameConfig.Shelter).
+const MAX_SLOTS = 6;
+
+// ─── état ──────────────────────────────────────────────────────────────────
+const G = {
+  running: false, time: 0,
+  zone: "street", preview: false,
+  cash: 0, unbanked: 0, totalBanked: 0, nights: 0, deaths: 0, deepest: 1,
+  owned: {}, placed: {}, weapon: null, seen: {},
+  awaken: 0, stage: 0,
+  px: 0, pz: 0, yaw: 0, pitch: -0.22, moving: false, dead: 0, walk: 0,
+  stam: 1, sprint: false, winded: false, nextStep: 0, shake: 0,
+  sleeping: null, earnedHere: 0, sessionLeft: 0, graceLeft: 0,
+  nextAssault: 0, incoming: 0, defHits: {},
+  nextSwing: 0, bossPhase: 0, bossHits: 0,
+  beasts: [], toasts: [], shoutUntil: 0, shoutText: "",
+};
+
+const SAVE = "sleepordie.v1";
+function save() {
+  try { localStorage.setItem(SAVE, JSON.stringify({
+    cash: G.cash, totalBanked: G.totalBanked, nights: G.nights, deaths: G.deaths,
+    deepest: G.deepest, owned: G.owned, weapon: G.weapon, seen: G.seen })); } catch (e) {}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE) || "null");
+    if (!d) return;
+    G.cash = d.cash || 0; G.totalBanked = d.totalBanked || 0; G.nights = d.nights || 0;
+    G.deaths = d.deaths || 0; G.deepest = d.deepest || 1;
+    G.owned = d.owned || {}; G.weapon = d.weapon || null; G.seen = d.seen || {};
+  } catch (e) {}
+}
+
+// ─── carte : une zone à la fois ────────────────────────────────────────────
+// Dans le jeu Roblox les sept zones sont sept dalles de 1600 studs côte à côte,
+// et on passe de l'une à l'autre par téléportation. Ici on reconstruit la carte
+// à chaque voyage : même résultat, sans garder six zones vides en mémoire.
+const MW = 78, MH = 62;
+let grid = [];
+const shelters = [], patrol = [];
+let vault = null, shop = null, spawn = null;
+
+function carve(x0, y0, w, h) {
+  for (let y = y0; y < y0 + h; y++)
+    for (let x = x0; x < x0 + w; x++)
+      if (x > 0 && y > 0 && x < MW - 1 && y < MH - 1) grid[y][x] = 1;
+}
+function corridor(ax, ay, bx, by, w) {
+  const half = Math.floor(w / 2);
+  for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) carve(x, ay - half, 1, w);
+  for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) carve(bx - half, y, w, 1);
+}
+const ctr = (r) => ({ x: (r.x + r.w / 2) * TILE, z: (r.y + r.h / 2) * TILE });
+
+// Chaque zone a sa forme. C'est ce qui fait qu'on sait où on est avant même de
+// lire le nom en haut de l'écran.
+const LAYOUTS = {
+  // La rue : une avenue, des ruelles perpendiculaires, une place au milieu.
+  street: () => {
+    const plaza = { x: 30, y: 26, w: 18, h: 11 };
+    carve(plaza.x, plaza.y, plaza.w, plaza.h);
+    corridor(6, 31, 72, 31, 7);
+    const alleys = [{ x: 12, y: 8, w: 9, h: 12 }, { x: 56, y: 8, w: 9, h: 12 },
+                    { x: 12, y: 44, w: 9, h: 12 }, { x: 56, y: 44, w: 9, h: 12 }];
+    for (const a of alleys) {
+      carve(a.x, a.y, a.w, a.h);
+      const c = ctr(a);
+      corridor(Math.floor(c.x / TILE), Math.floor(c.z / TILE), 39, 31, 3);
+      shelters.push({ x: c.x, z: c.z, w: 8, d: 10, room: a, kind: "ruelle" });
+    }
+    return plaza;
+  },
+  // Les égouts : des tunnels étroits et une seule jonction. On choisit sa
+  // sortie avant de dormir, comme le dit la mécanique de la zone.
+  sewers: () => {
+    const hub = { x: 33, y: 27, w: 12, h: 9 };
+    carve(hub.x, hub.y, hub.w, hub.h);
+    const ends = [{ x: 8, y: 12, w: 8, h: 8 }, { x: 62, y: 12, w: 8, h: 8 },
+                  { x: 8, y: 42, w: 8, h: 8 }, { x: 62, y: 42, w: 8, h: 8 }];
+    for (const e of ends) {
+      carve(e.x, e.y, e.w, e.h);
+      const c = ctr(e);
+      // Trois cases et pas deux : à deux, la caméra en vue épaule finit dans
+      // la paroi une fois sur douze (mesuré). Ce qui fait l'étroitesse de la
+      // zone, c'est qu'il n'y a qu'UNE sortie par section — pas sa largeur.
+      corridor(Math.floor(c.x / TILE), Math.floor(c.z / TILE), 39, 31, 3);
+      shelters.push({ x: c.x, z: c.z, w: 7, d: 7, room: e, kind: "alcôve" });
+    }
+    return hub;
+  },
+  // La maison des poupées : des pièces en damier, portes minuscules.
+  dollhouse: () => {
+    const hall = { x: 32, y: 27, w: 14, h: 9 };
+    carve(hall.x, hall.y, hall.w, hall.h);
+    const rooms = [];
+    for (let i = 0; i < 6; i++) {
+      const gx = 8 + (i % 3) * 24, gy = i < 3 ? 8 : 46;
+      rooms.push({ x: gx, y: gy, w: 13, h: 9 });
+    }
+    for (const r of rooms) {
+      carve(r.x, r.y, r.w, r.h);
+      const c = ctr(r);
+      corridor(Math.floor(c.x / TILE), Math.floor(c.z / TILE), 39, 31, 2);
+    }
+    for (const i of [0, 2, 3, 5]) {
+      const c = ctr(rooms[i]);
+      shelters.push({ x: c.x, z: c.z, w: 10, d: 7, room: rooms[i], kind: "chambre" });
+    }
+    return hall;
+  },
+  // Le quartier du slasher : une boucle de route, des pavillons autour.
+  slasher: () => {
+    const square = { x: 33, y: 27, w: 12, h: 9 };
+    carve(square.x, square.y, square.w, square.h);
+    // La boucle : c'est elle qui donne les raccourcis dont parle la mécanique.
+    corridor(14, 14, 64, 14, 4);
+    corridor(14, 48, 64, 48, 4);
+    corridor(14, 14, 14, 48, 4);
+    corridor(64, 14, 64, 48, 4);
+    corridor(39, 14, 39, 48, 3);
+    const houses = [{ x: 20, y: 20, w: 11, h: 9 }, { x: 48, y: 20, w: 11, h: 9 },
+                    { x: 20, y: 34, w: 11, h: 9 }, { x: 48, y: 34, w: 11, h: 9 }];
+    for (const h of houses) {
+      carve(h.x, h.y, h.w, h.h);
+      const c = ctr(h);
+      corridor(Math.floor(c.x / TILE), Math.floor(c.z / TILE), 39, 31, 2);
+      shelters.push({ x: c.x, z: c.z, w: 9, d: 7, room: h, kind: "pavillon" });
+    }
+    return square;
+  },
+  // Le couvent : un cloître carré autour d'une cour, des cellules dessus.
+  convent: () => {
+    const nave = { x: 32, y: 26, w: 14, h: 10 };
+    carve(nave.x, nave.y, nave.w, nave.h);
+    corridor(16, 12, 62, 12, 4);
+    corridor(16, 50, 62, 50, 4);
+    corridor(16, 12, 16, 50, 4);
+    corridor(62, 12, 62, 50, 4);
+    corridor(39, 12, 39, 26, 3);
+    corridor(39, 36, 39, 50, 3);
+    const cells = [{ x: 20, y: 18, w: 8, h: 7 }, { x: 52, y: 18, w: 8, h: 7 },
+                   { x: 20, y: 38, w: 8, h: 7 }, { x: 52, y: 38, w: 8, h: 7 }];
+    for (const c0 of cells) {
+      carve(c0.x, c0.y, c0.w, c0.h);
+      const c = ctr(c0);
+      corridor(Math.floor(c.x / TILE), Math.floor(c.z / TILE), 16, 31, 2);
+      shelters.push({ x: c.x, z: c.z, w: 7, d: 6, room: c0, kind: "cellule" });
+    }
+    return nave;
+  },
+  // L'hôpital : de longs couloirs, des salles de part et d'autre.
+  hospital: () => {
+    const lobby = { x: 31, y: 27, w: 16, h: 9 };
+    carve(lobby.x, lobby.y, lobby.w, lobby.h);
+    corridor(8, 31, 70, 31, 5);
+    corridor(20, 10, 20, 52, 4);
+    corridor(58, 10, 58, 52, 4);
+    const wards = [{ x: 9, y: 10, w: 10, h: 8 }, { x: 60, y: 10, w: 10, h: 8 },
+                   { x: 9, y: 44, w: 10, h: 8 }, { x: 60, y: 44, w: 10, h: 8 }];
+    for (const w of wards) {
+      carve(w.x, w.y, w.w, w.h);
+      const c = ctr(w);
+      shelters.push({ x: c.x, z: c.z, w: 9, d: 7, room: w, kind: "chambre" });
+    }
+    corridor(14, 14, 20, 14, 3);
+    corridor(58, 14, 65, 14, 3);
+    corridor(14, 48, 20, 48, 3);
+    corridor(58, 48, 65, 48, 3);
+    return lobby;
+  },
+  // Le carnaval : une grande arène ouverte, des stands autour. C'est la seule
+  // zone où on voit loin — et c'est fait exprès : le boss aussi.
+  carnival: () => {
+    const arena = { x: 24, y: 20, w: 30, h: 22 };
+    carve(arena.x, arena.y, arena.w, arena.h);
+    const stalls = [{ x: 8, y: 10, w: 10, h: 8 }, { x: 60, y: 10, w: 10, h: 8 },
+                    { x: 8, y: 44, w: 10, h: 8 }, { x: 60, y: 44, w: 10, h: 8 }];
+    for (const s of stalls) {
+      carve(s.x, s.y, s.w, s.h);
+      const c = ctr(s);
+      corridor(Math.floor(c.x / TILE), Math.floor(c.z / TILE), 39, 31, 3);
+      shelters.push({ x: c.x, z: c.z, w: 9, d: 7, room: s, kind: "stand" });
+    }
+    return arena;
+  },
+};
+
+function buildZone(zoneId) {
+  grid = Array.from({ length: MH }, () => new Array(MW).fill(0));
+  shelters.length = 0; patrol.length = 0;
+
+  const centre = (LAYOUTS[zoneId] || LAYOUTS.street)();
+  const cc = ctr(centre);
+  spawn = { x: cc.x, z: cc.z + 6 };
+  vault = { x: (centre.x + 2) * TILE, z: cc.z };
+  shop  = { x: (centre.x + centre.w - 2) * TILE, z: cc.z };
+
+  patrol.push({ x: cc.x, z: cc.z });
+  for (const s of shelters) {
+    patrol.push({ x: s.x, z: s.z + s.d * 0.9 });
+    patrol.push({ x: s.x - s.w * 0.8, z: s.z });
+    patrol.push({ x: (s.x + cc.x) / 2, z: cc.z });
+    patrol.push({ x: s.x, z: (s.z + cc.z) / 2 });
+  }
+  for (let i = patrol.length - 1; i >= 0; i--) {
+    const p = patrol[i];
+    if (solid(p.x, p.z) || patrol.some((q, j) => j < i && Math.hypot(q.x - p.x, q.z - p.z) < TILE))
+      patrol.splice(i, 1);
+  }
+}
+
+const solid = (x, z) => {
+  const tx = Math.floor(x / TILE), tz = Math.floor(z / TILE);
+  return tx < 0 || tz < 0 || tx >= MW || tz >= MH || grid[tz][tx] === 0;
+};
+
+function los(ax, az, bx, bz) {
+  const dx = bx - ax, dz = bz - az, d = Math.hypot(dx, dz);
+  if (d < 0.01) return true;
+  const steps = Math.ceil(d / (TILE * 0.4));
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    if (solid(ax + dx * t, az + dz * t)) return false;
+  }
+  return true;
+}
+
+function findPath(from, to) {
+  const sx = Math.floor(from.x / TILE), sz = Math.floor(from.z / TILE);
+  const gx = Math.floor(to.x / TILE), gz = Math.floor(to.z / TILE);
+  if (sx === gx && sz === gz) return [];
+  if (gx < 0 || gz < 0 || gx >= MW || gz >= MH || grid[gz][gx] === 0) return [];
+  const prev = new Int32Array(MW * MH).fill(-1), seen = new Uint8Array(MW * MH);
+  const q = [sz * MW + sx]; seen[sz * MW + sx] = 1;
+  const goal = gz * MW + gx;
+  let head = 0;
+  while (head < q.length) {
+    const cur = q[head++];
+    if (cur === goal) break;
+    const cx = cur % MW, cz = (cur - cx) / MW;
+    for (const [ox, oz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = cx + ox, nz = cz + oz;
+      if (nx < 0 || nz < 0 || nx >= MW || nz >= MH) continue;
+      const ni = nz * MW + nx;
+      if (seen[ni] || grid[nz][nx] === 0) continue;
+      seen[ni] = 1; prev[ni] = cur; q.push(ni);
+    }
+  }
+  if (!seen[goal]) return [];
+  const path = [];
+  let cur = goal;
+  while (cur !== -1 && cur !== sz * MW + sx) {
+    const cx = cur % MW, cz = (cur - cx) / MW;
+    path.push({ x: (cx + 0.5) * TILE, z: (cz + 0.5) * TILE });
+    cur = prev[cur];
+  }
+  return path.reverse();
+}
+
+// ─── objets possédés, défenses posées ──────────────────────────────────────
+const zone = () => ZONE_BY_ID[G.zone];
+const owns = (id) => (G.owned[id] || 0) > 0;
+const zoneUnlocked = (z) => G.totalBanked >= z.unlock;
+const weaponOf = () => (G.weapon && owns(G.weapon)) ? SHOP_BY_ID[G.weapon] : null;
+
+// ShelterService.defenseProfile : le délai total avant qu'un monstre entre, et
+// la baisse de détection. Les deux sont bornés — sans plafond, un refuge
+// devient invincible et la zone 7 n'a plus d'intérêt.
+function defenseProfile() {
+  let delay = 0, cut = 0, warn = 0, slots = 0;
+  for (const id in G.placed) {
+    const n = G.placed[id] || 0;
+    if (n <= 0) continue;
+    const it = SHOP_BY_ID[id];
+    if (!it || it.kind !== "defense") continue;
+    const broken = (G.defHits[id] || 0) >= it.dur * n;
+    if (broken) continue;
+    slots += (it.slots || 1) * n;
+    delay += (it.delay || 0) * n;
+    cut += (it.cut || 0) * n;
+    warn = Math.max(warn, it.warn || 0);
+  }
+  return { delay: Math.min(40, delay), cut: Math.min(0.6, cut), warn, slots };
+}
+
+// ═══ rendu 3D ══════════════════════════════════════════════════════════════
+const THREE = window.THREE;
+const renderer = new THREE.WebGLRenderer({
+  canvas: $("cv"), antialias: true, powerPreference: "high-performance",
+});
+// Sans ça, Three.js sort des couleurs linéaires : tout paraît quatre fois trop
+// sombre à l'écran. Mesuré : luminance moyenne 13,7 sans, 44,8 avec.
+renderer.outputEncoding = THREE.sRGBEncoding;
+// Sans compression des hautes lumières, les murs à trois mètres de la torche
+// saturent en blanc pur : on joue dans un tube éclairé au néon. L'ACES écrase
+// le haut de la courbe et rend les ombres au décor.
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.18;   // compense l'ambiance très basse
+// Ombres portées douces. C'est le plus gros gain visuel du lot : une géométrie
+// en blocs sans ombre ressemble à une maquette ; avec, elle ressemble à un
+// lieu. Une seule source projette (la torche au-dessus du joueur), donc une
+// seule passe d'ombre par image.
+renderer.shadowMap.enabled = true;
+// PCFShadowMap et pas PCFSoftShadowMap : ce dernier applique un noyau 5×5
+// FIXE et ignore `shadow.radius`. Avec lui, l'ombre du personnage restait une
+// découpe nette posée au sol, quel que soit le réglage.
+renderer.shadowMap.type = THREE.PCFShadowMap;
+// Le filtrage anisotrope est LA correction du « pixelisé ». Une texture vue en
+// biais — un sol, un mur au loin — est échantillonnée le long d'une diagonale ;
+// sans anisotropie, le GPU prend un mipmap trop petit et la surface part en
+// bouillie scintillante. 16× coûte presque rien et change tout.
+const ANISO = Math.min(16, renderer.capabilities.getMaxAnisotropy());
+renderer.setClearColor(0x05050a);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x05050a, 10, 62);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.1, 400);
+
+// Lumière. Peu de sources, mais les bonnes : une ambiance très basse, un ciel
+// qui remplit les volumes, et une torche au-dessus du joueur qui porte toute
+// l'horreur. Les lampes décoratives ne sont PAS des lumières : ce sont des
+// matériaux émissifs plus un halo. Dix vraies lampes dynamiques feraient
+// ramer un portable pour un gain invisible.
+// ⚠️ LE CONTRASTE EST LE SUJET. Une ambiance généreuse éclaire tout
+// uniformément : on y voit mieux, et l'image devient plate et laide. Ce qui
+// rend une image, c'est l'écart entre la flaque de lumière et le noir autour.
+// Ces deux valeurs sont donc volontairement très basses.
+scene.add(new THREE.AmbientLight(0x070910, 1.0));
+// Hémisphérique : ciel froid au-dessus, sol chaud en dessous. Juste assez pour
+// que les faces non éclairées ne soient pas d'un noir absolu — pas plus.
+const hemi = new THREE.HemisphereLight(0x2a3450, 0x12100e, 0.18);
+scene.add(hemi);
+// Torche : un projecteur large au-dessus du joueur, et c'est lui qui projette
+// les ombres. Un point light aurait demandé six passes (une par face du cube).
+// Plus intense, plus resserrée, et une décroissance franche : c'est elle qui
+// creuse l'image. Angle 0,95 rad ≈ 54°, pénombre 0,7 pour un bord doux.
+const torch = new THREE.SpotLight(0xffd79a, 2.2, 52, 0.95, 0.72, 1.6);
+torch.castShadow = true;
+torch.shadow.mapSize.set(2048, 2048);   // 1024 donnait une ombre en escalier
+torch.shadow.camera.near = 1;
+torch.shadow.camera.far = 60;
+torch.shadow.bias = -0.0012;
+// Sans rayon, l'ombre du personnage est une découpe nette posée au sol — on
+// dirait un autocollant. Un peu de flou de pénombre suffit à la rattacher.
+torch.shadow.radius = 8;
+scene.add(torch);
+scene.add(torch.target);
+const moon = new THREE.DirectionalLight(0x24304a, 0.14);
+moon.position.set(-0.4, 1, 0.3);
+scene.add(moon);
+// Petite lampe collée à la caméra : sans elle on ne voit que le dessus du
+// personnage, la torche étant pile au-dessus de sa tête.
+const fill = new THREE.PointLight(0x8e9ac4, 0.18, 20, 1.6);
+scene.add(fill);
+
+const MAT = {
+  vault: new THREE.MeshLambertMaterial({ color: 0x2f6b45 }),
+  shop:  new THREE.MeshLambertMaterial({ color: 0x3a4470 }),
+  lockedBed: new THREE.MeshLambertMaterial({ color: 0x33333c }),
+  vaultDoor: new THREE.MeshLambertMaterial({ color: 0x3f8c5c }),
+  metal: new THREE.MeshLambertMaterial({ color: 0x4a4f5c }),
+  locker: new THREE.MeshLambertMaterial({ color: 0x343a47 }),
+  frame: new THREE.MeshLambertMaterial({ color: 0x3b3328 }),
+  mattress: new THREE.MeshLambertMaterial({ color: 0x5a5347 }),
+  pillow: new THREE.MeshLambertMaterial({ color: 0x8e8a7d }),
+  crate: new THREE.MeshLambertMaterial({ color: 0x6b5235 }),
+  barrel: new THREE.MeshLambertMaterial({ color: 0x4e3b24 }),
+  beam:  new THREE.MeshLambertMaterial({ color: 0x3a2f22 }),
+  pipe:  new THREE.MeshLambertMaterial({ color: 0x53585f }),
+  meat:  new THREE.MeshLambertMaterial({ color: 0x6e2b2b }),
+  bone:  new THREE.MeshLambertMaterial({ color: 0xada28a }),
+  stain: new THREE.MeshLambertMaterial({ color: 0x1b1a14 }),
+  board: new THREE.MeshLambertMaterial({ color: 0x4a3f2e }),
+  glass: new THREE.MeshLambertMaterial({ color: 0x1b2430 }),
+};
+
+// Deux groupes : `world` ne contient que le décor (il est vidé et reconstruit
+// à chaque voyage), `actors` contient le joueur et les monstres. Les mélanger
+// faisait disparaître le personnage au premier appel de buildWorldMeshes().
+const world = new THREE.Group();
+scene.add(world);
+const actors = new THREE.Group();
+scene.add(actors);
+
+// ─── halos ─────────────────────────────────────────────────────────────────
+// Du faux bloom, et c'est volontaire. Le vrai demande une chaîne de
+// post-traitement (EffectComposer + UnrealBloomPass), soit quatre scripts de
+// plus à charger et deux passes plein écran par image. Un sprite additif avec
+// un dégradé radial donne 90 % de l'effet pour rien : les yeux d'un monstre
+// dans le noir, une enseigne, une ampoule.
+let glowTex = null;
+function glowTexture() {
+  if (glowTex) return glowTex;
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const x = c.getContext("2d");
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.35, "rgba(255,255,255,.42)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  glowTex = new THREE.CanvasTexture(c);
+  return glowTex;
+}
+function glow(color, size) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture(), color, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false,
+  }));
+  s.scale.set(size, size, 1);
+  return s;
+}
+// Poser un halo à un endroit. Chaîner des translateX/Y/Z marcherait (ils
+// renvoient l'objet) mais se lit mal : ce sont des translations LOCALES, donc
+// l'équivalence avec une position absolue n'est vraie que sans rotation.
+function glowAt(color, size, x, y, z) {
+  const s = glow(color, size);
+  s.position.set(x, y, z);
+  return s;
+}
+
+// Une ampoule : la sphère émissive + son halo, posées ensemble.
+function lamp(color, x, y, z, size) {
+  const g = new THREE.Group();
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(size * 0.16, 12, 10),
+    new THREE.MeshBasicMaterial({ color }));
+  g.add(bulb);
+  g.add(glow(color, size));
+  g.position.set(x, y, z);
+  return g;
+}
+
+// ─── formes ────────────────────────────────────────────────────────────────
+// Le jeu Roblox utilise des Ball, des Cylinder et des Wedge en plus des
+// briques : on fait pareil ici, sinon tout est cubique et ça se voit.
+function box(w, h, d, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function ball(r, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 12), mat);
+  m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function tube(r, h, mat, x, y, z, lying) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 14), mat);
+  m.position.set(x, y, z);
+  if (lying) m.rotation.z = Math.PI / 2;
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+// Un toit : deux pentes, parce qu'un WedgePart n'existe pas dans Three.js.
+function wedge(w, h, d, mat, x, y, z) {
+  const g = new THREE.Group();
+  const slope = Math.atan2(h, d / 2);
+  const len = Math.hypot(d / 2, h);
+  for (const side of [-1, 1]) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(w, 0.5, len), mat);
+    p.rotation.x = side * slope;
+    p.position.set(0, h / 2, side * d / 4);
+    p.castShadow = true; p.receiveShadow = true;
+    g.add(p);
+  }
+  g.position.set(x, y, z);
+  return g;
+}
+
+// ─── textures procédurales ─────────────────────────────────────────────────
+// Un mur d'une seule couleur, sous une lampe ponctuelle, donne un grand aplat
+// gris : c'est ce qui fait « maquette ». Du grain et quelques joints suffisent
+// à ce que l'œil lise une surface. Tout est peint sur un canvas, zéro fichier.
+//
+// 256 px et pas 64 : une texture de 64 étirée sur dix cases de 5 studs donne
+// un pixel par 8 cm de mur. Sur un écran Retina on compte les pixels. 256
+// multiplie par seize le nombre de points pour 256 Ko de mémoire.
+const TEXSIZE = 256;
+const tileCache = {}, repeatCache = {}, surfaces = {};
+
+// Palette par zone : chacune a sa couleur de murs, de sol et de brouillard.
+// C'est à la fois plus beau et plus lisible — on sait où on est à la teinte.
+const PALETTE = {
+  street:    { wall: "#2c2f38", floor: "#34343c", alt: "#2a2a31", ceil: "#14151c", fog: 0x0d1016, joint: 0.34 },
+  sewers:    { wall: "#283a30", floor: "#23302a", alt: "#1d2822", ceil: "#121a16", fog: 0x0a1410, joint: 0.42 },
+  dollhouse: { wall: "#473039", floor: "#4a3a33", alt: "#3e322c", ceil: "#1f1518", fog: 0x1a1016, joint: 0.26 },
+  slasher:   { wall: "#2a2f36", floor: "#32332e", alt: "#282a26", ceil: "#15171c", fog: 0x10131a, joint: 0.3 },
+  convent:   { wall: "#38344a", floor: "#302c3c", alt: "#282434", ceil: "#171427", fog: 0x14101c, joint: 0.38 },
+  hospital:  { wall: "#2e3a40", floor: "#36424a", alt: "#2c363c", ceil: "#141c20", fog: 0x0e1418, joint: 0.3 },
+  carnival:  { wall: "#44243a", floor: "#3c2230", alt: "#331c28", ceil: "#1d0f18", fog: 0x1c0c14, joint: 0.22 },
+};
+const pal = () => PALETTE[G.zone] || PALETTE.street;
+
+function makeTile(kind) {
+  const key = G.zone + ":" + kind;
+  if (tileCache[key]) return tileCache[key];
+  const S = TEXSIZE;
+  const c = document.createElement("canvas"); c.width = c.height = S;
+  const x = c.getContext("2d");
+  const p = pal();
+  x.fillStyle = { wall: p.wall, floor: p.floor, floorAlt: p.alt, ceil: p.ceil }[kind];
+  x.fillRect(0, 0, S, S);
+
+  // Grain fin : c'est lui qui empêche l'aplat. Deux échelles, pour que la
+  // surface tienne de près comme de loin.
+  const img = x.getImageData(0, 0, S, S), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (Math.random() - 0.5) * 26;
+    d[i] += n; d[i + 1] += n; d[i + 2] += n;
+  }
+  x.putImageData(img, 0, 0);
+  x.globalAlpha = 0.5;
+  for (let i = 0; i < 90; i++) {
+    const r = 6 + Math.random() * 26;
+    x.fillStyle = Math.random() < 0.5 ? "rgba(0,0,0,.09)" : "rgba(255,255,255,.045)";
+    x.beginPath(); x.arc(Math.random() * S, Math.random() * S, r, 0, 6.3); x.fill();
+  }
+  x.globalAlpha = 1;
+
+  x.strokeStyle = "rgba(0,0,0," + p.joint + ")"; x.lineWidth = S / 42;
+  if (kind === "wall") {
+    // Joints verticaux + une plinthe plus sombre en bas : les deux donnent
+    // l'échelle, sans quoi un mur de 13 studs pourrait en faire 3 ou 30.
+    for (const fx of [0.01, 0.5]) {
+      x.beginPath(); x.moveTo(S * fx, 0); x.lineTo(S * fx, S); x.stroke();
+    }
+    const grad = x.createLinearGradient(0, S * 0.78, 0, S);
+    grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,.42)");
+    x.fillStyle = grad; x.fillRect(0, S * 0.78, S, S * 0.22);
+  } else if (kind === "ceil") {
+    x.beginPath(); x.moveTo(0, S * 0.01); x.lineTo(S, S * 0.01); x.stroke();
+  } else {
+    x.beginPath(); x.moveTo(0, S * 0.01); x.lineTo(S, S * 0.01); x.stroke();
+    x.strokeStyle = "rgba(0,0,0,.18)";
+    x.beginPath(); x.moveTo(0, S / 2); x.lineTo(S, S / 2); x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = ANISO;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  tileCache[key] = t;
+  return t;
+}
+// Une texture par couple (répétition X, répétition Y) : les clones partagent
+// l'image, seul le cadrage change.
+function tiled(kind, rx, ry) {
+  rx = Math.max(1, Math.round(rx)); ry = Math.max(1, Math.round(ry));
+  const key = G.zone + ":" + kind + ":" + rx + "x" + ry;
+  if (repeatCache[key]) return repeatCache[key];
+  const t = makeTile(kind).clone();
+  t.needsUpdate = true;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = ANISO;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.repeat.set(rx, ry);
+  repeatCache[key] = t;
+  return t;
+}
+// MeshStandardMaterial et pas Lambert pour les grandes surfaces : il a une
+// vraie réponse à la lumière (rugosité), donc un mur n'est plus un aplat
+// uniforme. Le relief vient de la même image en carte de relief — gratuit,
+// puisqu'elle est déjà en mémoire.
+function surface(kind, rx, ry) {
+  const key = G.zone + ":" + kind + ":" + Math.round(rx) + "x" + Math.round(ry);
+  if (!surfaces[key]) {
+    const map = tiled(kind, rx, ry);
+    surfaces[key] = new THREE.MeshStandardMaterial({
+      map, bumpMap: map, bumpScale: kind === "wall" ? 0.5 : 0.3,
+      roughness: kind === "ceil" ? 0.95 : 0.82, metalness: 0.04,
+    });
+  }
+  return surfaces[key];
+}
+
+// On fusionne les cases en bandes horizontales : un mur de salle devient un
+// seul bloc au lieu de huit. Sans ça on a des centaines d'objets pour rien.
+function buildWorldMeshes() {
+  world.clear();
+  const H = 13;
+
+  for (let z = 0; z < MH; z++) {
+    let run = 0;
+    for (let x = 0; x <= MW; x++) {
+      const isFloor = x < MW && grid[z][x] === 1;
+      if (isFloor) { run++; continue; }
+      if (run > 0) {
+        const m = box(run * TILE, 1, TILE, surface(z % 2 ? "floorAlt" : "floor", run, 1),
+          (x - run / 2) * TILE, -0.5, (z + 0.5) * TILE);
+        m.castShadow = false;   // un sol ne projette rien, et ça coûte une passe
+        world.add(m);
+        run = 0;
+      }
+    }
+  }
+
+  // Murs : seules les cases pleines qui touchent du sol sont visibles.
+  const visible = (x, z) => {
+    if (grid[z][x] !== 0) return false;
+    for (const [ox, oz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x + ox, nz = z + oz;
+      if (nx >= 0 && nz >= 0 && nx < MW && nz < MH && grid[nz][nx] === 1) return true;
+    }
+    return false;
+  };
+  for (let z = 0; z < MH; z++) {
+    let run = 0;
+    for (let x = 0; x <= MW; x++) {
+      const isWall = x < MW && visible(x, z);
+      if (isWall) { run++; continue; }
+      if (run > 0) {
+        world.add(box(run * TILE, H, TILE, surface("wall", run, H / TILE),
+          (x - run / 2) * TILE, H / 2, (z + 0.5) * TILE));
+        run = 0;
+      }
+    }
+  }
+
+  // Plafond : même fusion en bandes que le sol. Sans plafond on dort sous un
+  // ciel noir et le lieu ne ressemble à rien.
+  for (let z = 0; z < MH; z++) {
+    let run = 0;
+    for (let x = 0; x <= MW; x++) {
+      const isFloor = x < MW && grid[z][x] === 1;
+      if (isFloor) { run++; continue; }
+      if (run > 0) {
+        const m = box(run * TILE, 1, TILE, surface("ceil", run, 1),
+          (x - run / 2) * TILE, H + 0.5, (z + 0.5) * TILE);
+        m.castShadow = false;
+        world.add(m);
+        run = 0;
+      }
+    }
+  }
+
+  buildFurniture(H);
+}
+
+// ─── mobilier ──────────────────────────────────────────────────────────────
+// Tout est posé le long des murs : la collision ne tient qu'à la grille, donc
+// un meuble au milieu du passage serait un meuble qu'on traverse.
+let seed = 1337;
+const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+
+function prop(w, h, d, mat, x, y, z, ry) {
+  if (solid(x, z)) return null;
+  const m = box(w, h, d, mat, x, y, z);
+  if (ry) m.rotation.y = ry;
+  world.add(m);
+  return m;
+}
+
+function buildFurniture(H) {
+  seed = 1337;
+  decorateHub(H);
+  for (const s of shelters) decorateShelter(s, H);
+}
+
+// Le hall : le coffre et la boutique. Le seul endroit où on ne dort pas.
+function decorateHub(H) {
+  world.add(box(8, 9, 5, MAT.vault, vault.x, 4.5, vault.z));
+  world.add(box(5.4, 6, 0.6, MAT.vaultDoor, vault.x, 4.5, vault.z + 2.7));
+  world.add(tube(0.9, 0.7, MAT.metal, vault.x + 1.2, 4.5, vault.z + 3.1, true));
+  world.add(box(9, 0.8, 6, MAT.metal, vault.x, 0.4, vault.z));
+  world.add(box(6, 0.5, 0.5, new THREE.MeshBasicMaterial({ color: 0x58d98a }), vault.x, 9.6, vault.z));
+  world.add(glowAt(0x58d98a, 16, vault.x, 9.6, vault.z));
+
+  world.add(box(8, 4.5, 3, MAT.shop, shop.x, 2.25, shop.z));
+  world.add(box(8.6, 0.5, 3.6, MAT.metal, shop.x, 4.7, shop.z));
+  world.add(box(7, 6, 1.4, MAT.locker, shop.x, 3, shop.z - 2.6));
+  world.add(box(6, 0.5, 0.5, new THREE.MeshBasicMaterial({ color: 0x6f86ff }), shop.x, 9.6, shop.z));
+  world.add(glowAt(0x6f86ff, 16, shop.x, 9.6, shop.z));
+}
+
+// Chaque zone a son décor. C'est ce qui fait qu'on sait où on est sans lire le
+// nom en haut de l'écran : la rue a des bennes et un lampadaire, les égouts
+// des conduites, la maison des poupées un berceau, le carnaval des mâts.
+function decorateShelter(s, H) {
+  const r = s.room, z = G.zone;
+  const x0 = (r.x + 1) * TILE, x1 = (r.x + r.w - 1) * TILE;
+  const z0 = (r.y + 1) * TILE, z1 = (r.y + r.h - 1) * TILE;
+  const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+
+  // Le lit, dans toutes les zones : c'est l'objet qu'on cherche en entrant.
+  world.add(box(s.w + 1, 1.2, s.d + 1, MAT.frame, s.x, 0.6, s.z));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])
+    world.add(box(0.8, 1.6, 0.8, MAT.frame, s.x + sx * (s.w / 2), 0.8, s.z + sz * (s.d / 2)));
+  s.mesh = box(s.w, 1.4, s.d, MAT.mattress, s.x, 1.9, s.z);
+  world.add(s.mesh);
+  world.add(box(s.w - 2.4, 0.7, 2.6, MAT.pillow, s.x, 2.9, s.z - s.d / 2 + 2));
+
+  // Une ampoule au-dessus de chaque refuge : repère visuel à distance.
+  s.lampObj = lamp(0xffd79a, s.x, H - 2.2, s.z, 11);
+  world.add(s.lampObj);
+
+  if (z === "street") {
+    prop(3.4, 4.2, 2.6, MAT.crate, x0 + 2.2, 2.1, z0 + 2.2);
+    prop(3.4, 4.2, 2.6, MAT.crate, x1 - 2.2, 2.1, z1 - 2.2);
+    world.add(tube(0.35, 10, MAT.pipe, x1 - 1.6, 5, z0 + 1.6));
+    world.add(lamp(0xffe3b0, x1 - 1.6, 10.2, z0 + 1.6, 13));
+    prop(0.6, 7, 0.6, MAT.pipe, x0 + 1.4, 3.5, z1 - 1.4);
+  } else if (z === "sewers") {
+    // Conduites au plafond : c'est la signature de la zone.
+    for (let i = 0; i < 3; i++)
+      world.add(tube(0.75, (x1 - x0) * 0.95, MAT.pipe, mx, H - 1.6 - i * 1.5, z0 + 1.3 + i * 1.2, true));
+    // Une flaque, pas un tapis : la première version couvrait la moitié du
+    // sol et se lisait comme un aplat rouge en travers de l'écran.
+    for (let i = 0; i < 3; i++)
+      world.add(box(3.2 + i, 0.08, 2.4 + i * 0.6, MAT.stain,
+        x0 + 3 + i * 3.4, 0.05, z1 - 3 - i * 1.2));
+    prop(2.2, 3.4, 2.2, MAT.barrel, x1 - 2, 1.7, z0 + 2);
+  } else if (z === "dollhouse") {
+    prop(2.8, 3.2, 2.8, MAT.frame, x0 + 2, 1.6, z1 - 2);
+    world.add(box(2.3, 0.5, 2.3, MAT.pillow, x0 + 2, 3.3, z1 - 2));
+    world.add(tube(0.3, 7, MAT.frame, x1 - 2, 3.5, z0 + 2));
+    world.add(lamp(0xffc8d8, x1 - 2, 7.4, z0 + 2, 10));
+    // Papier à fleurs : une bande claire à mi-hauteur sur un mur.
+    world.add(box((x1 - x0) * 0.9, 1.2, 0.3, MAT.pillow, mx, 6.5, z0 + 0.4));
+  } else if (z === "slasher") {
+    world.add(wedge(s.w + 2.5, 3.6, s.d + 2.5, MAT.board, s.x, H - 4.2, s.z));
+    prop(2.6, 5.2, 0.5, MAT.board, x0 + 1.8, 2.6, z0 + 1.8);
+    prop(0.5, 4.4, 2.6, MAT.board, x1 - 1.6, 2.2, z1 - 2);
+  } else if (z === "convent") {
+    // Colonnes : deux cylindres du sol au plafond, et un prie-Dieu.
+    world.add(tube(0.95, H, MAT.metal, x0 + 1.7, H / 2, z0 + 1.7));
+    world.add(tube(0.95, H, MAT.metal, x1 - 1.7, H / 2, z1 - 1.7));
+    prop(2.4, 0.4, 3.6, MAT.board, x1 - 2.2, 2.5, z0 + 2.6);
+    world.add(lamp(0xffeccd, mx, H - 3, mz, 12));
+  } else if (z === "hospital") {
+    prop(2.3, 3.6, 1.5, MAT.locker, x0 + 1.9, 1.8, z0 + 1.7);
+    // Néon au plafond : la seule zone à lumière froide.
+    world.add(box(5.5, 0.35, 1.2, new THREE.MeshBasicMaterial({ color: 0xbfffe6 }), s.x, H - 1, s.z));
+    world.add(glowAt(0x9affd0, 14, s.x, H - 1.2, s.z));
+    world.add(tube(0.25, 4.2, MAT.metal, x1 - 2, 2.1, z1 - 2));
+    prop(2.8, 0.25, 1.8, MAT.glass, x1 - 2, 4.2, z1 - 2);
+  } else if (z === "carnival") {
+    // Mâts rayés : un clair, un sang. On les voit de l'autre bout de l'arène.
+    world.add(tube(0.6, H, MAT.pillow, x0 + 1.7, H / 2, z0 + 1.7));
+    world.add(tube(0.6, H, MAT.meat, x1 - 1.7, H / 2, z1 - 1.7));
+    world.add(wedge(s.w + 3, 3.2, s.d + 3, MAT.meat, s.x, H - 3.8, s.z));
+    world.add(lamp(0xffe14a, s.x, H - 2.6, s.z, 15));
+  }
+}
+
+// Les refuges ne changent pas de couleur selon un palier (il n'y a plus de
+// paliers) : ce qui change, c'est la zone, et la carte est reconstruite à
+// chaque voyage. Cette fonction ne sert donc qu'à rafraîchir l'aperçu.
+function refreshShelters() {
+  const locked = !zoneUnlocked(zone());
+  for (const s of shelters) {
+    if (s.mesh) s.mesh.material = locked ? MAT.lockedBed : MAT.mattress;
+    if (s.lampObj) s.lampObj.visible = !locked;
+  }
+}
+
+// ─── personnages blocky, proportions R6 de Roblox ──────────────────────────
+// Un vrai avatar Roblox, c'est un visage dessiné sur la face avant de la tête.
+// On le peint sur un canvas plutôt que de charger une image : rien à
+// télécharger, et on peut en faire une version « créature ».
+const faceCache = {};
+function faceTexture(skin, kind) {
+  const key = skin + "/" + kind;
+  if (faceCache[key]) return faceCache[key];
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const x = c.getContext("2d");
+  x.fillStyle = "#" + skin.toString(16).padStart(6, "0");
+  x.fillRect(0, 0, 128, 128);
+  x.fillStyle = "#17110a";
+  if (kind === "smile") {
+    x.beginPath(); x.ellipse(45, 54, 8, 12, 0, 0, 7); x.fill();
+    x.beginPath(); x.ellipse(83, 54, 8, 12, 0, 0, 7); x.fill();
+    x.lineWidth = 6; x.strokeStyle = "#17110a"; x.lineCap = "round";
+    x.beginPath(); x.arc(64, 72, 21, 0.3, Math.PI - 0.3); x.stroke();
+  } else if (kind === "wrong") {
+    // Le Mime porte TON visage, mais le sourire est trop large et trop bas.
+    x.beginPath(); x.ellipse(45, 50, 8, 14, 0, 0, 7); x.fill();
+    x.beginPath(); x.ellipse(83, 50, 8, 14, 0, 0, 7); x.fill();
+    x.lineWidth = 7; x.strokeStyle = "#17110a"; x.lineCap = "round";
+    x.beginPath(); x.arc(64, 64, 34, 0.18, Math.PI - 0.18); x.stroke();
+  } else if (kind === "stitch") {
+    // La Rampante : pas d'yeux, une bouche cousue en travers.
+    x.lineWidth = 5; x.strokeStyle = "#5c1d1d"; x.lineCap = "round";
+    x.beginPath(); x.moveTo(26, 70); x.lineTo(102, 70); x.stroke();
+    x.lineWidth = 3;
+    for (let i = 32; i < 100; i += 11) { x.beginPath(); x.moveTo(i, 60); x.lineTo(i + 6, 80); x.stroke(); }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 2;
+  faceCache[key] = t;
+  return t;
+}
+
+// Tête : six matériaux, le cinquième (−Z) porte le visage. L'avatar regarde −Z.
+function headMaterials(skin, face) {
+  const plain = new THREE.MeshLambertMaterial({ color: skin });
+  if (!face) return plain;
+  const front = new THREE.MeshLambertMaterial({ map: faceTexture(skin, face) });
+  return [plain, plain, plain, plain, plain, front];
+}
+
+function makeAvatar(opts) {
+  const g = new THREE.Group();
+  const scale = opts.scale || 1;
+  const mat = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const limbs = {};
+  const mkLimb = (name, w, h, d, c, x, y, z) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, y, z || 0);
+    pivot.add(box(w, h, d, mat(c), 0, -h / 2, 0));
+    g.add(pivot);
+    limbs[name] = pivot;
+  };
+
+  if (opts.crawl) {
+    // La Rampante marche à quatre pattes : torse à plat, tête en avant, et
+    // quatre membres sous les angles. Même squelette, silhouette opposée.
+    g.add(box(1.9 * scale, 1.1 * scale, 3.2 * scale, mat(opts.shirt), 0, 0, 0));
+    const head = box(1.5 * scale, 1.2 * scale, 1.5 * scale,
+      headMaterials(opts.skin, opts.face), 0, 0.1 * scale, -2.1 * scale);
+    g.add(head);
+    const L = (opts.armLen || 2.6) * scale;
+    mkLimb("armL", 0.7 * scale, L, 0.7 * scale, opts.shirt, -0.95 * scale, -0.3 * scale, -1.2 * scale);
+    mkLimb("armR", 0.7 * scale, L, 0.7 * scale, opts.shirt, 0.95 * scale, -0.3 * scale, -1.2 * scale);
+    mkLimb("legL", 0.8 * scale, L * 0.8, 0.8 * scale, opts.pants, -0.95 * scale, -0.3 * scale, 1.2 * scale);
+    mkLimb("legR", 0.8 * scale, L * 0.8, 0.8 * scale, opts.pants, 0.95 * scale, -0.3 * scale, 1.2 * scale);
+    g.userData.limbs = limbs; g.userData.scale = scale; g.userData.crawl = true;
+    return g;
+  }
+
+  const tw = (opts.thin ? 1.5 : 2) * scale;
+  g.add(box(tw, 2 * scale, 1 * scale, mat(opts.shirt), 0, 0, 0));
+  g.add(box(1.6 * scale, 1.6 * scale, 1.6 * scale,
+    headMaterials(opts.skin, opts.face), 0, 1.8 * scale, 0));
+
+  if (opts.hat) {
+    g.add(box(1.8 * scale, 0.45 * scale, 1.8 * scale, mat(opts.hat), 0, 2.75 * scale, 0));
+    g.add(box(1.8 * scale, 0.2 * scale, 0.9 * scale, mat(opts.hat), 0, 2.5 * scale, -1.1 * scale));
+  }
+
+  // Bras et jambes : le pivot est à l'épaule et à la hanche, sinon la rotation
+  // donne l'impression que le membre pousse depuis le sol.
+  const armLen = (opts.armLen || 2) * scale;
+  const ax = (opts.thin ? 1.25 : 1.5) * scale;
+  mkLimb("armL", 0.9 * scale, armLen, 0.9 * scale, opts.shirt, -ax, 0.9 * scale);
+  mkLimb("armR", 0.9 * scale, armLen, 0.9 * scale, opts.shirt, ax, 0.9 * scale);
+  mkLimb("legL", 0.9 * scale, 2 * scale, 0.9 * scale, opts.pants, -0.5 * scale, -1 * scale);
+  mkLimb("legR", 0.9 * scale, 2 * scale, 0.9 * scale, opts.pants, 0.5 * scale, -1 * scale);
+
+  // Yeux lumineux : sur une créature, c'est souvent tout ce qu'on voit d'elle.
+  if (opts.eyes > 0) {
+    const eyeMat = new THREE.MeshBasicMaterial({ color: opts.eye });
+    for (let i = 0; i < opts.eyes; i++) {
+      let ex, ey;
+      if (opts.eyes === 1) { ex = 0; ey = 0; }
+      else if (opts.eyes === 2) { ex = i === 0 ? -0.38 : 0.38; ey = 0; }
+      else { const a = i / opts.eyes * Math.PI * 2; ex = Math.cos(a) * 0.45; ey = Math.sin(a) * 0.38; }
+      g.add(box(0.3 * scale, 0.16 * scale, 0.12 * scale, eyeMat,
+        ex * scale, 1.8 * scale + ey * scale, -0.85 * scale));
+    }
+    const glow = new THREE.PointLight(opts.eye, 0.9, 20);
+    glow.position.set(0, 1.8 * scale, -1 * scale);
+    g.add(glow);
+    g.userData.glow = glow;
+  }
+
+  g.userData.limbs = limbs;
+  g.userData.scale = scale;
+  return g;
+}
+
+// Joueur : couleurs classiques Roblox (chemise bleue, jambes vertes, tête
+// jaune) et le sourire d'origine.
+const PLAYER_LOOK = { shirt: 0x3f7fbf, pants: 0x4b9b4b, skin: 0xf2cf52, eyes: 0, scale: 1, face: "smile" };
+const player = makeAvatar(PLAYER_LOOK);
+actors.add(player);
+
+function animateLimbs(g, phase, amount) {
+  const l = g.userData.limbs;
+  if (!l) return;
+  const s = Math.sin(phase) * amount;
+  if (g.userData.crawl) {
+    // Quatre pattes : les diagonales vont ensemble.
+    l.armL.rotation.x = s; l.legR.rotation.x = s * 0.9;
+    l.armR.rotation.x = -s; l.legL.rotation.x = -s * 0.9;
+    return;
+  }
+  l.armL.rotation.x = s; l.armR.rotation.x = -s;
+  l.legL.rotation.x = -s; l.legR.rotation.x = s;
+}
+
+// ─── son ───────────────────────────────────────────────────────────────────
+// Tout est synthétisé au vol : pas un fichier à charger, donc pas un son qui
+// manque si le réseau est lent. Un jeu d'horreur sans son n'est pas un jeu
+// d'horreur — c'est la moitié de la peur.
+const SFX = { ctx: null, master: null, on: true, noise: null, drone: null, filter: null, beat: 0 };
+
+function audioInit() {
+  if (SFX.ctx) return;
+  const C = window.AudioContext || window.webkitAudioContext;
+  if (!C) return;
+  let ctx;
+  try { ctx = new C(); } catch (e) { return; }
+  SFX.ctx = ctx;
+  SFX.master = ctx.createGain();
+  SFX.master.gain.value = SFX.on ? 0.9 : 0;
+  SFX.master.connect(ctx.destination);
+
+  const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 1.5), ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  SFX.noise = buf;
+
+  // Nappe grave continue : on ne l'entend pas vraiment, on la sent. Elle monte
+  // avec l'éveil de la maison.
+  const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
+  o1.type = o2.type = "sawtooth";
+  o1.frequency.value = 41; o2.frequency.value = 41 * 1.012;
+  const f = ctx.createBiquadFilter();
+  f.type = "lowpass"; f.frequency.value = 170; f.Q.value = 4;
+  const g = ctx.createGain(); g.gain.value = 0.045;
+  o1.connect(f); o2.connect(f); f.connect(g); g.connect(SFX.master);
+  o1.start(); o2.start();
+  SFX.drone = g; SFX.filter = f;
+}
+function resumeAudio() {
+  audioInit();
+  if (SFX.ctx && SFX.ctx.state === "suspended") SFX.ctx.resume();
+}
+function burst(dur, cut, q, vol, type) {
+  if (!SFX.ctx || !SFX.on) return;
+  const c = SFX.ctx, src = c.createBufferSource();
+  src.buffer = SFX.noise; src.loop = true;
+  const f = c.createBiquadFilter();
+  f.type = type || "lowpass"; f.frequency.value = cut; f.Q.value = q || 1;
+  const g = c.createGain();
+  g.gain.setValueAtTime(vol, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+  src.connect(f); f.connect(g); g.connect(SFX.master);
+  src.start(); src.stop(c.currentTime + dur + 0.02);
+}
+function tone(freq, dur, vol, type, to) {
+  if (!SFX.ctx || !SFX.on) return;
+  const c = SFX.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = type || "sine";
+  o.frequency.setValueAtTime(freq, c.currentTime);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, c.currentTime + dur);
+  g.gain.setValueAtTime(vol, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+  o.connect(g); g.connect(SFX.master);
+  o.start(); o.stop(c.currentTime + dur + 0.02);
+}
+const sfx = {
+  step:   () => burst(0.085, 820 + Math.random() * 260, 1, 0.13),
+  run:    () => burst(0.07, 1100 + Math.random() * 300, 1, 0.17),
+  heart:  (v) => { tone(54, 0.16, 0.22 * v, "sine", 34); setTimeout(() => tone(48, 0.2, 0.15 * v, "sine", 30), 150); },
+  cash:   () => { tone(680, 0.1, 0.16, "triangle"); setTimeout(() => tone(1020, 0.16, 0.14, "triangle"), 95); },
+  buy:    () => { tone(520, 0.08, 0.14, "square"); setTimeout(() => tone(780, 0.12, 0.12, "square"), 80); },
+  unlock: () => [0, 110, 220].forEach((d, i) => setTimeout(() => tone(440 * Math.pow(1.26, i), 0.18, 0.13, "triangle"), d)),
+  sleep:  () => burst(1.4, 300, 0.8, 0.07),
+  alarm:  () => { tone(180, 0.5, 0.2, "sawtooth", 90); burst(0.6, 500, 1, 0.12); },
+  sting:  () => { tone(420, 0.55, 0.3, "sawtooth", 48); burst(0.5, 2600, 0.7, 0.26, "bandpass"); },
+  growl:  () => burst(0.9, 230, 2.4, 0.16),
+  door:   () => burst(0.35, 620, 3, 0.1),
+};
+function setSound(on) {
+  SFX.on = on;
+  if (SFX.master) SFX.master.gain.value = on ? 0.9 : 0;
+  const el = $("snd"); if (el) el.textContent = on ? "M · son" : "M · son coupé";
+  try { localStorage.setItem("sleepordie.snd", on ? "1" : "0"); } catch (e) {}
+}
+
+// ─── interface ─────────────────────────────────────────────────────────────
+// Format.money du jeu Roblox : des suffixes, parce qu'à 100 000 $/s on atteint
+// vite des nombres qu'on ne lit plus.
+function money(v) {
+  const sign = v < 0 ? "-" : "";
+  const n = Math.abs(v);
+  for (const [scale, suf] of [[1e12, "T"], [1e9, "Md"], [1e6, "M"], [1e3, "k"]]) {
+    if (n >= scale) {
+      const s = n / scale;
+      const dec = s < 10 ? 2 : (s < 100 ? 1 : 0);
+      return sign + s.toFixed(dec).replace(".", ",") + " " + suf + " $";
+    }
+  }
+  return sign + Math.round(n) + " $";
+}
+const mmss = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+function toast(text, kind) { G.toasts.push({ text, kind: kind || "info", until: G.time + 5 }); drawToasts(); }
+function drawToasts() {
+  $("toasts").innerHTML = G.toasts.slice(-4).map(t => `<div class="toast ${t.kind}">${t.text}</div>`).join("");
+}
+
+function syncHud() {
+  const z = zone();
+  $("w-cash").textContent = money(G.cash);
+  const u = $("w-unb"); u.textContent = money(G.unbanked); u.classList.toggle("live", G.unbanked > 0);
+  const h = $("w-hint");
+  h.textContent = G.unbanked > 0
+    ? `sur toi — ${Math.round(z.loss * 100)} % perdus s'il t'attrape`
+    : "sur toi";
+  h.classList.toggle("live", G.unbanked > 0);
+
+  const zn = $("z-nm");
+  zn.textContent = z.name.toUpperCase();
+  $("z-rt").textContent = money(z.rate) + "/s";
+  const pv = $("z-pv");
+  pv.hidden = zoneUnlocked(z);
+  if (!pv.hidden) pv.textContent = "APERÇU — gains non comptés";
+
+  const st = STAGES[G.stage];
+  $("a-st").textContent = st.name; $("a-st").style.color = st.color;
+  const sg = $("a-sg").children;
+  for (let i = 0; i < sg.length; i++) sg[i].style.background = i <= G.stage ? st.color : "var(--panel2)";
+  const nx = THRESHOLDS[G.stage + 1];
+  $("a-ft").textContent = nx === undefined
+    ? `maximum · gains x${st.reward.toFixed(2).replace(".", ",")}`
+    : `stade suivant dans ${Math.max(0, Math.ceil(nx - G.awaken))} pts · gains x${st.reward.toFixed(2).replace(".", ",")}`;
+
+  const sp = $("sleep");
+  if (G.sleeping) {
+    sp.hidden = false;
+    const capped = G.earnedHere >= z.cap;
+    const rate = z.rate * STAGES[G.stage].reward / (capped ? SOFTCAP_DIV : 1);
+    $("s-sp").textContent = G.sleeping.kind.toUpperCase() + " · " + z.name;
+    $("s-ra").textContent = `+${money(rate)}/s · ${money(G.earnedHere)} gagnés ici`
+      + (capped ? "  (plafond atteint — taux ÷4)" : "");
+    const d = defenseProfile();
+    $("s-ri").textContent = G.graceLeft > 0
+      ? `les gains démarrent dans ${G.graceLeft.toFixed(1).replace(".", ",")} s`
+      : (G.incoming > 0
+        ? `ASSAUT — il arrive dans ${G.incoming.toFixed(1).replace(".", ",")} s`
+        : `prochain assaut ~${Math.max(0, Math.ceil(G.nextAssault - G.time))} s · défenses ${d.delay.toFixed(0)} s`);
+    $("s-bar").style.width = Math.max(0, Math.min(1, G.sessionLeft / z.max)) * 100 + "%";
+  } else sp.hidden = true;
+
+  const stam = $("stam");
+  stam.hidden = G.stam > 0.999 && !G.sprint;
+  $("stam-i").style.width = (G.stam * 100).toFixed(0) + "%";
+  stam.classList.toggle("low", G.stam < 0.3);
+}
+
+// ─── panneaux ──────────────────────────────────────────────────────────────
+let sheet = null;
+function closeSheet() { sheet = null; $("sheet").innerHTML = ""; $("sheet").hidden = true; }
+function openSheet(kind, html) { sheet = kind; $("sheet").hidden = false; $("sheet").innerHTML = html; }
+
+function title() {
+  openSheet("title", `<div class="card">
+    <h1>SLEEP<br><em>OR DIE</em></h1>
+    <p><strong>Tu es payé pour dormir.</strong> Plus la zone est dangereuse, plus
+    elle paie. L'argent gagné en dormant reste <em>sur toi</em> : si un monstre
+    t'attrape, tu en perds la moitié ou plus. Dépose-le au coffre.</p>
+    <p style="color:var(--dim);font-size:12.5px">Sept zones, sept monstres, sept
+    mécaniques différentes. Les chiffres sont ceux du jeu Roblox du dépôt —
+    rien n'a été adouci pour la démo.</p>
+    <div class="keys">
+      <b>ZQSD / WASD</b><span>se déplacer (toutes dispositions)</span>
+      <b>souris</b><span>regarder — deux monstres y réagissent</span>
+      <b>E</b><span>dormir · déposer · boutique</span>
+      <b>F / clic</b><span>frapper — ça étourdit, ça ne tue pas</span>
+      <b>N</b><span>voyager entre les zones</span>
+      <b>Maj</b><span>courir — et se faire entendre</span>
+      <b>Espace</b><span>se réveiller</span>
+      <b>Échap</b><span>pause</span>
+    </div>
+    ${G.totalBanked > 0 ? `<p style="color:var(--cash)">Reprise : ${money(G.cash)} en banque · ${money(G.totalBanked)} déposés à vie · ${G.nights} sessions</p>` : ""}
+    <div class="row"><button type="button" id="b-play">${G.totalBanked > 0 ? "Continuer" : "Entrer dans la rue"}</button>
+    ${G.totalBanked > 0 ? '<button type="button" class="ghost" id="b-reset">Repartir de zéro</button>' : ""}</div></div>`);
+  $("b-play").onclick = () => { resumeAudio(); closeSheet(); start(); };
+  const r = $("b-reset");
+  if (r) r.onclick = () => {
+    try { localStorage.removeItem(SAVE); } catch (e) {}
+    G.cash = 0; G.totalBanked = 0; G.nights = 0; G.deaths = 0; G.deepest = 1;
+    G.owned = {}; G.placed = {}; G.weapon = null; G.seen = {};
+    title();
+  };
+}
+
+function pause() {
+  G.running = false;
+  openSheet("pause", `<div class="card"><h2>Pause</h2>
+    <div class="stats">
+      <div class="stat"><div class="t">EN BANQUE</div><div class="v" style="color:var(--cash)">${money(G.cash)}</div></div>
+      <div class="stat"><div class="t">SUR TOI</div><div class="v">${money(G.unbanked)}</div></div>
+      <div class="stat"><div class="t">DÉPOSÉ À VIE</div><div class="v">${money(G.totalBanked)}</div></div>
+      <div class="stat"><div class="t">MORTS</div><div class="v" style="color:${G.deaths ? "var(--danger)" : "inherit"}">${G.deaths}</div></div>
+    </div>
+    <p>Les zones se débloquent au <em>total déposé à vie</em>, pas à ce que tu as
+    en poche. Tu en as déposé ${money(G.totalBanked)}.</p>
+    <p style="color:var(--faint);font-size:12px">Partie en pause. ZQSD, WASD ou
+    une flèche reprend immédiatement.</p>
+    <div class="row"><button type="button" id="b-res">Reprendre</button>
+      <button type="button" class="ghost" id="b-zn">Voyager</button></div></div>`);
+  $("b-res").onclick = () => { closeSheet(); G.running = true; };
+  $("b-zn").onclick = () => zonesSheet();
+}
+
+// Les sept zones. Celles qu'on n'a pas débloquées restent visitables — c'est un
+// aperçu, son intérêt est qu'on voie les sept monstres — mais les gains n'y
+// comptent pas, sinon la progression n'a plus aucun sens.
+function zonesSheet() {
+  G.running = false;
+  const rows = ZONES.map(z => {
+    const open = zoneUnlocked(z);
+    const here = z.id === G.zone;
+    const m = MONSTERS[z.monster];
+    return `<div class="item"><div>
+      <div class="n">${z.order}. ${z.name} ${here ? '<span style="color:var(--accent)">— tu y es</span>' : ""}</div>
+      <div class="d">${z.blurb}</div>
+      <div class="l">${money(z.rate)}/s · ${m.name} · ${z.mech}</div>
+      <div class="l" style="color:${open ? "var(--cash)" : "var(--dim)"}">${
+        open ? "débloquée" : "il faut " + money(z.unlock) + " déposés — visitable en aperçu"}</div>
+      </div>
+      <button type="button" data-go="${z.id}" ${here ? "disabled" : ""}>${
+        here ? "ICI" : (open ? "Entrer" : "Aperçu")}</button></div>`;
+  }).join("");
+  openSheet("zones", `<div class="card"><h2>Les sept zones</h2>
+    <p>${money(G.totalBanked)} déposés à vie.</p>
+    <div class="shop-list">${rows}</div>
+    <div class="row"><button type="button" id="b-cl">Fermer</button></div></div>`);
+  $("b-cl").onclick = () => { closeSheet(); G.running = true; };
+  for (const b of document.querySelectorAll("[data-go]")) b.onclick = () => travel(b.dataset.go);
+}
+
+function shopSheet() {
+  G.running = false;
+  const rows = SHOP.map(it => {
+    const have = G.owned[it.id] || 0;
+    const can = G.cash >= it.price;
+    const placed = G.placed[it.id] || 0;
+    const detail = it.kind === "weapon"
+      ? `${it.dmg} de dégâts · étourdit ${String(it.stun).replace(".", ",")} s · recharge ${String(it.cd).replace(".", ",")} s`
+      : `${it.slots} emplacement${it.slots > 1 ? "s" : ""} · ${it.dur} usages`
+        + (it.delay ? ` · retient ${it.delay} s` : "")
+        + (it.warn ? ` · prévient ${String(it.warn).replace(".", ",")} s` : "");
+    const action = it.kind === "weapon"
+      ? (have ? (G.weapon === it.id
+          ? `<button type="button" disabled>ÉQUIPÉE</button>`
+          : `<button type="button" data-eq="${it.id}">Équiper</button>`)
+        : `<button type="button" data-buy="${it.id}" ${can ? "" : "disabled"}>${money(it.price)}</button>`)
+      : (have > placed
+        ? `<button type="button" data-place="${it.id}">Poser</button>`
+        : `<button type="button" data-buy="${it.id}" ${can ? "" : "disabled"}>${money(it.price)}</button>`);
+    return `<div class="item"><div><div class="n">${it.name}</div><div class="d">${it.desc}</div>
+      <div class="l">${detail}</div>
+      <div class="l">${it.kind === "weapon" ? (have ? "possédée" : "zone " + ZONE_BY_ID[it.zone].name)
+        : `possédées ${have} · posées ${placed}`}</div></div>${action}</div>`;
+  }).join("");
+  const d = defenseProfile();
+  openSheet("shop", `<div class="card"><h2>Boutique</h2>
+    <p>${money(G.cash)} en banque. Refuge : ${d.slots}/${MAX_SLOTS} emplacements,
+    ${d.delay.toFixed(0)} s de délai, détection −${Math.round(d.cut * 100)} %.</p>
+    <div class="shop-list">${rows}</div>
+    <div class="row"><button type="button" id="b-cl">Fermer</button></div></div>`);
+  $("b-cl").onclick = () => { closeSheet(); G.running = true; };
+  for (const b of document.querySelectorAll("[data-buy]")) b.onclick = () => {
+    const it = SHOP_BY_ID[b.dataset.buy];
+    if (G.cash < it.price) return;
+    G.cash -= it.price; G.owned[it.id] = (G.owned[it.id] || 0) + 1;
+    if (it.kind === "weapon" && !G.weapon) G.weapon = it.id;
+    save(); toast(`${it.name} acheté — ${money(it.price)}.`, "cash"); sfx.cash(); shopSheet();
+  };
+  for (const b of document.querySelectorAll("[data-eq]")) b.onclick = () => {
+    G.weapon = b.dataset.eq; save(); toast(`${SHOP_BY_ID[G.weapon].name} équipée.`, "info"); shopSheet();
+  };
+  for (const b of document.querySelectorAll("[data-place]")) b.onclick = () => {
+    const it = SHOP_BY_ID[b.dataset.place];
+    const d2 = defenseProfile();
+    if (d2.slots + (it.slots || 1) > MAX_SLOTS) {
+      toast(`Plus de place : ${MAX_SLOTS} emplacements par refuge.`, "warn"); return;
+    }
+    G.placed[it.id] = (G.placed[it.id] || 0) + 1;
+    toast(`${it.name} posée dans le refuge.`, "info"); shopSheet();
+  };
+}
+
+function reveal(def) {
+  G.running = false;
+  openSheet("reveal", `<div class="card bc">
+    <div class="k">TU VIENS D'EN RÉVEILLER UN</div>
+    <div class="n" style="color:#${def.eye.toString(16).padStart(6, "0")}">${def.name}</div>
+    <div class="t">${def.tell}</div>
+    <div class="k" style="margin-top:4px">COMMENT T'EN SORTIR</div>
+    <div class="c">${def.counter}</div>
+    <div class="k" style="margin-top:6px;color:var(--faint)">partie en pause — une touche de déplacement reprend</div>
+    <div class="row"><button type="button" id="b-go">J'ai compris — cours</button></div></div>`);
+  $("b-go").onclick = () => { closeSheet(); G.running = true; };
+}
+
+// ─── économie ──────────────────────────────────────────────────────────────
+function bank() {
+  if (G.unbanked <= 0) return 0;
+  const a = Math.floor(G.unbanked);
+  G.cash += a; G.totalBanked += a; G.unbanked = 0;
+  save();
+  sfx.cash();
+  for (const z of ZONES) {
+    if (z.unlock > 0 && G.totalBanked >= z.unlock && !G.seen["u" + z.id]) {
+      G.seen["u" + z.id] = true;
+      toast(`${z.name} débloquée — N pour y aller.`, "unlock");
+      sfx.unlock();
+    }
+  }
+  return a;
+}
+
+function travel(zoneId) {
+  const z = ZONE_BY_ID[zoneId];
+  if (!z || zoneId === G.zone) return;
+  if (G.sleeping) wake("travel");
+  G.zone = zoneId;
+  G.preview = !zoneUnlocked(z);
+  clearBeasts();
+  buildZone(zoneId);
+  buildWorldMeshes();
+  G.px = spawn.x; G.pz = spawn.z; G.dead = 0;
+  G.placed = {}; G.defHits = {};   // les défenses restent au refuge quitté
+  G.bossPhase = 0; G.bossHits = 0;
+  scene.fog.color.setHex(pal().fog);
+  renderer.setClearColor(pal().fog);
+  if (z.order > G.deepest) { G.deepest = z.order; save(); }
+  closeSheet();
+  G.running = true;
+  toast(G.preview
+    ? `${z.name} — aperçu. Les gains ne comptent pas ici.`
+    : `${z.name}. ${money(z.rate)}/s.`, G.preview ? "warn" : "info");
+  // Le monstre de la zone est déjà là. On n'entre pas dans une zone vide.
+  spawnBeast(MONSTERS[z.monster], null, true);
+}
+
+// ─── sommeil : une session, pas une nuit ───────────────────────────────────
+// Le jeu Roblox ne compte pas les nuits : il compte des SESSIONS. On dort, on
+// gagne par seconde, et la session s'arrête d'elle-même au bout de
+// MaxSessionSeconds. C'est ce qui empêche le farm passif.
+function nearShelter() {
+  for (const s of shelters)
+    if (Math.abs(G.px - s.x) < s.w * 0.9 && Math.abs(G.pz - s.z) < s.d * 0.8) return s;
+  return null;
+}
+function trySleep(s) {
+  const z = zone();
+  G.sleeping = s; G.earnedHere = 0;
+  G.sessionLeft = z.max; G.graceLeft = GRACE;
+  G.nextAssault = G.time + ASSAULT_BASE + (Math.random() - 0.5) * ASSAULT_JITTER;
+  G.incoming = 0;
+  G.px = s.x; G.pz = s.z;
+  sfx.sleep();
+  toast(`Tu dors. ${mmss(z.max)} de session, ${money(z.rate)}/s après ${GRACE} s.`, "info");
+}
+function wake(reason) {
+  if (!G.sleeping) return;
+  const z = zone();
+  G.sleeping = null; G.incoming = 0;
+  if (reason === "complete") {
+    G.nights++; save();
+    toast(`Session terminée. ${money(G.unbanked)} sur toi — va les déposer.`, "cash");
+  } else if (reason === "manual") {
+    toast(`Réveillé. ${money(G.unbanked)} sur toi.`, "info");
+  }
+}
+
+// L'assaut : le monstre le plus proche est envoyé sur le refuge, et les
+// défenses lui coûtent du temps avant d'arriver.
+function launchAssault() {
+  const z = zone();
+  const def = MONSTERS[z.monster];
+  const d = defenseProfile();
+  const m = MONSTERS[z.monster];
+
+  // §5 — « fake_alerts » : une alerte sur trois est fausse. C'est la mécanique
+  // de l'hôpital, et elle n'a de sens que si la fausse est indiscernable.
+  const fake = m.rule === "fake_alerts" && Math.random() < 0.34;
+
+  // « disable » : l'Entité du couvent neutralise les défenses. Le délai tombe,
+  // et l'alarme ne prévient pas.
+  const disabled = m.rule === "disable";
+  const delay = disabled ? 0 : d.delay;
+  const warn = disabled ? 0 : d.warn;
+
+  if (warn > 0 && !disabled) {
+    sfx.alarm();
+    toast(fake ? "L'alarme hurle." : "L'alarme hurle — quelque chose vient.", "danger");
+  } else if (disabled) {
+    toast("Les alarmes se taisent une par une.", "danger");
+  }
+  if (fake) {
+    // Rien ne vient. On consomme quand même l'usure de l'alarme : c'est
+    // précisément le coût de la mécanique.
+    for (const id in G.placed) if (SHOP_BY_ID[id] && SHOP_BY_ID[id].warn) G.defHits[id] = (G.defHits[id] || 0) + 1;
+    return;
+  }
+
+  for (const id in G.placed) {
+    if (!G.placed[id]) continue;
+    G.defHits[id] = (G.defHits[id] || 0) + 1;
+    const it = SHOP_BY_ID[id];
+    if (it && G.defHits[id] === it.dur * G.placed[id]) {
+      toast(`${it.name} a cédé.`, "warn"); sfx.door();
+    }
+  }
+
+  G.incoming = Math.max(0.6, delay + warn);
+  G.shoutText = "IL ARRIVE — COURS"; G.shoutUntil = G.time + G.incoming;
+  spawnBeast(def, G.incoming);
+  if (!G.seen[def.id]) { G.seen[def.id] = true; save(); reveal(def); }
+}
+
+// ─── monstres ──────────────────────────────────────────────────────────────
+// Les sept mécaniques du CDC §5, et c'est `rule` qui les porte :
+//   none         le Rôdeur     — chasse à vue, lâche au bout de 12 s
+//   sound        la Chose      — voit mal, entend tout : c'est courir qui l'appelle
+//   gaze         la Poupée     — figée tant qu'on la regarde
+//   relentless   le Masque     — lent, et ne lâche jamais
+//   disable      l'Entité      — neutralise les défenses du refuge
+//   fake_alerts  le Menteur    — une alerte sur trois est fausse
+//   boss_phases  le Clown      — trois phases qui rejouent sound, gaze, relentless
+function ruleOf(b) {
+  if (b.def.rule !== "boss_phases") return b.def.rule;
+  return BOSS_PHASES[Math.min(G.bossPhase, BOSS_PHASES.length - 1)].rule;
+}
+function statsOf(def, b) {
+  const s = STAGES[G.stage];
+  let speed = def.speed, sight = def.sight;
+  if (def.rule === "boss_phases" && b) {
+    const ph = BOSS_PHASES[Math.min(G.bossPhase, BOSS_PHASES.length - 1)];
+    speed = ph.speed; sight = ph.sight;
+  }
+  return { speed: speed * s.speed, sight: sight * s.sight, catch: def.catch + G.stage * 0.4 };
+}
+function clearBeasts() {
+  for (const b of G.beasts) despawn(b);
+  G.beasts.length = 0;
+}
+function despawn(b) {
+  actors.remove(b.obj);
+  if (b.lamp) actors.remove(b.lamp);
+}
+function spawnBeast(def, win, patrolMode) {
+  let inst = G.beasts.find(b => b.def.id === def.id);
+  if (!inst) {
+    const scale = def.height / 5;
+    // Le Menteur porte TES couleurs : de loin, on croit voir un autre joueur.
+    const look = def.mimic
+      ? { shirt: PLAYER_LOOK.shirt, pants: PLAYER_LOOK.pants, skin: PLAYER_LOOK.skin, face: "wrong" }
+      : { shirt: def.body, pants: def.body, skin: def.body, face: def.face };
+    inst = { def, obj: makeAvatar(Object.assign(look, {
+      eyes: def.eyes, eye: def.eye, scale, armLen: def.arm / scale,
+      crawl: def.crawl, thin: def.thin, hat: def.hat })) };
+    if (def.lantern) {
+      inst.lamp = new THREE.PointLight(0xffc478, 2.0, 46);
+      actors.add(inst.lamp);
+      inst.obj.add(box(0.8, 1, 0.8, new THREE.MeshBasicMaterial({ color: 0xffc478 }), 1.6 * scale, 0.2, 0));
+    }
+    // Halo sur les yeux : dans le noir, c'est souvent tout ce qu'on voit.
+    const halo = glow(def.eye, def.height * 0.5);
+    halo.position.set(0, def.height * 0.34, -0.4);
+    inst.obj.add(halo);
+    inst.halo = halo;
+    actors.add(inst.obj);
+    G.beasts.push(inst);
+  }
+  let at;
+  if (win) {
+    const want = Math.max(22, win * statsOf(def, inst).speed);
+    let best = patrol[0], err = Infinity;
+    for (const p of patrol) {
+      const d = Math.hypot(p.x - G.px, p.z - G.pz);
+      if (d > 14 && Math.abs(d - want) < err) { err = Math.abs(d - want); best = p; }
+    }
+    at = best || patrol[0];
+  } else {
+    const far = patrol.filter(p => Math.hypot(p.x - G.px, p.z - G.pz) > 45);
+    const pool = far.length ? far : patrol;
+    at = pool[Math.floor(Math.random() * pool.length)];
+  }
+  if (!at) at = { x: spawn.x, z: spawn.z };
+  inst.x = at.x; inst.z = at.z;
+  inst.mode = patrolMode ? "patrol" : "hunt";
+  inst.last = { x: G.px, z: G.pz };
+  inst.path = []; inst.repath = 0; inst.lost = 0; inst.still = 0;
+  inst.stun = 0;
+  inst.ends = G.time + def.giveUp;
+  inst.pi = 0; inst.walk = 0; inst.angle = 0;
+}
+
+// Le joueur le regarde-t-il ? (La Poupée se fige sous le regard.)
+function observed(b) {
+  const dx = b.x - G.px, dz = b.z - G.pz, d = Math.hypot(dx, dz);
+  if (d < 0.1) return true;
+  if (d > 130) return false;
+  const fx = -Math.sin(G.yaw), fz = -Math.cos(G.yaw);
+  return (fx * dx + fz * dz) / d > 0.35 && los(G.px, G.pz, b.x, b.z);
+}
+
+function updateBeast(b, dt) {
+  const s = statsOf(b.def, b);
+  const rule = ruleOf(b);
+  const d = Math.hypot(b.x - G.px, b.z - G.pz);
+
+  if (b.stun > 0) {
+    b.stun -= dt;
+    animateLimbs(b.obj, b.walk, 0);
+    b.obj.visible = los(G.px, G.pz, b.x, b.z) && d < STAGES[G.stage].fog * 1.6;
+    b.obj.position.set(b.x, b.def.height * 0.52, b.z);
+    if (b.halo) b.halo.material.opacity = 0.35;
+    return;
+  }
+  if (b.halo) b.halo.material.opacity = 1;
+
+  // « sound » : elle ne voit presque rien, mais elle entend. Courir, c'est
+  // l'appeler ; marcher, c'est se cacher.
+  const loud = G.sprint && G.moving;
+  const heard = rule === "sound" && d <= b.def.hear * (loud ? 1 : 0.45) * STAGES[G.stage].sight;
+  const canSee = rule === "sound"
+    ? (heard || (d <= s.sight * 0.5 && los(b.x, b.z, G.px, G.pz)))
+    : (d <= s.sight && los(b.x, b.z, G.px, G.pz));
+
+  if (b.mode === "patrol") {
+    if (canSee && !G.sleeping) {
+      b.mode = "hunt"; b.ends = G.time + b.def.giveUp; b.lost = 0; b.path = []; b.repath = 0;
+      toast(`${b.def.name} t'a vu.`, "danger"); sfx.growl();
+      G.shoutText = "IL T'A VU"; G.shoutUntil = G.time + 1.6;
+      if (!G.seen[b.def.id]) { G.seen[b.def.id] = true; save(); reveal(b.def); }
+    }
+  }
+
+  if (b.mode === "hunt") {
+    if (canSee) { b.last = { x: G.px, z: G.pz }; b.lost = 0; }
+    else {
+      b.lost += dt;
+      // « relentless » : il ne perd jamais la trace. Les autres, oui.
+      if (rule !== "relentless" && b.lost >= 3) { b.mode = "search"; b.path = []; }
+    }
+    if (rule === "relentless") b.last = { x: G.px, z: G.pz };
+    if (rule !== "relentless" && G.time >= b.ends) {
+      b.mode = "patrol"; b.path = []; toast("Il a lâché la piste.", "info");
+    }
+  }
+
+  if (b.mode === "search") {
+    const toLast = b.last ? Math.hypot(b.x - b.last.x, b.z - b.last.z) : 0;
+    if (!b.last || toLast < 6) { b.mode = "patrol"; b.path = []; }
+  }
+
+  let target = null;
+  if (b.mode === "hunt") target = b.last || { x: G.px, z: G.pz };
+  else if (b.mode === "search") target = b.last;
+  else {
+    if (!b.pt || Math.hypot(b.x - b.pt.x, b.z - b.pt.z) < 6) {
+      b.pi = (b.pi + 1) % Math.max(1, patrol.length);
+      b.pt = patrol[b.pi] || { x: spawn.x, z: spawn.z };
+      b.path = []; b.repath = 0;
+    }
+    target = b.pt;
+  }
+  if (target && G.time >= b.repath) { b.repath = G.time + 0.4; b.path = findPath(b, target); }
+
+  // « gaze » : regardée, elle ne bouge pas du tout. C'est toute la mécanique
+  // de la maison des poupées, et elle doit être absolue pour être lisible.
+  const frozen = rule === "gaze" && observed(b);
+  const speed = frozen ? 0 : (b.mode === "patrol" ? s.speed * 0.6 : s.speed);
+
+  let n = b.path[0];
+  while (n && Math.hypot(n.x - b.x, n.z - b.z) < TILE * 0.5) { b.path.shift(); n = b.path[0]; }
+  if (n && speed > 0) {
+    const dx = n.x - b.x, dz = n.z - b.z, len = Math.hypot(dx, dz) || 1;
+    b.x += dx / len * speed * dt; b.z += dz / len * speed * dt;
+    b.walk += dt * speed * 0.55;
+    b.angle = Math.atan2(dx, dz);
+  }
+
+  // Rendu : on cache le monstre hors ligne de vue, sinon on le verrait à
+  // travers les murs.
+  b.obj.visible = los(G.px, G.pz, b.x, b.z) && d < STAGES[G.stage].fog * 1.6;
+  b.obj.position.set(b.x, b.def.height * 0.52, b.z);
+  if (b.lamp) b.lamp.position.set(b.x, b.def.height * 0.5, b.z);
+  b.obj.rotation.y = b.angle + Math.PI;
+  animateLimbs(b.obj, b.walk, speed > 0 ? 0.75 : 0.05);
+  if (b.obj.userData.glow)
+    b.obj.userData.glow.intensity = (b.mode === "hunt" ? 1.9 : 0.8) + Math.sin(G.time * 6) * 0.25;
+
+  if (d <= s.catch) caught(b);
+}
+
+// Frapper : ça étourdit, ça ne tue pas. Exactement comme dans le jeu Roblox —
+// CombatService ne retire jamais de vie à un monstre.
+function swing() {
+  if (!G.running || sheet || G.sleeping || G.dead > 0) return;
+  const w = weaponOf();
+  if (!w) { toast("À mains nues, non. Achète une arme.", "warn"); return; }
+  if (G.time < G.nextSwing) return;
+  G.nextSwing = G.time + w.cd;
+  let best = null, bd = 7;
+  for (const b of G.beasts) {
+    const d = Math.hypot(b.x - G.px, b.z - G.pz);
+    if (d < bd) { bd = d; best = b; }
+  }
+  sfx.step();
+  if (!best) return;
+  best.stun = Math.max(best.stun, w.stun);
+  best.mode = "search"; best.path = [];
+  toast(`${w.name} — ${best.def.name} recule.`, "info");
+  sfx.sting();
+
+  // Le boss recule d'une phase tous les N coups encaissés. Tenir les trois
+  // phases, c'est la victoire : il ne meurt pas de dégâts.
+  if (best.def.rule === "boss_phases") {
+    G.bossHits++;
+    const ph = BOSS_PHASES[Math.min(G.bossPhase, BOSS_PHASES.length - 1)];
+    if (G.bossHits >= ph.hits) {
+      G.bossHits = 0;
+      if (G.bossPhase < BOSS_PHASES.length - 1) {
+        G.bossPhase++;
+        const nx = BOSS_PHASES[G.bossPhase];
+        toast(nx.text, "danger");
+        G.shoutText = "PHASE " + (G.bossPhase + 1); G.shoutUntil = G.time + 2.4;
+      } else {
+        despawn(best); G.beasts.splice(G.beasts.indexOf(best), 1);
+        G.seen.carnival_cleared = true; save();
+        toast("Le clown est tombé. Le carnaval se tait.", "unlock");
+        sfx.unlock();
+      }
+    }
+  }
+}
+
+function caught(b) {
+  if (G.dead > 0) return;
+  const z = zone();
+  wake("caught");
+  const lost = Math.floor(G.unbanked * z.loss);
+  G.unbanked = Math.max(0, Math.floor(G.unbanked - lost));
+  G.deaths++; save();
+  toast(`${b.def.name} t'a eu. −${money(lost)} (${Math.round(z.loss * 100)} % de ce que tu portais).`, "danger");
+  G.dead = 2.4; G.shake = 1.6;
+  sfx.sting();
+  G.shoutText = "IL T'A EU"; G.shoutUntil = G.time + 2.4;
+  b.mode = "patrol"; b.path = [];
+}
+
+// ─── entrées ───────────────────────────────────────────────────────────────
+// ⚠️ LE POINT QUI CASSAIT ZQSD
+//
+// Une touche a deux identités, et il faut lire les DEUX :
+//   · `e.key`  — ce qui est ÉCRIT dessus. Sur un AZERTY, la touche en haut à
+//                gauche des lettres rend "a" ; sur un QWERTY, "q".
+//   · `e.code` — OÙ elle se trouve, indépendamment de la disposition. Cette
+//                même touche rend "KeyQ" sur les deux claviers.
+//
+// Ne lire que `e.key` oblige à énumérer toutes les dispositions du monde ;
+// ne lire que `e.code` fait jouer un Français avec les doigts d'un Américain.
+// On enregistre donc la lettre ET la position, et le déplacement accepte les
+// deux. Résultat : ZQSD, WASD, QWERTZ et les flèches marchent tous, sans
+// réglage et sans détection de clavier.
+const keys = {};
+let tv = { x: 0, y: 0, on: false };
+const isTouch = matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+function setKey(e, down) {
+  const k = (e.key || "").toLowerCase();
+  if (k) keys[k] = down;
+  const c = e.code || "";
+  // Les positions sont préfixées par « # » pour ne jamais être confondues
+  // avec une lettre : "#w" est « la touche où se trouve le W d'un QWERTY ».
+  if (c.startsWith("Key")) keys["#" + c.slice(3).toLowerCase()] = down;
+  else if (c) keys["#" + c.toLowerCase()] = down;
+}
+const held = (...names) => names.some(n => keys[n] === true);
+
+// Avancer : W (QWERTY), Z (AZERTY), flèche haut, ou la POSITION du W.
+const FWD = ["w", "z", "arrowup", "#w", "#arrowup"];
+const BACK = ["s", "arrowdown", "#s", "#arrowdown"];
+const LEFT = ["a", "q", "arrowleft", "#a", "#arrowleft"];
+const RIGHT = ["d", "arrowright", "#d", "#arrowright"];
+const RUN = ["shift", "#shiftleft", "#shiftright"];
+
+addEventListener("keydown", (e) => {
+  setKey(e, true);
+  const k = (e.key || "").toLowerCase(), c = e.code || "";
+
+  // ⚠️ LA RAISON POUR LAQUELLE « ZQSD NE MARCHE PAS »
+  //
+  // Un panneau ouvert met la partie en pause — c'est voulu : la révélation
+  // d'un monstre doit arrêter le temps pour qu'on lise sa contre-mesure. Mais
+  // de l'autre côté de l'écran, le joueur appuie sur ZQSD et RIEN ne bouge. Il
+  // en conclut, très raisonnablement, que les touches sont cassées.
+  //
+  // Donc : une touche de déplacement ferme le panneau et relance la partie.
+  // Sauf l'écran-titre, où il faut vraiment cliquer (il y a du son à démarrer,
+  // et les navigateurs exigent un vrai clic pour l'autoriser).
+  if (sheet && sheet !== "title" && held(...FWD, ...BACK, ...LEFT, ...RIGHT, ...RUN)) {
+    closeSheet(); G.running = true;
+    return;
+  }
+  if (k === " " || c === "Space") { e.preventDefault(); if (G.sleeping) wake("manual"); }
+  if (k === "e" || c === "KeyE") { e.preventDefault(); interact(); }
+  if (k === "f" || c === "KeyF") { e.preventDefault(); swing(); }
+  if (k === "n" || c === "KeyN") { e.preventDefault(); if (sheet === "zones") { closeSheet(); G.running = true; } else zonesSheet(); }
+  if (k === "m" || c === "KeyM") { setSound(!SFX.on); return; }
+  if (k === "escape") {
+    if (sheet) { closeSheet(); G.running = true; }
+    else if (G.running) pause();
+  }
+});
+addEventListener("keyup", (e) => setKey(e, false));
+// Sans ça, changer d'onglet pendant qu'on avance laisse la touche « enfoncée »
+// et le personnage part tout seul au retour.
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+const cv = $("cv");
+let locked = false;
+cv.addEventListener("click", () => {
+  if (!G.running || isTouch) return;
+  if (cv.requestPointerLock) { try { cv.requestPointerLock(); } catch (e) {} }
+});
+document.addEventListener("pointerlockchange", () => {
+  locked = document.pointerLockElement === cv;
+  $("cross").hidden = !locked;
+});
+addEventListener("mousemove", (e) => {
+  if (!G.running) return;
+  if (locked) {
+    G.yaw -= e.movementX * 0.0022;
+    G.pitch = Math.max(-0.75, Math.min(0.42, G.pitch - e.movementY * 0.0018));
+  } else if (dragging) {
+    G.yaw -= (e.clientX - dragX) * 0.005;
+    G.pitch = Math.max(-0.75, Math.min(0.42, G.pitch - (e.clientY - dragY) * 0.004));
+    dragX = e.clientX; dragY = e.clientY;
+  }
+});
+let dragging = false, dragX = 0, dragY = 0;
+cv.addEventListener("mousedown", (e) => {
+  if (locked) { swing(); return; }
+  dragging = true; dragX = e.clientX; dragY = e.clientY;
+});
+addEventListener("mouseup", () => { dragging = false; });
+
+function interact() {
+  if (sheet || G.sleeping || G.dead > 0) return;
+  if (Math.hypot(G.px - vault.x, G.pz - vault.z) < 12) {
+    const got = bank();
+    toast(got > 0 ? `+${money(got)} déposés. C'est à toi pour de bon.` : "Tu n'as rien sur toi.",
+      got > 0 ? "cash" : "info");
+    return;
+  }
+  if (Math.hypot(G.px - shop.x, G.pz - shop.z) < 12) { shopSheet(); return; }
+  const s = nearShelter(); if (s) trySleep(s);
+}
+
+if (isTouch) {
+  $("touch").classList.add("on");
+  const st = $("stick"), kn = $("knob");
+  let o = null;
+  const begin = (e) => { const r = st.getBoundingClientRect(); o = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; mv(e); };
+  const mv = (e) => {
+    if (!o) return; e.preventDefault();
+    const t = e.touches[0];
+    let dx = t.clientX - o.x, dy = t.clientY - o.y;
+    const len = Math.hypot(dx, dy), max = 46;
+    if (len > max) { dx = dx / len * max; dy = dy / len * max; }
+    kn.style.transform = `translate(${dx}px,${dy}px)`;
+    tv = { x: dx / max, y: dy / max, on: len > 6 };
+  };
+  const end = () => { o = null; kn.style.transform = ""; tv = { x: 0, y: 0, on: false }; };
+  st.addEventListener("touchstart", begin, { passive: false });
+  st.addEventListener("touchmove", mv, { passive: false });
+  st.addEventListener("touchend", end); st.addEventListener("touchcancel", end);
+  $("tb-e").onclick = interact;
+  $("tb-sp").onclick = () => { if (G.sleeping) wake("manual"); else swing(); };
+  $("tb-n").onclick = () => { if (sheet === "zones") { closeSheet(); G.running = true; } else zonesSheet(); };
+  // Glisser sur la vue fait tourner la caméra.
+  let lx = null;
+  cv.addEventListener("touchstart", (e) => { lx = e.touches[0].clientX; }, { passive: true });
+  cv.addEventListener("touchmove", (e) => {
+    if (lx === null) return;
+    G.yaw -= (e.touches[0].clientX - lx) * 0.006;
+    lx = e.touches[0].clientX;
+  }, { passive: true });
+  cv.addEventListener("touchend", () => { lx = null; });
+}
+
+// ─── déplacement ───────────────────────────────────────────────────────────
+function movePlayer(dt) {
+  let ix = 0, iz = 0;
+  if (held(...FWD)) iz -= 1;
+  if (held(...BACK)) iz += 1;
+  if (held(...LEFT)) ix -= 1;
+  if (held(...RIGHT)) ix += 1;
+  if (tv.on) { ix = tv.x; iz = tv.y; }
+
+  const len = Math.hypot(ix, iz);
+  G.moving = len > 0.08 && !G.sleeping && G.dead <= 0;
+
+  // Courir vide la jauge en 3,2 s et met 5,5 s à revenir : c'est une porte de
+  // sortie, pas une vitesse de croisière.
+  // `winded` est indispensable : sans lui la jauge se stabilise pile sous le
+  // seuil et on sprinte en saccades indéfiniment. Une fois à sec, il faut
+  // remonter à 30 % avant de pouvoir repartir.
+  const wants = held(...RUN) || (tv.on && Math.hypot(tv.x, tv.y) > 0.92);
+  G.sprint = !!(wants && G.moving && !G.winded && G.stam > 0);
+  if (G.sprint) {
+    G.stam = Math.max(0, G.stam - dt / 3.2);
+    if (G.stam === 0) { G.winded = true; G.sprint = false; toast("Plus de souffle.", "info"); }
+  } else {
+    G.stam = Math.min(1, G.stam + dt / 5.5);
+    if (G.stam > 0.3) G.winded = false;
+  }
+
+  if (!G.moving) return;
+  ix /= len; iz /= len;
+
+  // Déplacement relatif à la caméra : avancer, c'est aller là où on regarde.
+  // yaw 0 regarde vers −Z, donc l'avant est (−sin, −cos) et la droite
+  // (cos, −sin). Les signes inversés faisaient partir le joueur VERS la caméra
+  // dès que la vue n'était pas pile dans l'axe.
+  const sin = Math.sin(G.yaw), cos = Math.cos(G.yaw);
+  const dx = ix * cos + iz * sin;
+  const dz = -ix * sin + iz * cos;
+
+  const sp = PLAYER_SPEED * (G.sprint ? 1.55 : 1);
+  const step = sp * dt;
+  const R = 1.6;
+  // Glissement le long des murs : chaque axe est testé séparément, avec un
+  // rayon pour que le personnage ne rentre pas dans la géométrie.
+  if (!solid(G.px + dx * step + Math.sign(dx) * R, G.pz)) G.px += dx * step;
+  if (!solid(G.px, G.pz + dz * step + Math.sign(dz) * R)) G.pz += dz * step;
+  G.walk += dt * sp * 0.5;
+  // Un pas par demi-cycle de jambes : le son colle à l'animation.
+  if (G.walk >= G.nextStep) { G.nextStep = G.walk + Math.PI; (G.sprint ? sfx.run : sfx.step)(); }
+}
+
+// ─── boucle ────────────────────────────────────────────────────────────────
+function start() {
+  G.zone = "street"; G.preview = false;
+  buildZone(G.zone);
+  buildWorldMeshes();
+  scene.fog.color.setHex(pal().fog);
+  renderer.setClearColor(pal().fog);
+  G.px = spawn.x; G.pz = spawn.z; G.dead = 0;
+  G.unbanked = 0; G.sleeping = null; G.awaken = 0; G.stage = 0; G.toasts = [];
+  G.placed = {}; G.defHits = {}; G.bossPhase = 0; G.bossHits = 0;
+  clearBeasts();
+  spawnBeast(MONSTERS[zone().monster], null, true);
+  $("hud").hidden = false;
+  G.running = true;
+  toast("Trouve un refuge dans une ruelle. E pour dormir.", "info");
+}
+
+function promptLine() {
+  if (G.sleeping || G.dead > 0) return false;
+  const p = $("prompt");
+  if (Math.hypot(G.px - vault.x, G.pz - vault.z) < 12) {
+    p.innerHTML = `<b>E</b> déposer ${money(G.unbanked)} au coffre`; return true;
+  }
+  if (Math.hypot(G.px - shop.x, G.pz - shop.z) < 12) {
+    p.innerHTML = `<b>E</b> ouvrir la boutique`; return true;
+  }
+  const s = nearShelter();
+  if (s) {
+    const z = zone();
+    p.innerHTML = G.preview
+      ? `<b>E</b> dormir (aperçu — les gains ne comptent pas) · ${s.kind}`
+      : `<b>E</b> dormir · ${s.kind} · ${money(z.rate)}/s · ${mmss(z.max)}`;
+    return true;
+  }
+  return false;
+}
+
+function resize() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / Math.max(1, h);
+  // En portrait, un champ vertical fixe écrase le champ horizontal : on ne voit
+  // plus que le dos du personnage. On élargit jusqu'à 94° pour compenser.
+  const base = 72 * Math.PI / 180;
+  camera.fov = camera.aspect < 1
+    ? Math.min(94, 2 * Math.atan(Math.tan(base / 2) / camera.aspect) * 180 / Math.PI)
+    : 72;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  if (G.running) {
+    G.time += dt;
+    const z = zone();
+    if (G.dead > 0) { G.dead -= dt; if (G.dead <= 0) { G.px = spawn.x; G.pz = spawn.z; } }
+    movePlayer(dt);
+
+    if (G.sleeping) {
+      // Délai de grâce : on ne gagne rien les trois premières secondes, sinon
+      // s'allonger une seconde entre deux courses paierait.
+      if (G.graceLeft > 0) {
+        G.graceLeft -= dt;
+      } else {
+        // Plafond souple : au-delà, le taux est divisé par quatre. Sans ça, la
+        // zone 7 à 100 000 $/s rend toute la progression précédente inutile.
+        const capped = G.earnedHere >= z.cap;
+        const rate = z.rate * STAGES[G.stage].reward / (capped ? SOFTCAP_DIV : 1);
+        const gain = rate * dt;
+        G.earnedHere += gain;
+        // En aperçu, on voit tout mais on ne gagne rien : la progression reste
+        // honnête.
+        if (!G.preview) G.unbanked += gain;
+        // L'éveil monte avec la profondeur de la zone, pas avec le temps passé
+        // n'importe où : dormir dans la rue ne réveille rien.
+        G.awaken += gainFor(z.order) * dt;
+      }
+      G.sessionLeft -= dt;
+      if (G.incoming > 0) {
+        G.incoming -= dt;
+        if (G.incoming <= 0) { G.incoming = 0; wake("assault"); }
+      } else if (G.time >= G.nextAssault) {
+        G.nextAssault = G.time + ASSAULT_BASE + (Math.random() - 0.5) * ASSAULT_JITTER;
+        launchAssault();
+      }
+      if (G.sessionLeft <= 0) wake("complete");
+    } else {
+      // La jauge redescend dès que personne ne dort profond.
+      G.awaken = Math.max(0, G.awaken - DECAY * dt);
+    }
+
+    let st = 0;
+    for (let i = 0; i < THRESHOLDS.length; i++) if (G.awaken >= THRESHOLDS[i]) st = i;
+    if (st !== G.stage) {
+      const up = st > G.stage;
+      G.stage = st;
+      toast(`ÉVEIL — ${STAGES[st].name} : ${STAGES[st].text}`, st >= 2 ? "danger" : "info");
+      if (up && st >= 2) G.shake = Math.max(G.shake, 0.5);
+    }
+
+    for (const b of G.beasts.slice()) updateBeast(b, dt);
+
+    const before = G.toasts.length;
+    G.toasts = G.toasts.filter(t => t.until > G.time);
+    if (G.toasts.length !== before) drawToasts();
+    syncHud();
+
+    const sh = $("shout");
+    if (G.time < G.shoutUntil) {
+      sh.hidden = false;
+      const left = G.shoutUntil - G.time;
+      sh.textContent = G.shoutText
+        + (G.shoutText === "IL ARRIVE — COURS" ? "  " + left.toFixed(1).replace(".", ",") + " s" : "");
+      $("tint").style.opacity = String(0.1 + 0.07 * Math.abs(Math.sin(G.time * 7)));
+    } else { sh.hidden = true; $("tint").style.opacity = "0"; }
+    $("vig").classList.toggle("hot", G.dead > 0 || G.time < G.shoutUntil);
+    $("prompt").hidden = !promptLine();
+
+    // Ambiance : le brouillard se resserre quand l'éveil monte. C'est ce qui
+    // fait sentir le stade sans lire la jauge.
+    const fog = STAGES[G.stage].fog;
+    scene.fog.far += (fog - scene.fog.far) * Math.min(1, dt * 2);
+    if (SFX.filter) {
+      SFX.filter.frequency.value += (170 + G.stage * 95 - SFX.filter.frequency.value) * Math.min(1, dt);
+      SFX.drone.gain.value = 0.045 + G.stage * 0.016;
+    }
+    // Battements de cœur : plus le monstre est près, plus c'est rapide.
+    let near = 1e9;
+    for (const b of G.beasts) near = Math.min(near, Math.hypot(b.x - G.px, b.z - G.pz));
+    if (near < 58 && G.dead <= 0) {
+      const t = Math.min(1, (58 - near) / 58);
+      if (G.time >= SFX.beat) { sfx.heart(0.4 + t); SFX.beat = G.time + 1.1 - 0.6 * t; }
+    } else SFX.beat = 0;
+    G.shake = Math.max(0, G.shake - dt * 1.4);
+    scene.fog.near = scene.fog.far * 0.12;
+    torch.distance = fog * 1.1;
+  }
+
+  // Personnage et caméra
+  const bodyY = G.sleeping ? 1.6 : 3.2;
+  player.position.set(G.px, bodyY, G.pz);
+  player.rotation.y = G.yaw;   // il regarde devant lui, pas vers la caméra
+  player.rotation.x = G.sleeping ? -Math.PI / 2.1 : 0;
+  player.visible = G.dead <= 0;
+  animateLimbs(player, G.walk, G.moving ? 0.8 : 0.05);
+  // La torche éclaire depuis le dessus et VISE le joueur : c'est ce qui donne
+  // une ombre portée nette au lieu d'une tache uniforme.
+  torch.position.set(G.px, 11.5, G.pz);
+  torch.target.position.set(G.px, 0, G.pz);
+  torch.target.updateMatrixWorld();
+
+  // La caméra se rapproche quand un mur se met derrière le joueur, sinon on
+  // se retrouve à jouer face à une paroi grise.
+  const sy = Math.sin(G.yaw), cy = Math.cos(G.yaw);
+  // Écran étroit : on recule un peu plus, sinon le personnage mange la vue.
+  const base = (G.sleeping ? 11 : 13) * (camera.aspect < 1 ? 1.25 : 1);
+  let dist = base;
+  // On descend jusqu'à 5 studs s'il le faut : s'arrêter plus tôt laisse la
+  // caméra DANS le mur, et on joue en regardant une texture de brique.
+  while (dist > 5 && solid(G.px + sy * (dist + 1.5), G.pz + cy * (dist + 1.5))) dist -= 1;
+  // Dans un coin, même 5 studs peuvent être dans la pierre : on vérifie le
+  // point de la caméra lui-même. Mais jamais en dessous de 3,5 studs — sinon
+  // la caméra finit DANS la tête du personnage et on joue dans le noir.
+  while (dist > 3.5 && solid(G.px + sy * dist, G.pz + cy * dist)) dist -= 0.5;
+  // Et si à 3,5 studs c'est ENCORE de la pierre — un couloir étroit, un angle
+  // fermé — on continue à se rapprocher par pas fins, puis on monte un peu.
+  //
+  // ⚠️ La première version de ce correctif passait d'un coup à 2,2 studs avec
+  // +4,5 de hauteur : résultat, une vue quasi verticale sur le crâne du
+  // personnage dans TOUTE pièce un peu petite. La chambre d'hôpital fait
+  // 10×8 studs ; à 13 studs de recul on touche forcément un mur. Le bon
+  // réflexe n'est pas de basculer en plongée, c'est de se rapprocher.
+  let lift = 0;
+  while (dist > 2.2 && solid(G.px + sy * dist, G.pz + cy * dist)) dist -= 0.3;
+  if (solid(G.px + sy * dist, G.pz + cy * dist)) lift = 0.9;
+  // ⚠️ LA HAUTEUR DOIT SUIVRE LE RECUL.
+  //
+  // Elle était fixe à 6,5 studs. Dans une grande salle, la caméra est à 13
+  // studs derrière : l'angle de plongée vaut 27°, c'est une vue d'épaule
+  // normale. Mais dans une chambre d'hôpital ou un stand de carnaval, le
+  // recul tombe à 2,2 studs — et à 6,5 de haut pour 2,2 de recul, on regarde
+  // le crâne du personnage à 71° de plongée. C'est ce qui donnait ces images
+  // écrasées où l'on ne voit que le sol.
+  //
+  // En la liant au recul, l'angle reste constant quelle que soit la pièce.
+  const height = 2.0 + dist * 0.35 + G.pitch * -10 + lift;
+  // Balancement de marche + secousse quand on se fait attraper.
+  const bob = G.moving ? Math.sin(G.walk * 2) * (G.sprint ? 0.55 : 0.32) : 0;
+  const sh2 = G.shake * G.shake;
+  camera.position.set(
+    G.px + sy * dist + (Math.random() - 0.5) * sh2 * 2.2,
+    Math.min(11.6, bodyY + height + bob) + (Math.random() - 0.5) * sh2 * 2.2,
+    G.pz + cy * dist + (Math.random() - 0.5) * sh2 * 2.2
+  );
+  fill.position.set(camera.position.x, camera.position.y, camera.position.z);
+  camera.lookAt(G.px, bodyY + 1.4, G.pz);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+// ─── départ ────────────────────────────────────────────────────────────────
+load();
+try { if (localStorage.getItem("sleepordie.snd") === "0") SFX.on = false; } catch (e) {}
+setSound(SFX.on);
+buildZone(G.zone);
+buildWorldMeshes();
+scene.fog.color.setHex(pal().fog);
+renderer.setClearColor(pal().fog);
+G.px = spawn.x; G.pz = spawn.z;
+resize();
+title();
+requestAnimationFrame(frame);
+
+</script>
