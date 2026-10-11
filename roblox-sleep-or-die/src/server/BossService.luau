@@ -74,10 +74,9 @@ function BossService.start(): boolean
 	if not def or not layout then
 		return false
 	end
-	local model = MonsterService.spawn(def, "carnival", layout.Spawns[1], layout.Patrol)
-	if not model then
-		return false
-	end
+	-- `spawnUnique` et pas `spawn` : le boss ne doit jamais être refusé par le
+	-- plafond de la zone. C'est un unique, il passe avant la figuration.
+	local model = MonsterService.spawnUnique(def, "carnival", layout.Spawns[1], layout.Patrol)
 	CollectionService:AddTag(model, "Boss")
 	active = { Model = model, Phase = 0, Hits = 0, Players = {} }
 	applyPhase(1)

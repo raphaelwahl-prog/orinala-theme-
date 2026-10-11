@@ -23,6 +23,7 @@ local CosmeticService = require(script.CosmeticService)
 local EconomyService = require(script.EconomyService)
 local EventService = require(script.EventService)
 local InventoryService = require(script.InventoryService)
+local LeaderboardService = require(script.LeaderboardService)
 local LifeService = require(script.LifeService)
 local MissionService = require(script.MissionService)
 local MonetizationService = require(script.MonetizationService)
@@ -86,8 +87,10 @@ local function pushState(player: Player)
 			Stage = AwakeningService.stage(),
 			Data = AwakeningService.data(),
 		},
+		EventCollective = EventService.collectiveState(),
 		Cosmetics = CosmeticService.catalogue(player),
 		Skin = profile.Skin,
+		Settings = profile.Settings,
 		Downed = LifeService.isDowned(player),
 		Stats = {
 			Nights = profile.NightsSurvived,
@@ -120,7 +123,16 @@ ObjectiveService.init()
 BossService.init()
 AwakeningService.init()
 LifeService.init()
+LeaderboardService.init()
 EconomyService.setAwakeningBonus(AwakeningService.rewardMultiplier)
+-- §13 : le multiplicateur de l'événement agit sur les gains, comme celui de
+-- l'éveil. Il était calculé par EventService depuis le début, mais aucun
+-- service ne le lisait : un événement ne changeait rien aux revenus.
+EconomyService.setEventBonus(EventService.rewardMultiplier)
+EventService.onReward(function(player, amount)
+	EconomyService.grant(player, amount, "événement")
+	pushState(player)
+end)
 WorldService.startPopulating()
 ZoneService.setTeleporter(WorldService.teleport)
 
@@ -153,6 +165,9 @@ EventService.onChanged(function(active)
 	for _, player in ipairs(Players:GetPlayers()) do
 		send(player, "EventChanged", active)
 		alert(player, active.Name .. " — " .. active.Text, "event")
+		-- Les effets sont déjà appliqués quand cette annonce part : le joueur
+		-- qui lit « la rue devient invivable » joue déjà contre cette rue.
+		pushState(player)
 	end
 end)
 
@@ -199,10 +214,14 @@ SurvivalService.onChanged(function(player, session, reason)
 	if reason == "complete" and session then
 		MissionService.progress(player, "survive_session", 1)
 		ObjectiveService.noteSession(player, session.ZoneId, reason)
+		-- Défi collectif (§13) : une session tenue compte pour tout le serveur.
+		EventService.noteSession()
 		alert(player, ("Session terminée. %s sur toi — va les déposer.")
 			:format(Format.money(session.Earned)), "cash")
 	elseif reason == "death" and session then
 		ObjectiveService.noteCaught(player)
+		-- Et une mort coûte au serveur entier, pas qu'à celui qui meurt.
+		EventService.noteDeath()
 		send(player, "DeathReport", {
 			Zone = session.ZoneId, Earned = session.Earned,
 			Seconds = session.EligibleSeconds,
@@ -311,6 +330,15 @@ local function onAttack(player: Player, target: unknown)
 		alert(player, label .. " — il recule.", "info")
 		if CollectionService:HasTag(target, "Boss") then
 			BossService.registerHit(player)
+		elseif EventService.isMiniBoss(target) then
+			local down, name = EventService.registerMiniBossHit(player, target)
+			if down then
+				for _, other in ipairs(Players:GetPlayers()) do
+					alert(other, name .. " est tombé. « Le Fêtard » est débloqué "
+						.. "pour ceux qui l'ont frappé.", "unlock")
+					pushState(other)
+				end
+			end
 		end
 	end
 end
@@ -344,6 +372,49 @@ local function onCosmetic(player: Player, action: unknown, id: unknown)
 	pushState(player)
 end
 
+local function onEventClaim(player: Player)
+	local ok, message = EventService.claim(player)
+	if ok then
+		alert(player, message .. " — récompense versée.", "cash")
+	else
+		alert(player, message, "warn")
+	end
+	pushState(player)
+end
+
+local function onLeaderboard(player: Player)
+	-- La lecture est en cache côté service : cette demande ne déclenche aucun
+	-- appel DataStore, donc un joueur qui ouvre l'écran en boucle ne coûte rien.
+	send(player, "LeaderboardData", LeaderboardService.view(player))
+end
+
+local function onSetting(player: Player, id: unknown, value: unknown)
+	if type(id) ~= "string" or type(value) ~= "boolean" then
+		return
+	end
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	-- Un réglage inconnu est refusé : le client ne décide pas de la liste.
+	local known = false
+	for _, entry in ipairs(GameConfig.Ui.Settings) do
+		if entry.Id == id then
+			known = true
+			break
+		end
+	end
+	if not known then
+		return
+	end
+	profile.Settings[id] = value
+	PlayerDataService.markDirty(player)
+	if id == "UiSound" then
+		SoundLib.setUiSound(player, value)
+	end
+	pushState(player)
+end
+
 local function onPurchase(player: Player, productKey: unknown)
 	if type(productKey) ~= "string" then
 		return
@@ -364,6 +435,9 @@ Net.get("RequestAttack").OnServerEvent:Connect(onAttack)
 Net.get("RequestMission").OnServerEvent:Connect(onMission)
 Net.get("RequestPurchase").OnServerEvent:Connect(onPurchase)
 Net.get("RequestCosmetic").OnServerEvent:Connect(onCosmetic)
+Net.get("RequestEventClaim").OnServerEvent:Connect(onEventClaim)
+Net.get("RequestLeaderboard").OnServerEvent:Connect(onLeaderboard)
+Net.get("RequestSetting").OnServerEvent:Connect(onSetting)
 Net.get("RequestRepair").OnServerEvent:Connect(function(player)
 	alert(player, "Les défenses se remplacent à la boutique.", "info")
 end)
@@ -373,6 +447,8 @@ Players.PlayerAdded:Connect(function(player)
 	local profile = PlayerDataService.load(player)
 	MissionService.rollPeriods(player)
 	ZoneService.refresh(player)
+	-- Le réglage de son suit le compte : il est appliqué avant le premier son.
+	SoundLib.setUiSound(player, profile.Settings.UiSound ~= false)
 
 	if not profile.Loaded then
 		alert(player, "Tes données n'ont pas pu être chargées. "
@@ -392,6 +468,16 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
+	-- Dans cet ordre : on publie le score pendant que le profil existe encore,
+	-- puis on le libère. L'inverse publierait un classement vide.
+	--
+	-- Sous `pcall`, et ce n'est pas de la superstition : la publication écrit
+	-- dans un DataStore, donc elle cède la main. Si elle levait, la sauvegarde
+	-- du profil juste en dessous ne partirait jamais — on perdrait la partie du
+	-- joueur pour une histoire de classement.
+	pcall(LeaderboardService.publish, player)
+	LeaderboardService.forget(player)
+	SoundLib.forget(player)
 	PlayerDataService.release(player)
 end)
 

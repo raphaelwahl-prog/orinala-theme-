@@ -197,8 +197,26 @@ function SoundLib.playAt(effect: string, part: BasePart?)
 	end)
 end
 
+-- Réglage par joueur (§9, écran de paramètres). Le serveur fabrique les sons
+-- d'interface dans le PlayerGui du joueur : c'est donc ici, et pas côté client,
+-- qu'on peut honnêtement les couper. Les sons du monde (`playAt`) sont entendus
+-- par tout le monde selon la distance : ils ne peuvent pas être coupés par un
+-- seul joueur, et l'écran de paramètres ne le propose pas.
+local muted: { [Player]: boolean } = {}
+
+function SoundLib.setUiSound(player: Player, enabled: boolean)
+	muted[player] = not enabled
+end
+
+function SoundLib.forget(player: Player)
+	muted[player] = nil
+end
+
 -- Son d'interface pour un joueur précis.
 function SoundLib.playFor(player: Player, effect: string)
+	if muted[player] then
+		return
+	end
 	local gui = player:FindFirstChildOfClass("PlayerGui")
 	if not gui then
 		return

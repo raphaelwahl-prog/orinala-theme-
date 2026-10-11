@@ -52,10 +52,23 @@ export type Profile = {
 	Receipts: { [string]: boolean },     -- anti-doublon ProcessReceipt
 	MultiplierUntil: number,
 	Multiplier: number,
+
+	-- §9 — les réglages de l'écran de paramètres. Ils vivent dans le profil et
+	-- pas côté client : un joueur photosensible qui coupe les flashs ne doit
+	-- pas avoir à le refaire depuis son téléphone.
+	Settings: { [string]: boolean },
 }
 
 local store: DataStore? = nil
 local profiles: { [Player]: Profile } = {}
+
+local function defaultSettings(): { [string]: boolean }
+	local settings = {}
+	for _, entry in ipairs(GameConfig.Ui.Settings) do
+		settings[entry.Id] = entry.Default
+	end
+	return settings
+end
 
 local function blank(): Profile
 	return {
@@ -86,6 +99,7 @@ local function blank(): Profile
 		Receipts = {},
 		MultiplierUntil = 0,
 		Multiplier = 1,
+		Settings = defaultSettings(),
 	}
 end
 
@@ -102,6 +116,16 @@ local function merge(profile: Profile, saved: any)
 	end
 	profile.Zones = profile.Zones or {}
 	profile.Zones.street = true
+
+	-- `merge` remplace la table entière : une sauvegarde faite avant l'ajout
+	-- d'un réglage n'en contient pas la clé, et ce réglage serait alors `nil`
+	-- au lieu de sa valeur par défaut. On recomplète, clé par clé.
+	profile.Settings = profile.Settings or {}
+	for _, entry in ipairs(GameConfig.Ui.Settings) do
+		if type(profile.Settings[entry.Id]) ~= "boolean" then
+			profile.Settings[entry.Id] = entry.Default
+		end
+	end
 end
 
 local function key(player: Player): string

@@ -16,18 +16,18 @@ dans le code, elle est marquée « pas fait », même si la configuration existe
 | 5 | Monstres et IA | **fait** | `MonsterService`, `BossService` | Les 8 états et **les 7 mécaniques** : `sound`, `gaze`, `relentless`, `disable` (le couvent éteint tes défenses), `fake_alerts` (l'hôpital émet de fausses alertes), `boss_phases` (3 phases qui rejouent les mécaniques apprises). |
 | 6 | Économie et équipements | **fait** | `EconomyService`, `ItemConfig`, `ShopService` | — |
 | 7 | Missions et PNJ | **fait** | `MissionService`, `ObjectiveService` | 16 missions, 6 PNJ, et **les 11 types d'objectifs branchés**. Les quatre ramassables sont des objets du monde qui réapparaissent ; `escape_chase`, `survive_extreme` et `find_secret` se déduisent du jeu, pas d'un bouton. |
-| 8 | Progression à long terme | **partiel** | `BossService`, `CosmeticService` | Six skins, dont trois qui ne s'achètent pas (dix nuits survécues, la maison des poupées débloquée, le carnaval battu). Le boss accorde un trophée et un titre. Les variantes de monstres, contrats rares et classements saisonniers restent à faire. |
+| 8 | Progression à long terme | **fait** | `BossService`, `CosmeticService`, `LeaderboardService` | Sept skins, dont quatre qui ne s'achètent pas (dix nuits survécues, la maison des poupées débloquée, le carnaval battu, le mini-boss d'événement abattu). Le boss accorde un trophée et un titre. **Trois classements saisonniers** (argent déposé, nuits survécues, boss battus), remis à zéro chaque mois civil, par OrderedDataStore — avec repli sur les joueurs présents quand le stockage classé est inaccessible, et l'écran le dit. Restent les variantes de monstres et les contrats rares. |
 | 8 bis | Éveil partagé | **fait** | `AwakeningService` | Jauge commune à tout le serveur, quatre stades, effet sur la vitesse et la vue de **tous** les monstres, contrepartie en gains, décroissance quand personne ne dort profond. Repris du prototype DEAD TIRED. |
 | 8 ter | Entraide | **fait** | `LifeService` | Le coup fatal met à terre plutôt que de tuer quand un autre joueur est là : 30 s de saignement, 4 s de maintien pour relever. Seul sur le serveur, le coup tue. |
-| 9 | Interface | **partiel** | `Hud.luau`, `Panels.luau` | Tout est là sauf l'écran de paramètres et les classements. |
+| 9 | Interface | **fait** | `Hud.luau`, `Panels.luau` | Neuf panneaux : boutique, défenses, missions, carte, skins, **événement** (V), **classements** (L), **paramètres** (P), écran de mort. Les quatre réglages agissent réellement : flashs d'écran, bandeaux d'alerte, invites contextuelles, sons d'interface. Ils vivent dans le profil, donc ils suivent le compte. |
 | 9 bis | Rendu | **partiel** | `MonsterRig`, `AtmosphereService` | Squelettes R6 animés par Motor6D, une silhouette par monstre, têtes `MeshType.Head`, cylindres, sphères et coins, visage classique sur Le Menteur, Atmosphere + Bloom + étalonnage par zone + profondeur de champ, ombres réelles, particules. **Manquent : les MeshPart et les animations importées — les deux demandent de téléverser.** |
 | 9 ter | Son | **fait, à vérifier chez toi** | `SoundService` | Pas, repérage, attaques, assauts sur le refuge, alarme, mise à terre, relevage, encaissement, achats, déblocages, et une nappe continue qui monte avec l'éveil. Tout vient de la bibliothèque locale `rbxasset://sounds/`. Le service **teste chaque chemin au démarrage** et écrit dans la sortie ce qui a chargé : si c'est silencieux, tu sais pourquoi en une ligne. |
 | 10 | Architecture technique | **fait** | arborescence `src/` | Les noms de services sont exactement ceux du CDC. |
 | 11 | Sauvegarde | **fait** | `PlayerDataService` | — |
 | 12 | Monétisation | **fait, à configurer** | `MonetizationService` | Le code est complet. **Les identifiants de produits sont à 0** : il faut créer les Developer Products et les Game Passes sur le tableau de bord Roblox et recopier leurs identifiants dans `GameConfig.Monetization`. |
-| 13 | Événements | **partiel** | `EventService` | La rotation, l'événement actif et l'anti-double-réclamation fonctionnent. Seul le multiplicateur de récompense agit ; le nombre et la vitesse des monstres ne sont pas encore modifiés. |
+| 13 | Événements | **fait** | `EventService`, `MonsterService`, `WorldService` | Les cinq champs de chaque événement agissent : gains (injectés dans `EconomyService`), **plafond de monstres** (`MonsterService.capFor`), **vitesse des monstres**, **mini-boss** (le monstre de la zone agrandi, jamais dans l'arène du boss), **défi collectif** (sessions et morts comptées sur tout le serveur). La récompense se réclame par un bouton, une fois par période, et son montant suit le multiplicateur. |
 | 14 bis | Zones construites | **7 sur 7** | `ZoneLayouts.luau` | Rue, égouts, maison des poupées, quartier du slasher, couvent, hôpital, carnaval. |
-| 14 | Ordre de développement | **étapes 1 à 8** | — | Restent les étapes 9 et 10 : rétention (événements complets, classements) et lancement (mesures de performances, tests téléphone, équilibrage d'après les retours). |
+| 14 | Ordre de développement | **étapes 1 à 9** | — | L'étape 9 (rétention) est faite : événements complets et classements saisonniers. Reste l'étape 10, le lancement : mesures de performances, tests sur un vrai téléphone, équilibrage d'après les retours — trois choses qui se mesurent et ne s'écrivent pas. |
 | 15 | Critères de validation | **9 sur 10 tenus dans le code** | voir ci-dessous | — |
 
 ## §15 — les critères, un par un
@@ -46,8 +46,35 @@ dans le code, elle est marquée « pas fait », même si la configuration existe
 | Les performances restent acceptables en multijoueur | `MaxAlive` par monstre, pathfinding à 2 Hz hors du Heartbeat. **À mesurer avec de vrais joueurs.** |
 
 Les deux derniers ne peuvent pas être « tenus par du code » : ils se mesurent.
-Le reste est vérifié à chaque build par `tools/crosscheck.py` (364 liens entre
-modules) et `tools/checkzones.py` (68 contrôles sur les sept cartes).
+
+## Les quatre couches de vérification
+
+Elles tournent à chaque modification, et chacune attrape ce que les autres ne
+voient pas :
+
+| Outil | Ce qu'il prouve | Dernier passage |
+|---|---|---|
+| compilateur Luau (`luau-web`) | la syntaxe de chaque fichier | 37 fichiers, 0 échec |
+| `tools/crosscheck.py` | chaque appel entre modules existe, chaque remote est déclaré, aucun module n'est mort | 542 liens |
+| `tools/checkzones.py` | les sept cartes se tiennent et ne débordent pas | 68 contrôles |
+| `tools/logictests.py` | **le code fait ce qu'il prétend faire** | 48 contrôles |
+
+La quatrième est la plus utile et la plus récente. Les trois premières vérifient
+la forme ; aucune ne dit si un événement change réellement quelque chose.
+`logictests.py` assemble un faux Roblox (`game:GetService`, `Instance`, `task`,
+`Vector3`, DataStore…) autour du **vrai code source pris sur le disque**, puis
+l'exécute. Il a été validé par mutation : on casse volontairement chacune des
+six règles qu'il surveille, et on vérifie qu'il le voit. Un test qui passe quoi
+qu'on fasse ne vaut rien.
+
+Ce qu'il a trouvé, et que la relecture n'avait pas vu :
+
+* le contrôle du mini-boss était placé **après** son attente de 5 s — le
+  monstre arrivait cinq secondes après l'annonce qui le promettait ;
+* le plafond de la zone refusait le **boss du carnaval** si un monstre
+  traînait dans l'arène (d'où `MonsterService.spawnUnique`) ;
+* `model.Name` porte l'**identifiant** du monstre, pas son nom de scène :
+  l'annonce de victoire aurait affiché « prowler est tombé ».
 
 ## Deux écarts assumés par rapport au document
 

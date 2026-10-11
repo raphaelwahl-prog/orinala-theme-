@@ -26,6 +26,19 @@ local gui: ScreenGui
 local refs: { [string]: any } = {}
 local toasts: { Frame } = {}
 
+-- Réglages du joueur (§9). Le serveur les envoie avec l'état ; le HUD les
+-- applique ici, au seul endroit qui dessine. Un réglage absent vaut « activé » :
+-- un profil d'avant l'écran de paramètres ne doit pas se retrouver muet.
+local settings: { [string]: boolean } = {}
+
+function Hud.setSettings(values: { [string]: boolean }?)
+	settings = values or {}
+end
+
+local function enabled(id: string): boolean
+	return settings[id] ~= false
+end
+
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new("UICorner")
 	c.CornerRadius = UDim.new(0, radius)
@@ -161,6 +174,9 @@ function Hud.build(screen: ScreenGui)
 end
 
 function Hud.toast(text: string, kind: string)
+	if not enabled("Toasts") then
+		return
+	end
 	local colors = {
 		info = INK, warn = Color3.fromRGB(255, 196, 92),
 		danger = DANGER, cash = CASH, unlock = Color3.fromRGB(190, 130, 255),
@@ -190,19 +206,26 @@ function Hud.toast(text: string, kind: string)
 end
 
 function Hud.setPrompt(text: string?)
-	refs.prompt.Visible = text ~= nil
+	refs.prompt.Visible = text ~= nil and enabled("Prompts")
 	if text then
 		refs.promptText.Text = text
 	end
 end
 
 function Hud.flash(amount: number)
+	-- Coupé volontairement : c'est le réglage qui compte le plus de la liste.
+	-- Un voile rouge qui part à chaque coup reçu, ce n'est pas un détail de
+	-- confort pour quelqu'un de photosensible.
+	if not enabled("Flash") then
+		return
+	end
 	refs.tint.BackgroundTransparency = 1 - math.clamp(amount, 0, 0.35)
 	TweenService:Create(refs.tint, TweenInfo.new(0.6),
 		{ BackgroundTransparency = 1 }):Play()
 end
 
 function Hud.update(state)
+	Hud.setSettings(state.Settings)
 	refs.cash.Text = "En banque  " .. Format.money(state.Cash)
 	refs.unbanked.Text = Format.money(state.Unbanked)
 	refs.unbanked.TextColor3 = state.Unbanked > 0 and CASH or DIM
@@ -229,13 +252,25 @@ function Hud.update(state)
 	refs.shelter.Text = state.ShelterId ~= "" and ("refuge : " .. state.ShelterId)
 		or "aucun refuge"
 
-	if state.Multiplier > 1 then
-		refs.event.Text = "gains x" .. state.Multiplier
-	elseif state.Event then
-		refs.event.Text = state.Event.Name
-	else
-		refs.event.Text = ""
+	-- Ligne d'événement. Avant, elle affichait SOIT le multiplicateur Robux
+	-- SOIT le nom de l'événement : le joueur ne pouvait pas savoir que les deux
+	-- se cumulaient. Maintenant que l'événement agit vraiment sur les gains,
+	-- elle dit le nom, le multiplicateur total, et l'état du défi collectif.
+	local parts = {}
+	if state.Event then
+		table.insert(parts, state.Event.Name)
 	end
+	local total = (state.Multiplier or 1)
+		* (state.Event and state.Event.RewardMultiplier or 1)
+	if total > 1.001 then
+		table.insert(parts, ("gains x%.2f"):format(total))
+	end
+	local col = state.EventCollective
+	if col and col.Open then
+		table.insert(parts, col.Failed and "défi perdu"
+			or ("défi %d/%d"):format(col.Sessions, col.Target))
+	end
+	refs.event.Text = table.concat(parts, "  ·  ")
 
 	-- Objectif : la première mission non terminée, principales d'abord.
 	local best = nil

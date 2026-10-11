@@ -1,4 +1,4 @@
-<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX45"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX46"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">4</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX11"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX10"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX46"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX47"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">4</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX11"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX10"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
 -- L'ÉVEIL DE LA MAISON — la jauge partagée par tout le serveur.
 --
 -- Reprise de la première version du jeu, parce que c'est la seule mécanique
@@ -89,7 +89,11 @@ export type Cosmetic = {
 	Shirt: Color3,
 	Pants: Color3,
 	Head: Color3,
-	Requires: { Nights: number?, Deaths: number?, Zone: string?, Achievement: string? }?,
+	-- `Reason` dit, en français, ce qu'il faut faire. Sans lui, un deuxième skin
+	-- à condition d'exploit afficherait le motif du premier : le message était
+	-- codé en dur sur « battre le boss du carnaval ».
+	Requires: { Nights: number?, Deaths: number?, Zone: string?,
+		Achievement: string?, Reason: string? }?,
 }
 
 local CosmeticConfig = {}
@@ -120,7 +124,16 @@ CosmeticConfig.List = {
 	{ Id = &quot;clown&quot;, Name = &quot;Trophée du Clown&quot;, Desc = &quot;Tu l'as fait tomber. Porte-le.&quot;,
 		Price = 0, Shirt = Color3.fromRGB(180, 40, 70), Pants = Color3.fromRGB(240, 240, 240),
 		Head = Color3.fromRGB(250, 250, 250),
-		Requires = { Achievement = &quot;carnival_cleared&quot; } },
+		Requires = { Achievement = &quot;carnival_cleared&quot;,
+			Reason = &quot;battre le boss du carnaval&quot; } },
+
+	-- §13 — le cosmétique exclusif du « Carnaval interdit ». Il ne s'achète
+	-- jamais : il ne s'obtient qu'en abattant le mini-boss d'un événement.
+	{ Id = &quot;reveler&quot;, Name = &quot;Le Fêtard&quot;, Desc = &quot;Tu as mis à terre quelque chose de démesuré.&quot;,
+		Price = 0, Shirt = Color3.fromRGB(96, 40, 130), Pants = Color3.fromRGB(28, 22, 40),
+		Head = Color3.fromRGB(226, 198, 120),
+		Requires = { Achievement = &quot;miniboss_down&quot;,
+			Reason = &quot;abattre le mini-boss d'un événement&quot; } },
 }
 
 CosmeticConfig.ById = {}
@@ -147,7 +160,7 @@ function CosmeticConfig.check(item: Cosmetic, stats: {
 		return false, &quot;débloquer la zone correspondante&quot;
 	end
 	if req.Achievement and not stats.Achievements[req.Achievement] then
-		return false, &quot;battre le boss du carnaval&quot;
+		return false, req.Reason or &quot;accomplir l'exploit correspondant&quot;
 	end
 	return true, &quot;&quot;
 end
@@ -290,6 +303,19 @@ GameConfig.Monetization = {
 GameConfig.Events = {
 	-- CDC §13. Le serveur décide seul de l'événement actif.
 	RotationSeconds = 1800,
+	-- Réclamation : l'événement donne de l'argent une fois par période, et le
+	-- montant suit son multiplicateur. Un événement à x2 vaut donc le double
+	-- d'un événement à x1,4 — la récompense dit la même chose que le risque.
+	ClaimBase = 25000,
+	-- Défi collectif (« Nuit sans fin »). Les deux nombres sont comptés sur le
+	-- serveur entier, pas par joueur : c'est ce qui en fait un défi collectif
+	-- et pas une mission déguisée.
+	Collective = { Sessions = 8, MaxDeaths = 3 },
+	-- Mini-boss (« Carnaval interdit »). Ce n'est pas un nouveau monstre : c'est
+	-- celui de la zone, plus grand, plus rapide et voyant plus loin. Le joueur
+	-- reconnaît la silhouette, et comprend tout de suite que quelque chose
+	-- cloche — un monstre inédit demanderait un modèle, donc un téléversement.
+	MiniBoss = { Hits = 14, Speed = 1.45, Sight = 1.6, Scale = 1.4, Damage = 1.3 },
 	List = {
 		{ Id = &quot;street_invasion&quot;, Name = &quot;Invasion de la rue&quot;,
 			Zone = &quot;street&quot;, MonsterMultiplier = 2, RewardMultiplier = 1.5,
@@ -306,9 +332,38 @@ GameConfig.Events = {
 	},
 }
 
+GameConfig.Leaderboards = {
+	-- CDC §8 : « classements saisonniers ». Une saison = un mois civil UTC.
+	-- C'est assez court pour qu'un nouveau joueur puisse viser la tête, et
+	-- assez long pour que le classement veuille dire quelque chose.
+	StoreName = &quot;SleepOrDie_Boards_v1&quot;,
+	Size = 10,                  -- entrées affichées par classement
+	RefreshSeconds = 60,        -- relecture du classement (quotas OrderedDataStore)
+	PublishSeconds = 90,        -- écriture des scores des joueurs présents
+	Boards = {
+		{ Id = &quot;banked&quot;, Name = &quot;Argent déposé&quot;, Field = &quot;LifetimeBanked&quot;, Kind = &quot;money&quot; },
+		{ Id = &quot;nights&quot;, Name = &quot;Nuits survécues&quot;, Field = &quot;NightsSurvived&quot;, Kind = &quot;count&quot; },
+		{ Id = &quot;bosses&quot;, Name = &quot;Boss battus&quot;, Field = &quot;BossesBeaten&quot;, Kind = &quot;count&quot; },
+	},
+}
+
 GameConfig.Ui = {
 	ToastSeconds = 5,
 	AlertSeconds = 4,
+	-- §9 — l'écran de paramètres. Ces quatre réglages-là, et pas d'autres :
+	-- ce sont les seuls qui peuvent réellement être appliqués par joueur.
+	-- Le brouillard et la nappe sonore sont des objets de serveur partagés
+	-- (Lighting, un seul Sound) : les mettre ici serait mentir au joueur.
+	Settings = {
+		{ Id = &quot;Flash&quot;, Name = &quot;Flashs d'écran&quot;,
+			Desc = &quot;Le voile rouge quand tu encaisses ou qu'on te repère.&quot;, Default = true },
+		{ Id = &quot;Toasts&quot;, Name = &quot;Messages d'alerte&quot;,
+			Desc = &quot;Les bandeaux en haut de l'écran.&quot;, Default = true },
+		{ Id = &quot;Prompts&quot;, Name = &quot;Invites contextuelles&quot;,
+			Desc = &quot;La ligne « E — dormir ici » en bas.&quot;, Default = true },
+		{ Id = &quot;UiSound&quot;, Name = &quot;Sons d'interface&quot;,
+			Desc = &quot;Achats, dépôts, déblocages. N'affecte pas les monstres.&quot;, Default = true },
+	},
 }
 
 GameConfig.Debug = {
@@ -668,6 +723,7 @@ Net.Events = {
 	&quot;AwakeningChanged&quot;,  -- jauge d'éveil partagée
 	&quot;DownedChanged&quot;,     -- un joueur à terre, et le temps qu'il lui reste
 	&quot;DeathReport&quot;,       -- bilan de mort
+	&quot;LeaderboardData&quot;,   -- classements saisonniers (§8)
 	-- client → serveur
 	&quot;RequestClaim&quot;,      -- réserver un refuge
 	&quot;RequestSleep&quot;,      -- démarrer une session
@@ -681,6 +737,9 @@ Net.Events = {
 	&quot;RequestMission&quot;,    -- accepter / rendre une mission
 	&quot;RequestPurchase&quot;,   -- ouvrir une fenêtre d'achat Robux
 	&quot;RequestCosmetic&quot;,   -- débloquer ou équiper un skin
+	&quot;RequestEventClaim&quot;, -- réclamer la récompense de l'événement en cours
+	&quot;RequestLeaderboard&quot;,-- demander les classements
+	&quot;RequestSetting&quot;,    -- changer un réglage (§9)
 }
 
 local cache: { [string]: RemoteEvent } = {}
@@ -853,7 +912,7 @@ function ZoneConfig.canEnter(zone: Zone, stats: {
 end
 
 return ZoneConfig
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX36"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX35"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX37"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX36"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
 -- Point d'entrée serveur. Tout le câblage est ici, et nulle part ailleurs :
 -- les services ne se connaissent que par appel direct, jamais par événement
 -- global, pour qu'on puisse lire le jeu de haut en bas depuis ce fichier.
@@ -878,6 +937,7 @@ local CosmeticService = require(script.CosmeticService)
 local EconomyService = require(script.EconomyService)
 local EventService = require(script.EventService)
 local InventoryService = require(script.InventoryService)
+local LeaderboardService = require(script.LeaderboardService)
 local LifeService = require(script.LifeService)
 local MissionService = require(script.MissionService)
 local MonetizationService = require(script.MonetizationService)
@@ -941,8 +1001,10 @@ local function pushState(player: Player)
 			Stage = AwakeningService.stage(),
 			Data = AwakeningService.data(),
 		},
+		EventCollective = EventService.collectiveState(),
 		Cosmetics = CosmeticService.catalogue(player),
 		Skin = profile.Skin,
+		Settings = profile.Settings,
 		Downed = LifeService.isDowned(player),
 		Stats = {
 			Nights = profile.NightsSurvived,
@@ -975,7 +1037,16 @@ ObjectiveService.init()
 BossService.init()
 AwakeningService.init()
 LifeService.init()
+LeaderboardService.init()
 EconomyService.setAwakeningBonus(AwakeningService.rewardMultiplier)
+-- §13 : le multiplicateur de l'événement agit sur les gains, comme celui de
+-- l'éveil. Il était calculé par EventService depuis le début, mais aucun
+-- service ne le lisait : un événement ne changeait rien aux revenus.
+EconomyService.setEventBonus(EventService.rewardMultiplier)
+EventService.onReward(function(player, amount)
+	EconomyService.grant(player, amount, &quot;événement&quot;)
+	pushState(player)
+end)
 WorldService.startPopulating()
 ZoneService.setTeleporter(WorldService.teleport)
 
@@ -1008,6 +1079,9 @@ EventService.onChanged(function(active)
 	for _, player in ipairs(Players:GetPlayers()) do
 		send(player, &quot;EventChanged&quot;, active)
 		alert(player, active.Name .. &quot; — &quot; .. active.Text, &quot;event&quot;)
+		-- Les effets sont déjà appliqués quand cette annonce part : le joueur
+		-- qui lit « la rue devient invivable » joue déjà contre cette rue.
+		pushState(player)
 	end
 end)
 
@@ -1054,10 +1128,14 @@ SurvivalService.onChanged(function(player, session, reason)
 	if reason == &quot;complete&quot; and session then
 		MissionService.progress(player, &quot;survive_session&quot;, 1)
 		ObjectiveService.noteSession(player, session.ZoneId, reason)
+		-- Défi collectif (§13) : une session tenue compte pour tout le serveur.
+		EventService.noteSession()
 		alert(player, (&quot;Session terminée. %s sur toi — va les déposer.&quot;)
 			:format(Format.money(session.Earned)), &quot;cash&quot;)
 	elseif reason == &quot;death&quot; and session then
 		ObjectiveService.noteCaught(player)
+		-- Et une mort coûte au serveur entier, pas qu'à celui qui meurt.
+		EventService.noteDeath()
 		send(player, &quot;DeathReport&quot;, {
 			Zone = session.ZoneId, Earned = session.Earned,
 			Seconds = session.EligibleSeconds,
@@ -1166,6 +1244,15 @@ local function onAttack(player: Player, target: unknown)
 		alert(player, label .. &quot; — il recule.&quot;, &quot;info&quot;)
 		if CollectionService:HasTag(target, &quot;Boss&quot;) then
 			BossService.registerHit(player)
+		elseif EventService.isMiniBoss(target) then
+			local down, name = EventService.registerMiniBossHit(player, target)
+			if down then
+				for _, other in ipairs(Players:GetPlayers()) do
+					alert(other, name .. &quot; est tombé. « Le Fêtard » est débloqué &quot;
+						.. &quot;pour ceux qui l'ont frappé.&quot;, &quot;unlock&quot;)
+					pushState(other)
+				end
+			end
 		end
 	end
 end
@@ -1199,6 +1286,49 @@ local function onCosmetic(player: Player, action: unknown, id: unknown)
 	pushState(player)
 end
 
+local function onEventClaim(player: Player)
+	local ok, message = EventService.claim(player)
+	if ok then
+		alert(player, message .. &quot; — récompense versée.&quot;, &quot;cash&quot;)
+	else
+		alert(player, message, &quot;warn&quot;)
+	end
+	pushState(player)
+end
+
+local function onLeaderboard(player: Player)
+	-- La lecture est en cache côté service : cette demande ne déclenche aucun
+	-- appel DataStore, donc un joueur qui ouvre l'écran en boucle ne coûte rien.
+	send(player, &quot;LeaderboardData&quot;, LeaderboardService.view(player))
+end
+
+local function onSetting(player: Player, id: unknown, value: unknown)
+	if type(id) ~= &quot;string&quot; or type(value) ~= &quot;boolean&quot; then
+		return
+	end
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	-- Un réglage inconnu est refusé : le client ne décide pas de la liste.
+	local known = false
+	for _, entry in ipairs(GameConfig.Ui.Settings) do
+		if entry.Id == id then
+			known = true
+			break
+		end
+	end
+	if not known then
+		return
+	end
+	profile.Settings[id] = value
+	PlayerDataService.markDirty(player)
+	if id == &quot;UiSound&quot; then
+		SoundLib.setUiSound(player, value)
+	end
+	pushState(player)
+end
+
 local function onPurchase(player: Player, productKey: unknown)
 	if type(productKey) ~= &quot;string&quot; then
 		return
@@ -1219,6 +1349,9 @@ Net.get(&quot;RequestAttack&quot;).OnServerEvent:Connect(onAttack)
 Net.get(&quot;RequestMission&quot;).OnServerEvent:Connect(onMission)
 Net.get(&quot;RequestPurchase&quot;).OnServerEvent:Connect(onPurchase)
 Net.get(&quot;RequestCosmetic&quot;).OnServerEvent:Connect(onCosmetic)
+Net.get(&quot;RequestEventClaim&quot;).OnServerEvent:Connect(onEventClaim)
+Net.get(&quot;RequestLeaderboard&quot;).OnServerEvent:Connect(onLeaderboard)
+Net.get(&quot;RequestSetting&quot;).OnServerEvent:Connect(onSetting)
 Net.get(&quot;RequestRepair&quot;).OnServerEvent:Connect(function(player)
 	alert(player, &quot;Les défenses se remplacent à la boutique.&quot;, &quot;info&quot;)
 end)
@@ -1228,6 +1361,8 @@ Players.PlayerAdded:Connect(function(player)
 	local profile = PlayerDataService.load(player)
 	MissionService.rollPeriods(player)
 	ZoneService.refresh(player)
+	-- Le réglage de son suit le compte : il est appliqué avant le premier son.
+	SoundLib.setUiSound(player, profile.Settings.UiSound ~= false)
 
 	if not profile.Loaded then
 		alert(player, &quot;Tes données n'ont pas pu être chargées. &quot;
@@ -1247,6 +1382,16 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
+	-- Dans cet ordre : on publie le score pendant que le profil existe encore,
+	-- puis on le libère. L'inverse publierait un classement vide.
+	--
+	-- Sous `pcall`, et ce n'est pas de la superstition : la publication écrit
+	-- dans un DataStore, donc elle cède la main. Si elle levait, la sauvegarde
+	-- du profil juste en dessous ne partirait jamais — on perdrait la partie du
+	-- joueur pour une histoire de classement.
+	pcall(LeaderboardService.publish, player)
+	LeaderboardService.forget(player)
+	SoundLib.forget(player)
 	PlayerDataService.release(player)
 end)
 
@@ -1589,10 +1734,9 @@ function BossService.start(): boolean
 	if not def or not layout then
 		return false
 	end
-	local model = MonsterService.spawn(def, &quot;carnival&quot;, layout.Spawns[1], layout.Patrol)
-	if not model then
-		return false
-	end
+	-- `spawnUnique` et pas `spawn` : le boss ne doit jamais être refusé par le
+	-- plafond de la zone. C'est un unique, il passe avant la figuration.
+	local model = MonsterService.spawnUnique(def, &quot;carnival&quot;, layout.Spawns[1], layout.Patrol)
 	CollectionService:AddTag(model, &quot;Boss&quot;)
 	active = { Model = model, Phase = 0, Hits = 0, Players = {} }
 	applyPhase(1)
@@ -1944,6 +2088,16 @@ function EconomyService.setAwakeningBonus(fn: () -&gt; number)
 	awakeningBonus = fn
 end
 
+-- Même mécanique pour le multiplicateur de l'événement en cours (§13). Il
+-- était déclaré dans la configuration et calculé par EventService, mais
+-- personne ne le lisait : les gains ne bougeaient pas d'un gramme pendant un
+-- événement. Il est maintenant injecté ici, comme celui de l'éveil.
+local eventBonus: (() -&gt; number)? = nil
+
+function EconomyService.setEventBonus(fn: () -&gt; number)
+	eventBonus = fn
+end
+
 function EconomyService.onChanged(fn: (Player) -&gt; ())
 	table.insert(listeners, fn)
 end
@@ -1982,6 +2136,9 @@ function EconomyService.accrue(player: Player, zoneId: string, seconds: number, 
 		-- Contrepartie du risque partagé : plus la maison est réveillée, plus
 		-- ça paie. Sans ça, personne n'aurait intérêt à remplir la jauge.
 		rate *= awakeningBonus()
+	end
+	if eventBonus then
+		rate *= eventBonus()
 	end
 	-- Plafond souple : au-delà, le taux est divisé. Sans ça, la zone 7 à
 	-- 100 000 $/s rend toute la progression précédente sans objet.
@@ -2098,21 +2255,68 @@ return EconomyService
 -- §13 — événements. Le serveur seul décide de l'événement actif, et une
 -- récompense d'événement ne peut pas être réclamée deux fois (clé = identifiant
 -- de l'événement + sa période).
+--
+-- Chaque champ déclaré dans GameConfig.Events.List agit réellement :
+--   · RewardMultiplier  → injecté dans EconomyService (gains de survie) ;
+--   · MonsterMultiplier → relève le plafond de monstres (MonsterService.capFor) ;
+--   · MonsterSpeed      → accélère tous les monstres concernés ;
+--   · MiniBoss          → fait naître une version démesurée du monstre de zone ;
+--   · Collective        → ouvre un défi serveur, et la récompense se mérite.
+--   · Zone              → « any » ou un identifiant : limite la portée des deux
+--                         effets sur les monstres.
+--
+-- Avant, seul `RewardMultiplier` était *lu* — et encore, par personne. Un
+-- événement changeait le bandeau du HUD et rien d'autre.
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
 
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local MonsterService = require(script.Parent.MonsterService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
+local WorldService = require(script.Parent.WorldService)
+local ZoneConfig = require(script.Parent.Parent.Shared.ZoneConfig)
 
 local EventService = {}
 
-local current: { Id: string, Name: string, Text: string, RewardMultiplier: number,
-	StartedAt: number, Period: string }? = nil
-local listeners: { (any) -&gt; () } = {}
+export type Active = {
+	Id: string,
+	Name: string,
+	Text: string,
+	Zone: string,
+	RewardMultiplier: number,
+	MonsterMultiplier: number,
+	MonsterSpeed: number,
+	MiniBoss: boolean,
+	Collective: boolean,
+	StartedAt: number,
+	Period: string,
+}
 
-function EventService.onChanged(fn: (any) -&gt; ())
+local current: Active? = nil
+local listeners: { (Active) -&gt; () } = {}
+local rewardHandlers: { (Player, number) -&gt; () } = {}
+
+-- Défi collectif : compté sur le serveur entier, remis à zéro à chaque
+-- rotation. `Failed` reste vrai jusqu'à la rotation suivante : un défi raté
+-- est raté, on ne le repêche pas.
+local collective = { Sessions = 0, Deaths = 0, Failed = false }
+
+-- Mini-boss d'événement : un seul à la fois sur tout le serveur.
+local miniBoss: { Model: Model, Label: string, Hits: number, Players: { Player } }? = nil
+
+function EventService.onChanged(fn: (Active) -&gt; ())
 	table.insert(listeners, fn)
 end
 
-function EventService.active()
+-- Le bootstrap branche ici le versement de la récompense, pour qu'EventService
+-- n'ait pas à connaître EconomyService (qui, lui, reçoit déjà le multiplicateur
+-- d'événement : la boucle serait circulaire).
+function EventService.onReward(fn: (Player, number) -&gt; ())
+	table.insert(rewardHandlers, fn)
+end
+
+function EventService.active(): Active?
 	return current
 end
 
@@ -2120,6 +2324,121 @@ function EventService.rewardMultiplier(): number
 	return current and current.RewardMultiplier or 1
 end
 
+-- ── défi collectif ────────────────────────────────────────────────────────
+function EventService.collectiveState()
+	local target = GameConfig.Events.Collective
+	local open = current ~= nil and current.Collective
+	return {
+		Open = open,
+		Sessions = collective.Sessions,
+		Target = target.Sessions,
+		Deaths = collective.Deaths,
+		MaxDeaths = target.MaxDeaths,
+		Failed = collective.Failed,
+		Done = open and not collective.Failed and collective.Sessions &gt;= target.Sessions,
+	}
+end
+
+function EventService.noteSession()
+	if not current or not current.Collective or collective.Failed then
+		return
+	end
+	collective.Sessions += 1
+end
+
+function EventService.noteDeath()
+	if not current or not current.Collective or collective.Failed then
+		return
+	end
+	collective.Deaths += 1
+	if collective.Deaths &gt; GameConfig.Events.Collective.MaxDeaths then
+		collective.Failed = true
+	end
+end
+
+-- ── mini-boss ─────────────────────────────────────────────────────────────
+local function clearMiniBoss()
+	if miniBoss then
+		MonsterService.despawn(miniBoss.Model)
+		miniBoss = nil
+	end
+end
+
+function EventService.miniBossAlive(): boolean
+	return miniBoss ~= nil and miniBoss.Model.Parent ~= nil
+end
+
+-- Appelé par le bootstrap quand un joueur frappe un monstre tagué MiniBoss.
+-- Renvoie (tombé, nom) : le bootstrap n'a qu'à relayer.
+function EventService.registerMiniBossHit(player: Player, model: Model): (boolean, string)
+	if not miniBoss or miniBoss.Model ~= model then
+		return false, &quot;&quot;
+	end
+	local known = false
+	for _, existing in ipairs(miniBoss.Players) do
+		if existing == player then
+			known = true
+			break
+		end
+	end
+	if not known then
+		table.insert(miniBoss.Players, player)
+	end
+
+	miniBoss.Hits += 1
+	if miniBoss.Hits &lt; GameConfig.Events.MiniBoss.Hits then
+		return false, &quot;&quot;
+	end
+
+	local participants = table.clone(miniBoss.Players)
+	local name = miniBoss.Label
+	clearMiniBoss()
+	for _, participant in ipairs(participants) do
+		local profile = PlayerDataService.get(participant)
+		if profile then
+			-- L'exploit ouvre le skin de l'événement. Il ne s'achète pas : un
+			-- skin qu'on ne peut qu'obtenir vaut plus qu'un skin à 299 Robux.
+			profile.Achievements.miniboss_down = true
+			PlayerDataService.markDirty(participant)
+		end
+	end
+	return true, name
+end
+
+-- Fait naître le mini-boss dans une zone occupée, s'il n'y en a pas déjà un.
+local function tendMiniBoss()
+	if not current or not current.MiniBoss then
+		clearMiniBoss()
+		return
+	end
+	if miniBoss then
+		if miniBoss.Model.Parent then
+			return
+		end
+		-- Mort par une autre voie (étourdi hors limite, zone nettoyée) :
+		-- on oublie celui-là, le suivant pourra naître.
+		miniBoss = nil
+	end
+
+	for _, zone in ipairs(ZoneConfig.List) do
+		-- Jamais dans la zone du boss. Sans ce garde, un événement « toutes
+		-- zones » pouvait faire naître un clown démesuré dans l'arène pendant
+		-- le vrai combat en trois phases : deux clowns, dont un qui ne suit
+		-- aucune des mécaniques que le joueur vient d'apprendre.
+		local def = MonsterConfig.get(zone.Monster)
+		if def and def.Rule ~= &quot;boss_phases&quot;
+			and (current.Zone == &quot;any&quot; or current.Zone == zone.Id)
+			and WorldService.occupied(zone.Id) then
+			local model, label = WorldService.spawnMiniBoss(zone.Id)
+			if model then
+				miniBoss = { Model = model, Label = label, Hits = 0, Players = {} }
+				return
+			end
+		end
+	end
+end
+
+-- ── rotation ──────────────────────────────────────────────────────────────
 local function pick()
 	local list = GameConfig.Events.List
 	local chosen = list[math.random(1, #list)]
@@ -2127,29 +2446,62 @@ local function pick()
 		Id = chosen.Id,
 		Name = chosen.Name,
 		Text = chosen.Text,
+		Zone = chosen.Zone or &quot;any&quot;,
 		RewardMultiplier = chosen.RewardMultiplier or 1,
+		MonsterMultiplier = chosen.MonsterMultiplier or 1,
+		MonsterSpeed = chosen.MonsterSpeed or 1,
+		MiniBoss = chosen.MiniBoss == true,
+		Collective = chosen.Collective == true,
 		StartedAt = os.time(),
 		-- La période rend la clé de récompense unique : même événement demain,
-		-- récompense à nouveau réclamable, mais pas deux fois aujourd'hui.
+		-- récompense à nouveau réclamable, mais pas deux fois dans l'heure.
 		Period = os.date(&quot;!%Y%m%d%H&quot;),
 	}
+
+	-- Les effets s'appliquent AVANT d'annoncer : un joueur qui lit « les gains
+	-- montent, la rue devient invivable » doit déjà jouer contre cette rue.
+	MonsterService.applyEvent((current :: Active).MonsterSpeed,
+		(current :: Active).MonsterMultiplier, (current :: Active).Zone)
+	collective.Sessions, collective.Deaths, collective.Failed = 0, 0, false
+	clearMiniBoss()
+
 	for _, fn in ipairs(listeners) do
-		task.spawn(fn, current)
+		task.spawn(fn, current :: Active)
 	end
 end
 
--- Réclamation d'une récompense d'événement, une seule fois par période.
+-- ── réclamation ───────────────────────────────────────────────────────────
+-- Renvoie (réussi, message). Un défi collectif non rempli refuse, en disant
+-- où en est le serveur : c'est l'information qui pousse les joueurs à se parler.
 function EventService.claim(player: Player): (boolean, string)
 	local profile = PlayerDataService.get(player)
 	if not profile or not current then
 		return false, &quot;Aucun événement en cours.&quot;
 	end
+
+	if current.Collective then
+		local state = EventService.collectiveState()
+		if state.Failed then
+			return false, (&quot;Défi collectif perdu : %d morts sur le serveur (%d permises). &quot;
+				.. &quot;Rendez-vous au prochain événement.&quot;):format(state.Deaths, state.MaxDeaths)
+		end
+		if not state.Done then
+			return false, (&quot;Défi collectif : %d sessions tenues sur %d. Il en manque %d.&quot;)
+				:format(state.Sessions, state.Target, state.Target - state.Sessions)
+		end
+	end
+
 	local key = &quot;ev_&quot; .. current.Id .. &quot;_&quot; .. current.Period
 	if profile.Achievements[key] then
-		return false, &quot;Déjà réclamé.&quot;
+		return false, &quot;Déjà réclamé pour cet événement.&quot;
 	end
 	profile.Achievements[key] = true
 	PlayerDataService.markDirty(player)
+
+	local amount = math.floor(GameConfig.Events.ClaimBase * current.RewardMultiplier)
+	for _, fn in ipairs(rewardHandlers) do
+		task.spawn(fn, player, amount)
+	end
 	return true, current.Name
 end
 
@@ -2161,6 +2513,27 @@ function EventService.init()
 			pick()
 		end
 	end)
+	-- Le mini-boss est surveillé à part : il doit pouvoir naître quand un
+	-- joueur entre dans une zone bien après le début de l'événement.
+	--
+	-- Le contrôle passe AVANT l'attente, et pas après. Avec l'attente en
+	-- premier, un joueur déjà sur place au lancement de l'événement voyait le
+	-- mini-boss arriver jusqu'à cinq secondes après l'annonce — un trou qui se
+	-- remarque, puisque l'annonce dit « un mini-boss apparaît ».
+	task.spawn(function()
+		while true do
+			local ok, err = pcall(tendMiniBoss)
+			if not ok and GameConfig.Debug.Verbose then
+				warn(&quot;[EventService] &quot; .. tostring(err))
+			end
+			task.wait(5)
+		end
+	end)
+end
+
+-- Utilisé par le bootstrap pour reconnaître la cible d'un coup.
+function EventService.isMiniBoss(model: Instance): boolean
+	return CollectionService:HasTag(model, &quot;MiniBoss&quot;)
 end
 
 return EventService
@@ -2224,7 +2597,273 @@ function InventoryService.bestWeapon(player: Player): ItemConfig.Item?
 end
 
 return InventoryService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">LifeService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">LeaderboardService</string><ProtectedString name="Source">--!strict
+-- §8 — les classements saisonniers.
+--
+-- Trois classements (argent déposé, nuits survécues, boss battus), remis à zéro
+-- à chaque saison. Une saison = un mois civil UTC : assez court pour qu'un
+-- nouveau joueur puisse viser la tête, assez long pour que le classement veuille
+-- dire quelque chose.
+--
+-- Trois règles que ce service se donne, et qui expliquent presque tout le code :
+--
+--   1. **Il ne publie jamais un profil non chargé.** Un joueur dont les données
+--      n'ont pas pu être lues a un profil vide. Le publier écraserait son vrai
+--      score par un zéro — exactement la faute que `profile.Loaded` existe pour
+--      empêcher côté sauvegarde.
+--   2. **Il ne lève jamais.** Un OrderedDataStore indisponible, un quota
+--      dépassé, une saison qui change pendant une lecture : rien de tout ça ne
+--      doit casser une partie. Tout est sous `pcall`, et en cas d'échec on
+--      retombe sur les joueurs présents.
+--   3. **Il ne bloque jamais la boucle de jeu.** Les lectures et écritures sont
+--      des appels qui cèdent la main ; elles tournent dans leurs propres
+--      tâches, à une cadence fixée par GameConfig (quotas Roblox).
+
+local DataStoreService = game:GetService(&quot;DataStoreService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+
+local LeaderboardService = {}
+
+export type Entry = { Rank: number, Name: string, Value: number, IsMe: boolean }
+
+local config = GameConfig.Leaderboards
+
+-- Classements en cache, par identifiant de classement.
+local cache: { [string]: { Entry } } = {}
+local names: { [number]: string } = {}
+local published: { [number]: { [string]: number } } = {}
+local available = true
+local seasonId = &quot;&quot;
+
+function LeaderboardService.season(): string
+	return os.date(&quot;!%Y-%m&quot;)
+end
+
+function LeaderboardService.boards()
+	return config.Boards
+end
+
+-- Bascule en mode dégradé, une fois pour toutes, en le disant une seule fois.
+--
+-- ⚠️ Le piège, et il est facile à manquer : en Studio sans accès API,
+-- `GetOrderedDataStore` **ne lève pas**. Il rend un objet parfaitement normal,
+-- et c'est seulement `GetSortedAsync` / `SetAsync` qui échouent. Si on ne
+-- déclarait le mode dégradé qu'à l'échec de `GetOrderedDataStore`, le service
+-- retomberait bien sur les joueurs présents (les pcall font leur travail) mais
+-- `view.Local` resterait faux : l'écran afficherait six joueurs du serveur
+-- comme s'ils étaient le classement mondial. C'est donc ici, et depuis chaque
+-- appel qui échoue, qu'on le constate.
+local function degrade(what: string, err: any)
+	if available then
+		available = false
+		warn(&quot;[LeaderboardService] stockage classé indisponible (&quot; .. what .. &quot; : &quot;
+			.. tostring(err) .. &quot;) — classements limités aux joueurs présents.&quot;)
+	end
+end
+
+local function storeFor(boardId: string): OrderedDataStore?
+	if not available then
+		return nil
+	end
+	local ok, store = pcall(function()
+		return DataStoreService:GetOrderedDataStore(config.StoreName .. &quot;_&quot; .. boardId,
+			LeaderboardService.season())
+	end)
+	if not ok then
+		degrade(&quot;ouverture&quot;, store)
+		return nil
+	end
+	return store
+end
+
+local function nameOf(userId: number): string
+	local cached = names[userId]
+	if cached then
+		return cached
+	end
+	local ok, result = pcall(function()
+		return Players:GetNameFromUserIdAsync(userId)
+	end)
+	local resolved = (ok and type(result) == &quot;string&quot;) and result or (&quot;Joueur &quot; .. userId)
+	names[userId] = resolved
+	return resolved
+end
+
+-- Repli : le classement des joueurs actuellement sur le serveur. Ce n'est pas
+-- le vrai classement, et l'interface le dit (`Local = true`) — mieux vaut un
+-- tableau honnêtement partiel qu'un tableau vide.
+local function localBoard(board): { Entry }
+	local rows = {}
+	for player, profile in pairs(PlayerDataService.all()) do
+		if profile.Loaded then
+			-- Lecture par nom de champ : le type Profile est une table typée,
+			-- on passe donc par `any` pour que l'analyse de Studio ne crie pas
+			-- sur un accès qu'elle ne peut pas vérifier statiquement.
+			local value = (profile :: any)[board.Field]
+			if type(value) == &quot;number&quot; and value &gt; 0 then
+				table.insert(rows, { Name = player.Name, Value = value, UserId = player.UserId })
+			end
+		end
+	end
+	table.sort(rows, function(a, b)
+		return a.Value &gt; b.Value
+	end)
+	local entries: { Entry } = {}
+	for index, row in ipairs(rows) do
+		if index &gt; config.Size then
+			break
+		end
+		table.insert(entries, { Rank = index, Name = row.Name, Value = row.Value, IsMe = false })
+	end
+	return entries
+end
+
+local function refresh(board)
+	local store = storeFor(board.Id)
+	if not store then
+		cache[board.Id] = localBoard(board)
+		return
+	end
+	local ok, pages = pcall(function()
+		return store:GetSortedAsync(false, config.Size)
+	end)
+	if not ok or not pages then
+		degrade(&quot;lecture &quot; .. board.Id, pages)
+		cache[board.Id] = localBoard(board)
+		return
+	end
+	local okPage, page = pcall(function()
+		return pages:GetCurrentPage()
+	end)
+	if not okPage or type(page) ~= &quot;table&quot; then
+		cache[board.Id] = localBoard(board)
+		return
+	end
+
+	local entries: { Entry } = {}
+	for index, row in ipairs(page) do
+		local userId = tonumber(row.key) or 0
+		table.insert(entries, {
+			Rank = index,
+			Name = nameOf(userId),
+			Value = row.value,
+			IsMe = false,
+		})
+	end
+	cache[board.Id] = entries
+end
+
+-- Écrit le score d'un joueur, pour chaque classement, s'il a bougé.
+function LeaderboardService.publish(player: Player)
+	local profile = PlayerDataService.get(player)
+	-- Règle 1 : jamais un profil non chargé.
+	if not profile or not profile.Loaded then
+		return
+	end
+	local seen = published[player.UserId]
+	if not seen then
+		seen = {}
+		published[player.UserId] = seen
+	end
+
+	for _, board in ipairs(config.Boards) do
+		local value = (profile :: any)[board.Field]
+		if type(value) == &quot;number&quot; then
+			local rounded = math.floor(value)
+			-- OrderedDataStore n'accepte que des entiers positifs.
+			if rounded &gt; 0 and seen[board.Id] ~= rounded then
+				local store = storeFor(board.Id)
+				if store then
+					local ok, err = pcall(function()
+						(store :: OrderedDataStore):SetAsync(tostring(player.UserId), rounded)
+					end)
+					if ok then
+						seen[board.Id] = rounded
+					else
+						degrade(&quot;écriture &quot; .. board.Id, err)
+					end
+				else
+					seen[board.Id] = rounded
+				end
+			end
+		end
+	end
+end
+
+function LeaderboardService.forget(player: Player)
+	published[player.UserId] = nil
+end
+
+-- Tout ce qu'il faut pour dessiner l'écran, du point de vue d'un joueur.
+function LeaderboardService.view(player: Player)
+	local profile = PlayerDataService.get(player)
+	local boards = {}
+	for _, board in ipairs(config.Boards) do
+		local entries = {}
+		for _, entry in ipairs(cache[board.Id] or {}) do
+			table.insert(entries, {
+				Rank = entry.Rank, Name = entry.Name, Value = entry.Value,
+				IsMe = entry.Name == player.Name,
+			})
+		end
+		-- Le score du joueur, pas son rang : connaître son rang exact
+		-- demanderait de parcourir tout le classement à chaque ouverture.
+		-- Afficher un rang approximatif serait un mensonge d'interface.
+		local mine = profile and (profile :: any)[board.Field] or 0
+		table.insert(boards, {
+			Id = board.Id, Name = board.Name, Kind = board.Kind,
+			Entries = entries,
+			Mine = type(mine) == &quot;number&quot; and math.floor(mine) or 0,
+		})
+	end
+	return {
+		Season = seasonId ~= &quot;&quot; and seasonId or LeaderboardService.season(),
+		Local = not available,
+		Boards = boards,
+	}
+end
+
+function LeaderboardService.init()
+	seasonId = LeaderboardService.season()
+
+	task.spawn(function()
+		while true do
+			for _, board in ipairs(config.Boards) do
+				local ok, err = pcall(refresh, board)
+				if not ok and GameConfig.Debug.Verbose then
+					warn(&quot;[LeaderboardService] lecture &quot; .. board.Id .. &quot; : &quot; .. tostring(err))
+				end
+			end
+			-- Changement de saison en cours de partie : les classements
+			-- repartent de zéro sans redémarrer le serveur, et les scores déjà
+			-- publiés doivent l'être à nouveau dans la nouvelle saison.
+			local now = LeaderboardService.season()
+			if now ~= seasonId then
+				seasonId = now
+				published = {}
+			end
+			task.wait(config.RefreshSeconds)
+		end
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(config.PublishSeconds)
+			for _, player in ipairs(Players:GetPlayers()) do
+				local ok, err = pcall(LeaderboardService.publish, player)
+				if not ok and GameConfig.Debug.Verbose then
+					warn(&quot;[LeaderboardService] écriture &quot; .. player.Name .. &quot; : &quot; .. tostring(err))
+				end
+			end
+		end
+	end)
+end
+
+return LeaderboardService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">LifeService</string><ProtectedString name="Source">--!strict
 -- À terre, pas mort : le coéquipier peut te relever.
 --
 -- Sans ça, une mort en multijoueur ne fait que renvoyer chacun à son coin.
@@ -2387,7 +3026,7 @@ function LifeService.init()
 end
 
 return LifeService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">MissionService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">MissionService</string><ProtectedString name="Source">--!strict
 -- §7 — missions. Le CDC §15 exige qu'une mission ne puisse pas être réclamée
 -- plusieurs fois : c'est `MissionsDone` pour les principales et secondaires, et
 -- les clés de jour / de semaine pour les répétables.
@@ -2523,7 +3162,7 @@ function MissionService.list(player: Player)
 end
 
 return MissionService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--!strict
 -- §12 — Robux.
 --
 -- Deux règles non négociables du CDC :
@@ -2631,7 +3270,7 @@ function MonetizationService.prompt(player: Player, productKey: string)
 end
 
 return MonetizationService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">MonsterRig</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">MonsterRig</string><ProtectedString name="Source">--!strict
 -- Le corps des monstres.
 --
 -- Avant, un monstre c'était deux boîtes soudées qui glissaient sur le sol.
@@ -2920,7 +3559,7 @@ function MonsterRig.animate(rig, phase: number, amount: number)
 end
 
 return MonsterRig
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">MonsterService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">MonsterService</string><ProtectedString name="Source">--!strict
 -- §5 — les monstres et leur IA.
 --
 -- Deux boucles, comme toujours quand il y a du pathfinding :
@@ -2985,6 +3624,37 @@ end
 
 function MonsterService.globals(): (number, number)
 	return globalSpeed, globalSight
+end
+
+-- Multiplicateurs imposés par l'événement du serveur (§13). Ils sont tenus
+-- SÉPARÉS de ceux de l'éveil, et pas écrits dans les mêmes variables : sinon
+-- le dernier des deux services à parler effacerait l'autre, et on aurait un
+-- événement qui annule l'éveil ou l'inverse selon l'ordre d'appel.
+-- Les deux se cumulent par multiplication.
+local eventSpeed, eventPopulation = 1, 1
+local eventZone = &quot;any&quot;
+
+function MonsterService.applyEvent(speed: number, population: number, zoneId: string)
+	eventSpeed, eventPopulation, eventZone = speed, population, zoneId
+end
+
+local function factorsFor(zoneId: string): (number, number)
+	if eventZone ~= &quot;any&quot; and eventZone ~= zoneId then
+		return 1, 1
+	end
+	return eventSpeed, eventPopulation
+end
+
+function MonsterService.eventFactors(zoneId: string): (number, number)
+	return factorsFor(zoneId)
+end
+
+-- Plafond de monstres d'un type dans une zone. Un seul endroit le calcule :
+-- si le peuplement et l'apparition ne sont pas d'accord, la zone se remplit à
+-- moitié et l'événement « Invasion de la rue » ne se voit jamais.
+function MonsterService.capFor(def: MonsterConfig.Monster, zoneId: string): number
+	local _, population = factorsFor(zoneId)
+	return math.max(1, math.floor(def.MaxAlive * population))
 end
 
 function MonsterService.onSignal(fn: (string, string, Vector3) -&gt; ())
@@ -3197,7 +3867,8 @@ local function move(agent: Agent, dt: number)
 		return
 	end
 
-	local speed = agent.Def.WalkSpeed * globalSpeed
+	local eSpeed = (factorsFor(agent.ZoneId))
+	local speed = agent.Def.WalkSpeed * globalSpeed * eSpeed
 	if agent.State == S.PATROL then
 		speed *= 0.55
 	end
@@ -3234,12 +3905,8 @@ local function move(agent: Agent, dt: number)
 	end
 end
 
-function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
-	patrol: { Vector3 }): Model?
-	if MonsterService.countInZone(zoneId) &gt;= def.MaxAlive then
-		return nil
-	end
-
+local function create(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
+	patrol: { Vector3 }): Model
 	-- Un vrai squelette R6, avec des membres qui bougent.
 	local model, rig = MonsterRig.build(def, position)
 	local root = model.PrimaryPart :: BasePart
@@ -3260,6 +3927,23 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 	}
 	table.insert(agents, agent)
 	return model
+end
+
+function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
+	patrol: { Vector3 }): Model?
+	if MonsterService.countInZone(zoneId) &gt;= MonsterService.capFor(def, zoneId) then
+		return nil
+	end
+	return create(def, zoneId, position, patrol)
+end
+
+-- Apparition qui ignore le plafond, pour les monstres uniques : le boss du
+-- carnaval et le mini-boss d'événement. Sans elle, un unique ne naît pas quand
+-- la zone est pleine — et c'est exactement pendant un événement d'invasion
+-- qu'elle est pleine, donc précisément quand on a besoin de lui.
+function MonsterService.spawnUnique(def: MonsterConfig.Monster, zoneId: string,
+	position: Vector3, patrol: { Vector3 }): Model
+	return create(def, zoneId, position, patrol)
 end
 
 function MonsterService.stun(model: Model, seconds: number)
@@ -3392,7 +4076,7 @@ function MonsterService.assault(shelterId: string)
 end
 
 return MonsterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">ObjectiveService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">ObjectiveService</string><ProtectedString name="Source">--!strict
 -- §7 — les objectifs de mission qui ont besoin d'objets dans le monde.
 --
 -- Les quatre types ramassables (`collect`, `repair`, `rescue`, `deliver`) sont
@@ -3524,7 +4208,7 @@ function ObjectiveService.noteZoneEntered(player: Player, zoneId: string)
 end
 
 return ObjectiveService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX27"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
 -- §11 — profils joueurs et DataStore.
 --
 -- Règle qui compte le plus (CDC §11) : « Si les données ne peuvent pas être
@@ -3578,10 +4262,23 @@ export type Profile = {
 	Receipts: { [string]: boolean },     -- anti-doublon ProcessReceipt
 	MultiplierUntil: number,
 	Multiplier: number,
+
+	-- §9 — les réglages de l'écran de paramètres. Ils vivent dans le profil et
+	-- pas côté client : un joueur photosensible qui coupe les flashs ne doit
+	-- pas avoir à le refaire depuis son téléphone.
+	Settings: { [string]: boolean },
 }
 
 local store: DataStore? = nil
 local profiles: { [Player]: Profile } = {}
+
+local function defaultSettings(): { [string]: boolean }
+	local settings = {}
+	for _, entry in ipairs(GameConfig.Ui.Settings) do
+		settings[entry.Id] = entry.Default
+	end
+	return settings
+end
 
 local function blank(): Profile
 	return {
@@ -3612,6 +4309,7 @@ local function blank(): Profile
 		Receipts = {},
 		MultiplierUntil = 0,
 		Multiplier = 1,
+		Settings = defaultSettings(),
 	}
 end
 
@@ -3628,6 +4326,16 @@ local function merge(profile: Profile, saved: any)
 	end
 	profile.Zones = profile.Zones or {}
 	profile.Zones.street = true
+
+	-- `merge` remplace la table entière : une sauvegarde faite avant l'ajout
+	-- d'un réglage n'en contient pas la clé, et ce réglage serait alors `nil`
+	-- au lieu de sa valeur par défaut. On recomplète, clé par clé.
+	profile.Settings = profile.Settings or {}
+	for _, entry in ipairs(GameConfig.Ui.Settings) do
+		if type(profile.Settings[entry.Id]) ~= &quot;boolean&quot; then
+			profile.Settings[entry.Id] = entry.Default
+		end
+	end
 end
 
 local function key(player: Player): string
@@ -3766,7 +4474,7 @@ function PlayerDataService.startAutosave()
 end
 
 return PlayerDataService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX27"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX28"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
 -- §4 — refuges : réservation, défenses, contestation.
 --
 -- Les refuges sont des modèles du Workspace marqués par l'attribut `Zone` et
@@ -4085,7 +4793,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 return ShelterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX28"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
 -- §6 — la boutique. Le client envoie un identifiant d'objet, rien d'autre :
 -- le prix vient toujours du serveur.
 
@@ -4140,7 +4848,7 @@ function ShopService.buy(player: Player, itemId: string): (boolean, string)
 end
 
 return ShopService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">SoundService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">SoundService</string><ProtectedString name="Source">--!strict
 -- LE SON.
 --
 -- Roblox ne sait pas fabriquer un son : il lui faut des fichiers. Mais toutes
@@ -4339,8 +5047,26 @@ function SoundLib.playAt(effect: string, part: BasePart?)
 	end)
 end
 
+-- Réglage par joueur (§9, écran de paramètres). Le serveur fabrique les sons
+-- d'interface dans le PlayerGui du joueur : c'est donc ici, et pas côté client,
+-- qu'on peut honnêtement les couper. Les sons du monde (`playAt`) sont entendus
+-- par tout le monde selon la distance : ils ne peuvent pas être coupés par un
+-- seul joueur, et l'écran de paramètres ne le propose pas.
+local muted: { [Player]: boolean } = {}
+
+function SoundLib.setUiSound(player: Player, enabled: boolean)
+	muted[player] = not enabled
+end
+
+function SoundLib.forget(player: Player)
+	muted[player] = nil
+end
+
 -- Son d'interface pour un joueur précis.
 function SoundLib.playFor(player: Player, effect: string)
+	if muted[player] then
+		return
+	end
 	local gui = player:FindFirstChildOfClass(&quot;PlayerGui&quot;)
 	if not gui then
 		return
@@ -4392,7 +5118,7 @@ function SoundLib.available(): { string }
 end
 
 return SoundLib
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
 -- §2 et §4 — la session de survie : la boucle centrale du jeu.
 --
 -- Une session démarre quand le joueur dort dans SON refuge. Elle crédite
@@ -4590,15 +5316,17 @@ function SurvivalService.onCharacterAdded(player: Player, character: Model)
 end
 
 return SurvivalService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX32"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
 -- Construit les sept zones au démarrage et retient, pour chacune, ses points
 -- de ronde, ses points d'apparition et son point d'arrivée.
 --
 -- C'est le seul endroit qui connaît la géométrie. Les autres services ne
 -- parlent qu'en identifiants de zone.
 
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
 local Players = game:GetService(&quot;Players&quot;)
 
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
 local MonsterService = require(script.Parent.MonsterService)
 local ZoneBuilder = require(script.Parent.ZoneBuilder)
@@ -4649,8 +5377,12 @@ end
 -- Peuple chaque zone de son monstre, dans la limite de MaxAlive, et seulement
 -- s'il y a quelqu'un dedans : inutile de faire tourner une IA dans une zone
 -- vide, c'est du temps serveur gâché.
-local function occupied(zoneId: string): boolean
-	local origin = ZoneBuilder.origin((ZoneConfig.get(zoneId) :: any).Order)
+function WorldService.occupied(zoneId: string): boolean
+	local zone = ZoneConfig.get(zoneId)
+	if not zone then
+		return false
+	end
+	local origin = ZoneBuilder.origin(zone.Order)
 	for _, player in ipairs(Players:GetPlayers()) do
 		local character = player.Character
 		local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
@@ -4661,6 +5393,38 @@ local function occupied(zoneId: string): boolean
 	return false
 end
 
+-- §13 — le mini-boss d'un événement. Pas un monstre inédit : celui de la zone,
+-- agrandi et accéléré. Renvoie nil si la zone n'a pas de monstre ou pas de
+-- carte, plutôt que de lever : un événement ne doit jamais casser le serveur.
+--
+-- Renvoie (modèle, nom affichable). Le nom est rendu à part parce que
+-- `MonsterRig` nomme le modèle avec l'IDENTIFIANT du monstre (`prowler`) et non
+-- son nom de scène : lire `model.Name` pour l'annoncer afficherait « prowler
+-- est tombé ». Et on ne peut pas changer l'identifiant pour autant — c'est lui
+-- qui choisit la silhouette et les sons.
+function WorldService.spawnMiniBoss(zoneId: string): (Model?, string)
+	local zone = ZoneConfig.get(zoneId)
+	local layout = layouts[zoneId]
+	local def = zone and MonsterConfig.get(zone.Monster)
+	if not layout or not def or #layout.Spawns == 0 then
+		return nil, &quot;&quot;
+	end
+
+	local boost = GameConfig.Events.MiniBoss
+	local copy = table.clone(def)
+	copy.Name = def.Name .. &quot; — DÉMESURÉ&quot;
+	copy.WalkSpeed = def.WalkSpeed * boost.Speed
+	copy.SightRange = def.SightRange * boost.Sight
+	copy.HearRange = def.HearRange * boost.Sight
+	copy.Damage = math.floor(def.Damage * boost.Damage)
+	copy.Height = def.Height * boost.Scale
+
+	local point = layout.Spawns[math.random(1, #layout.Spawns)]
+	local model = MonsterService.spawnUnique(copy, zoneId, point, layout.Patrol)
+	CollectionService:AddTag(model, &quot;MiniBoss&quot;)
+	return model, copy.Name
+end
+
 function WorldService.startPopulating()
 	task.spawn(function()
 		while true do
@@ -4668,8 +5432,11 @@ function WorldService.startPopulating()
 				local layout = layouts[zone.Id]
 				local def = MonsterConfig.get(zone.Monster)
 				-- Le boss n'apparaît pas tout seul : BossService s'en charge.
-				if layout and def and def.Rule ~= &quot;boss_phases&quot; and occupied(zone.Id) then
-					if MonsterService.countInZone(zone.Id) &lt; def.MaxAlive then
+				if layout and def and def.Rule ~= &quot;boss_phases&quot;
+					and WorldService.occupied(zone.Id) then
+					-- `capFor` et pas `def.MaxAlive` : c'est lui qui porte le
+					-- relèvement du plafond pendant un événement d'invasion.
+					if MonsterService.countInZone(zone.Id) &lt; MonsterService.capFor(def, zone.Id) then
 						local point = layout.Spawns[math.random(1, #layout.Spawns)]
 						MonsterService.spawn(def, zone.Id, point, layout.Patrol)
 					end
@@ -4681,7 +5448,7 @@ function WorldService.startPopulating()
 end
 
 return WorldService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX32"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX33"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
 -- Primitives de construction, partagées par les sept zones.
 --
 -- Chaque zone occupe une dalle de 1600 studs sur l'axe X : la rue en 0, les
@@ -5012,7 +5779,7 @@ function ZoneBuilder.reset()
 end
 
 return ZoneBuilder
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX33"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX34"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
 -- Les sept cartes. Une fonction par zone, toutes bâties avec les primitives de
 -- ZoneBuilder, toutes renvoyant la même chose : points de ronde, points
 -- d'apparition des monstres, et le point d'arrivée quand on entre dans la zone.
@@ -5544,7 +6311,7 @@ Layouts.ById = {
 }
 
 return Layouts
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX34"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX35"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
 -- §3 — accès aux zones. Une zone ne se débloque jamais sans que ses conditions
 -- soient remplies (CDC §15), et la vérification est faite ici, côté serveur,
 -- à chaque entrée — pas seulement au moment du déblocage.
@@ -5654,7 +6421,7 @@ function ZoneService.overview(player: Player)
 end
 
 return ZoneService
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX44"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX42"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX43"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX41"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX40"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX39"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX45"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX43"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX44"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX42"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX41"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX40"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
 -- Point d'entrée client. Il ne décide de rien : il affiche ce que le serveur
 -- envoie et transmet les demandes du joueur.
 
@@ -5667,6 +6434,7 @@ local Workspace = game:GetService(&quot;Workspace&quot;)
 
 local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
 local Format = require(Shared.Format)
+local GameConfig = require(Shared.GameConfig)
 local Net = require(Shared.Net)
 
 local Hud = require(script.Hud)
@@ -5693,10 +6461,17 @@ Panels.build(screen, {
 	cosmetic = function(action, id)
 		Net.get(&quot;RequestCosmetic&quot;):FireServer(action, id)
 	end,
+	setting = function(id, value)
+		Net.get(&quot;RequestSetting&quot;):FireServer(id, value)
+	end,
+	eventClaim = function()
+		Net.get(&quot;RequestEventClaim&quot;):FireServer()
+	end,
 })
 
 local state: any = nil
 local lastReport: any = nil
+local boards: any = nil
 
 Net.get(&quot;StateChanged&quot;).OnClientEvent:Connect(function(payload)
 	state = payload
@@ -5713,6 +6488,27 @@ Net.get(&quot;StateChanged&quot;).OnClientEvent:Connect(function(payload)
 		Panels.openZones(state)
 	elseif kind == &quot;cosmetics&quot; then
 		Panels.openCosmetics(state)
+	elseif kind == &quot;event&quot; then
+		Panels.openEvent(state)
+	elseif kind == &quot;settings&quot; then
+		Panels.openSettings(state, GameConfig.Ui.Settings)
+	end
+end)
+
+Net.get(&quot;LeaderboardData&quot;).OnClientEvent:Connect(function(view)
+	boards = view
+	if Panels.currentKind() == &quot;leaderboard&quot; then
+		Panels.openLeaderboard(boards)
+	end
+end)
+
+Net.get(&quot;EventChanged&quot;).OnClientEvent:Connect(function(active)
+	-- L'état complet suit juste derrière (le serveur le renvoie), mais on met
+	-- la ligne du HUD à jour tout de suite : l'annonce et l'affichage doivent
+	-- dire la même chose au même moment.
+	if state then
+		state.Event = active
+		Hud.update(state)
 	end
 end)
 
@@ -5897,6 +6693,33 @@ local function attack()
 	end
 end
 
+-- Les trois écrans ajoutés, derrière un seul bouton tactile (voir
+-- `Panels.openMenu` : neuf boutons empilés sur un téléphone, ce n'est plus une
+-- interface).
+local function openLeaderboard()
+	Panels.openLeaderboard(boards)
+	Net.get(&quot;RequestLeaderboard&quot;):FireServer()
+end
+
+local function menuEntries()
+	return {
+		{ Name = &quot;Événement&quot;, Desc = &quot;L'événement du serveur et sa récompense.&quot;,
+			Open = function()
+				if state then
+					Panels.openEvent(state)
+				end
+			end },
+		{ Name = &quot;Classements&quot;, Desc = &quot;Les trois classements de la saison.&quot;,
+			Open = openLeaderboard },
+		{ Name = &quot;Paramètres&quot;, Desc = &quot;Flashs, bandeaux, invites, sons d'interface.&quot;,
+			Open = function()
+				if state then
+					Panels.openSettings(state, GameConfig.Ui.Settings)
+				end
+			end },
+	}
+end
+
 local function onAction(name: string, inputState: Enum.UserInputState)
 	if inputState ~= Enum.UserInputState.Begin then
 		return Enum.ContextActionResult.Pass
@@ -5921,6 +6744,21 @@ local function onAction(name: string, inputState: Enum.UserInputState)
 		if state then
 			Panels.openCosmetics(state)
 		end
+	elseif name == &quot;Event&quot; then
+		if state then
+			Panels.openEvent(state)
+		end
+	elseif name == &quot;Leaderboard&quot; then
+		-- On ouvre tout de suite avec ce qu'on a (« Chargement… » au premier
+		-- coup) et on demande la suite : un écran qui s'ouvre vide pendant un
+		-- aller-retour réseau donne l'impression d'un bouton cassé.
+		openLeaderboard()
+	elseif name == &quot;Settings&quot; then
+		if state then
+			Panels.openSettings(state, GameConfig.Ui.Settings)
+		end
+	elseif name == &quot;Menu&quot; then
+		Panels.openMenu(menuEntries())
 	elseif name == &quot;Attack&quot; then
 		attack()
 	elseif name == &quot;Close&quot; then
@@ -5937,6 +6775,12 @@ ContextActionService:BindAction(&quot;Zones&quot;, onAction, true, Enum.KeyCode.
 ContextActionService:BindAction(&quot;Attack&quot;, onAction, true, Enum.KeyCode.F,
 	Enum.UserInputType.MouseButton1)
 ContextActionService:BindAction(&quot;Skins&quot;, onAction, true, Enum.KeyCode.C)
+-- `false` en troisième argument : PAS de bouton tactile pour ces trois-là.
+-- C'est « Menu » qui les porte sur téléphone, et lui seul en fabrique un.
+ContextActionService:BindAction(&quot;Event&quot;, onAction, false, Enum.KeyCode.V)
+ContextActionService:BindAction(&quot;Leaderboard&quot;, onAction, false, Enum.KeyCode.L)
+ContextActionService:BindAction(&quot;Settings&quot;, onAction, false, Enum.KeyCode.P)
+ContextActionService:BindAction(&quot;Menu&quot;, onAction, true, Enum.KeyCode.G)
 ContextActionService:BindAction(&quot;Close&quot;, onAction, false, Enum.KeyCode.Escape)
 
 ContextActionService:SetTitle(&quot;Interact&quot;, &quot;E&quot;)
@@ -5944,9 +6788,10 @@ ContextActionService:SetTitle(&quot;Defenses&quot;, &quot;DÉFENSES&quot;)
 ContextActionService:SetTitle(&quot;Missions&quot;, &quot;MISSIONS&quot;)
 ContextActionService:SetTitle(&quot;Attack&quot;, &quot;FRAPPER&quot;)
 ContextActionService:SetTitle(&quot;Skins&quot;, &quot;SKINS&quot;)
+ContextActionService:SetTitle(&quot;Menu&quot;, &quot;MENU&quot;)
 
 Hud.toast(&quot;Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.&quot;, &quot;info&quot;)
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX37"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX38"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
 -- §9 — l'interface. Tout ce que le cahier des charges demande d'afficher :
 -- argent sécurisé et non sécurisé, zone, santé, objectifs, état du refuge,
 -- alertes, temps de survie, inventaire, carte, écran de mort, paramètres.
@@ -5973,6 +6818,19 @@ local ACCENT = Color3.fromRGB(120, 160, 255)
 local gui: ScreenGui
 local refs: { [string]: any } = {}
 local toasts: { Frame } = {}
+
+-- Réglages du joueur (§9). Le serveur les envoie avec l'état ; le HUD les
+-- applique ici, au seul endroit qui dessine. Un réglage absent vaut « activé » :
+-- un profil d'avant l'écran de paramètres ne doit pas se retrouver muet.
+local settings: { [string]: boolean } = {}
+
+function Hud.setSettings(values: { [string]: boolean }?)
+	settings = values or {}
+end
+
+local function enabled(id: string): boolean
+	return settings[id] ~= false
+end
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new(&quot;UICorner&quot;)
@@ -6109,6 +6967,9 @@ function Hud.build(screen: ScreenGui)
 end
 
 function Hud.toast(text: string, kind: string)
+	if not enabled(&quot;Toasts&quot;) then
+		return
+	end
 	local colors = {
 		info = INK, warn = Color3.fromRGB(255, 196, 92),
 		danger = DANGER, cash = CASH, unlock = Color3.fromRGB(190, 130, 255),
@@ -6138,19 +6999,26 @@ function Hud.toast(text: string, kind: string)
 end
 
 function Hud.setPrompt(text: string?)
-	refs.prompt.Visible = text ~= nil
+	refs.prompt.Visible = text ~= nil and enabled(&quot;Prompts&quot;)
 	if text then
 		refs.promptText.Text = text
 	end
 end
 
 function Hud.flash(amount: number)
+	-- Coupé volontairement : c'est le réglage qui compte le plus de la liste.
+	-- Un voile rouge qui part à chaque coup reçu, ce n'est pas un détail de
+	-- confort pour quelqu'un de photosensible.
+	if not enabled(&quot;Flash&quot;) then
+		return
+	end
 	refs.tint.BackgroundTransparency = 1 - math.clamp(amount, 0, 0.35)
 	TweenService:Create(refs.tint, TweenInfo.new(0.6),
 		{ BackgroundTransparency = 1 }):Play()
 end
 
 function Hud.update(state)
+	Hud.setSettings(state.Settings)
 	refs.cash.Text = &quot;En banque  &quot; .. Format.money(state.Cash)
 	refs.unbanked.Text = Format.money(state.Unbanked)
 	refs.unbanked.TextColor3 = state.Unbanked &gt; 0 and CASH or DIM
@@ -6177,13 +7045,25 @@ function Hud.update(state)
 	refs.shelter.Text = state.ShelterId ~= &quot;&quot; and (&quot;refuge : &quot; .. state.ShelterId)
 		or &quot;aucun refuge&quot;
 
-	if state.Multiplier &gt; 1 then
-		refs.event.Text = &quot;gains x&quot; .. state.Multiplier
-	elseif state.Event then
-		refs.event.Text = state.Event.Name
-	else
-		refs.event.Text = &quot;&quot;
+	-- Ligne d'événement. Avant, elle affichait SOIT le multiplicateur Robux
+	-- SOIT le nom de l'événement : le joueur ne pouvait pas savoir que les deux
+	-- se cumulaient. Maintenant que l'événement agit vraiment sur les gains,
+	-- elle dit le nom, le multiplicateur total, et l'état du défi collectif.
+	local parts = {}
+	if state.Event then
+		table.insert(parts, state.Event.Name)
 	end
+	local total = (state.Multiplier or 1)
+		* (state.Event and state.Event.RewardMultiplier or 1)
+	if total &gt; 1.001 then
+		table.insert(parts, (&quot;gains x%.2f&quot;):format(total))
+	end
+	local col = state.EventCollective
+	if col and col.Open then
+		table.insert(parts, col.Failed and &quot;défi perdu&quot;
+			or (&quot;défi %d/%d&quot;):format(col.Sessions, col.Target))
+	end
+	refs.event.Text = table.concat(parts, &quot;  ·  &quot;)
 
 	-- Objectif : la première mission non terminée, principales d'abord.
 	local best = nil
@@ -6240,8 +7120,9 @@ function Hud.setHealth(current: number, max: number)
 end
 
 return Hud
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX38"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
--- Boutique, missions, carte, écran de mort et paramètres (§9).
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX39"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
+-- Boutique, défenses, missions, carte, skins, événement, classements,
+-- paramètres et écran de mort (§9).
 -- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
 
 local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
@@ -6265,6 +7146,8 @@ local current: string? = nil
 local onBuy: ((string) -&gt; ())? = nil
 local onPlace: ((string) -&gt; ())? = nil
 local onCosmetic: ((string, string) -&gt; ())? = nil
+local onSetting: ((string, boolean) -&gt; ())? = nil
+local onEventClaim: (() -&gt; ())? = nil
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new(&quot;UICorner&quot;)
@@ -6281,11 +7164,14 @@ local function clear()
 end
 
 function Panels.build(screen: ScreenGui, callbacks: {
-	buy: (string) -&gt; (), place: (string) -&gt; (), cosmetic: (string, string) -&gt; () })
+	buy: (string) -&gt; (), place: (string) -&gt; (), cosmetic: (string, string) -&gt; (),
+	setting: (string, boolean) -&gt; (), eventClaim: () -&gt; () })
 	gui = screen
 	onBuy = callbacks.buy
 	onPlace = callbacks.place
 	onCosmetic = callbacks.cosmetic
+	onSetting = callbacks.setting
+	onEventClaim = callbacks.eventClaim
 
 	overlay = Instance.new(&quot;Frame&quot;)
 	overlay.Name = &quot;Overlay&quot;
@@ -6533,6 +7419,181 @@ function Panels.openCosmetics(state)
 			end)
 		end
 	end
+	overlay.Visible = true
+end
+
+-- ── le menu (§9, contrainte mobile) ──────────────────────────────────────
+-- Sur ordinateur, les trois écrans ajoutés s'ouvrent à la touche (V, L, P).
+-- Sur téléphone, chaque action liée par `ContextActionService` fabrique un
+-- bouton tactile : trois de plus en auraient fait NEUF empilés dans un coin de
+-- l'écran. Le CDC demande une interface « lisible sur ordinateur et mobile ».
+-- Donc un seul bouton tactile, « MENU », qui mène aux trois.
+function Panels.openMenu(entries: { { Name: string, Desc: string, Open: () -&gt; () } })
+	current = &quot;menu&quot;
+	titleLabel.Text = &quot;Menu&quot;
+	clear()
+	for _, entry in ipairs(entries) do
+		local frame = row(56)
+		text(frame, entry.Name, 13.5, INK, UDim2.new(0, 12, 0, 8),
+			UDim2.new(1, -130, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, entry.Desc, 11, DIM, UDim2.new(0, 12, 0, 30), UDim2.new(1, -130, 0, 20))
+		local b = button(frame, &quot;Ouvrir&quot;, true)
+		b.Activated:Connect(entry.Open)
+	end
+	overlay.Visible = true
+end
+
+-- ── l'événement en cours (§13) ────────────────────────────────────────────
+function Panels.openEvent(state)
+	current = &quot;event&quot;
+	titleLabel.Text = &quot;Événement&quot;
+	clear()
+
+	local active = state.Event
+	if not active then
+		local frame = row(54)
+		text(frame, &quot;Aucun événement en cours.&quot;, 13, DIM,
+			UDim2.new(0, 12, 0, 16), UDim2.new(1, -24, 0, 30))
+		overlay.Visible = true
+		return
+	end
+
+	local head = row(96)
+	text(head, active.Name, 16, INK, UDim2.new(0, 12, 0, 10),
+		UDim2.new(1, -24, 0, 22)).Font = Enum.Font.GothamBold
+	text(head, active.Text, 11.5, DIM, UDim2.new(0, 12, 0, 34), UDim2.new(1, -24, 0, 34))
+	local scope = active.Zone == &quot;any&quot; and &quot;toutes les zones&quot; or (&quot;zone : &quot; .. active.Zone)
+	text(head, (&quot;gains x%.2f  ·  %s&quot;):format(active.RewardMultiplier, scope), 11,
+		CASH, UDim2.new(0, 12, 0, 70), UDim2.new(1, -24, 0, 20))
+
+	-- Ce que l'événement change réellement, dit sans détour.
+	local effects = {}
+	if active.MonsterMultiplier &gt; 1 then
+		table.insert(effects, (&quot;%.0f%% de monstres en plus&quot;)
+			:format((active.MonsterMultiplier - 1) * 100))
+	end
+	if active.MonsterSpeed &gt; 1 then
+		table.insert(effects, (&quot;monstres %.0f%% plus rapides&quot;)
+			:format((active.MonsterSpeed - 1) * 100))
+	end
+	if active.MiniBoss then
+		table.insert(effects, &quot;un mini-boss rôde&quot;)
+	end
+	if #effects &gt; 0 then
+		local frame = row(44)
+		text(frame, &quot;Ce que ça change : &quot; .. table.concat(effects, &quot;, &quot;) .. &quot;.&quot;, 11.5,
+			DANGER, UDim2.new(0, 12, 0, 12), UDim2.new(1, -24, 0, 24))
+	end
+
+	local col = state.EventCollective
+	if col and col.Open then
+		local frame = row(64)
+		text(frame, &quot;Défi collectif — tout le serveur&quot;, 13, INK,
+			UDim2.new(0, 12, 0, 8), UDim2.new(1, -24, 0, 20)).Font = Enum.Font.GothamBold
+		local line = (&quot;%d / %d sessions tenues  ·  %d mort%s sur %d permise%s&quot;)
+			:format(col.Sessions, col.Target, col.Deaths, col.Deaths == 1 and &quot;&quot; or &quot;s&quot;,
+				col.MaxDeaths, col.MaxDeaths == 1 and &quot;&quot; or &quot;s&quot;)
+		text(frame, col.Failed and &quot;Défi perdu. Rendez-vous au prochain.&quot; or line, 11.5,
+			col.Failed and DANGER or DIM, UDim2.new(0, 12, 0, 32), UDim2.new(1, -24, 0, 24))
+	end
+
+	local claimable = not (col and col.Open) or (col.Done == true)
+	local frame = row(54)
+	text(frame, claimable and &quot;Récompense disponible&quot;
+		or &quot;Récompense verrouillée par le défi&quot;, 13,
+		claimable and INK or DIM, UDim2.new(0, 12, 0, 16), UDim2.new(1, -130, 0, 24))
+	local b = button(frame, &quot;Réclamer&quot;, claimable)
+	if claimable and onEventClaim then
+		b.Activated:Connect(function()
+			(onEventClaim :: any)()
+		end)
+	end
+	overlay.Visible = true
+end
+
+-- ── classements saisonniers (§8) ──────────────────────────────────────────
+function Panels.openLeaderboard(view)
+	current = &quot;leaderboard&quot;
+	titleLabel.Text = &quot;Classements  ·  saison &quot; .. (view and view.Season or &quot;?&quot;)
+	clear()
+
+	if not view then
+		local frame = row(54)
+		text(frame, &quot;Chargement des classements…&quot;, 13, DIM,
+			UDim2.new(0, 12, 0, 16), UDim2.new(1, -24, 0, 30))
+		overlay.Visible = true
+		return
+	end
+
+	if view.Local then
+		-- On le dit franchement plutôt que de faire passer six joueurs pour
+		-- un classement mondial.
+		local frame = row(52)
+		text(frame, &quot;Classement limité aux joueurs de ce serveur : &quot;
+			.. &quot;le stockage classé n'est pas accessible.&quot;, 11.5, DANGER,
+			UDim2.new(0, 12, 0, 12), UDim2.new(1, -24, 0, 32))
+	end
+
+	for _, board in ipairs(view.Boards) do
+		local head = row(40)
+		text(head, board.Name, 14, INK, UDim2.new(0, 12, 0, 10),
+			UDim2.new(1, -140, 0, 20)).Font = Enum.Font.GothamBold
+		local mine = board.Kind == &quot;money&quot; and Format.money(board.Mine) or tostring(board.Mine)
+		text(head, &quot;toi : &quot; .. mine, 11, CASH, UDim2.new(1, -128, 0, 13),
+			UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
+
+		if #board.Entries == 0 then
+			local frame = row(34)
+			text(frame, &quot;Personne encore. La place est libre.&quot;, 11, DIM,
+				UDim2.new(0, 12, 0, 9), UDim2.new(1, -24, 0, 18))
+		end
+		for _, entry in ipairs(board.Entries) do
+			local frame = row(30)
+			if entry.IsMe then
+				frame.BackgroundColor3 = Color3.fromRGB(34, 40, 34)
+			end
+			text(frame, (&quot;%d.&quot;):format(entry.Rank), 11.5, DIM,
+				UDim2.new(0, 12, 0, 7), UDim2.new(0, 28, 0, 18))
+			text(frame, entry.Name, 11.5, entry.IsMe and CASH or INK,
+				UDim2.new(0, 42, 0, 7), UDim2.new(1, -170, 0, 18))
+			local value = board.Kind == &quot;money&quot; and Format.money(entry.Value)
+				or tostring(entry.Value)
+			text(frame, value, 11.5, INK, UDim2.new(1, -128, 0, 7),
+				UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
+		end
+	end
+	overlay.Visible = true
+end
+
+-- ── paramètres (§9) ───────────────────────────────────────────────────────
+function Panels.openSettings(state, entries)
+	current = &quot;settings&quot;
+	titleLabel.Text = &quot;Paramètres&quot;
+	clear()
+
+	for _, entry in ipairs(entries) do
+		local on = state.Settings == nil or state.Settings[entry.Id] ~= false
+		local frame = row(58)
+		text(frame, entry.Name, 13.5, INK, UDim2.new(0, 12, 0, 8),
+			UDim2.new(1, -130, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, entry.Desc, 11, DIM, UDim2.new(0, 12, 0, 30), UDim2.new(1, -130, 0, 20))
+		local b = button(frame, on and &quot;ACTIVÉ&quot; or &quot;COUPÉ&quot;, true)
+		if not on then
+			b.BackgroundColor3 = Color3.fromRGB(44, 44, 52)
+			b.TextColor3 = DIM
+		end
+		if onSetting then
+			b.Activated:Connect(function()
+				(onSetting :: any)(entry.Id, not on)
+			end)
+		end
+	end
+
+	local note = row(58)
+	text(note, &quot;Le brouillard et la nappe sonore ne sont pas réglables : &quot;
+		.. &quot;ce sont des objets partagés par tout le serveur. Les couper pour &quot;
+		.. &quot;toi les couperait pour les autres.&quot;, 11, DIM,
+		UDim2.new(0, 12, 0, 10), UDim2.new(1, -24, 0, 40))
 	overlay.Visible = true
 end
 

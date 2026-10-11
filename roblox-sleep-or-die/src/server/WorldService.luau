@@ -5,8 +5,10 @@
 -- C'est le seul endroit qui connaît la géométrie. Les autres services ne
 -- parlent qu'en identifiants de zone.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
 local MonsterService = require(script.Parent.MonsterService)
 local ZoneBuilder = require(script.Parent.ZoneBuilder)
@@ -57,8 +59,12 @@ end
 -- Peuple chaque zone de son monstre, dans la limite de MaxAlive, et seulement
 -- s'il y a quelqu'un dedans : inutile de faire tourner une IA dans une zone
 -- vide, c'est du temps serveur gâché.
-local function occupied(zoneId: string): boolean
-	local origin = ZoneBuilder.origin((ZoneConfig.get(zoneId) :: any).Order)
+function WorldService.occupied(zoneId: string): boolean
+	local zone = ZoneConfig.get(zoneId)
+	if not zone then
+		return false
+	end
+	local origin = ZoneBuilder.origin(zone.Order)
 	for _, player in ipairs(Players:GetPlayers()) do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -69,6 +75,38 @@ local function occupied(zoneId: string): boolean
 	return false
 end
 
+-- §13 — le mini-boss d'un événement. Pas un monstre inédit : celui de la zone,
+-- agrandi et accéléré. Renvoie nil si la zone n'a pas de monstre ou pas de
+-- carte, plutôt que de lever : un événement ne doit jamais casser le serveur.
+--
+-- Renvoie (modèle, nom affichable). Le nom est rendu à part parce que
+-- `MonsterRig` nomme le modèle avec l'IDENTIFIANT du monstre (`prowler`) et non
+-- son nom de scène : lire `model.Name` pour l'annoncer afficherait « prowler
+-- est tombé ». Et on ne peut pas changer l'identifiant pour autant — c'est lui
+-- qui choisit la silhouette et les sons.
+function WorldService.spawnMiniBoss(zoneId: string): (Model?, string)
+	local zone = ZoneConfig.get(zoneId)
+	local layout = layouts[zoneId]
+	local def = zone and MonsterConfig.get(zone.Monster)
+	if not layout or not def or #layout.Spawns == 0 then
+		return nil, ""
+	end
+
+	local boost = GameConfig.Events.MiniBoss
+	local copy = table.clone(def)
+	copy.Name = def.Name .. " — DÉMESURÉ"
+	copy.WalkSpeed = def.WalkSpeed * boost.Speed
+	copy.SightRange = def.SightRange * boost.Sight
+	copy.HearRange = def.HearRange * boost.Sight
+	copy.Damage = math.floor(def.Damage * boost.Damage)
+	copy.Height = def.Height * boost.Scale
+
+	local point = layout.Spawns[math.random(1, #layout.Spawns)]
+	local model = MonsterService.spawnUnique(copy, zoneId, point, layout.Patrol)
+	CollectionService:AddTag(model, "MiniBoss")
+	return model, copy.Name
+end
+
 function WorldService.startPopulating()
 	task.spawn(function()
 		while true do
@@ -76,8 +114,11 @@ function WorldService.startPopulating()
 				local layout = layouts[zone.Id]
 				local def = MonsterConfig.get(zone.Monster)
 				-- Le boss n'apparaît pas tout seul : BossService s'en charge.
-				if layout and def and def.Rule ~= "boss_phases" and occupied(zone.Id) then
-					if MonsterService.countInZone(zone.Id) < def.MaxAlive then
+				if layout and def and def.Rule ~= "boss_phases"
+					and WorldService.occupied(zone.Id) then
+					-- `capFor` et pas `def.MaxAlive` : c'est lui qui porte le
+					-- relèvement du plafond pendant un événement d'invasion.
+					if MonsterService.countInZone(zone.Id) < MonsterService.capFor(def, zone.Id) then
 						local point = layout.Spawns[math.random(1, #layout.Spawns)]
 						MonsterService.spawn(def, zone.Id, point, layout.Patrol)
 					end

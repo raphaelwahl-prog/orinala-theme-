@@ -1,5 +1,6 @@
 --!strict
--- Boutique, missions, carte, écran de mort et paramètres (§9).
+-- Boutique, défenses, missions, carte, skins, événement, classements,
+-- paramètres et écran de mort (§9).
 -- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -23,6 +24,8 @@ local current: string? = nil
 local onBuy: ((string) -> ())? = nil
 local onPlace: ((string) -> ())? = nil
 local onCosmetic: ((string, string) -> ())? = nil
+local onSetting: ((string, boolean) -> ())? = nil
+local onEventClaim: (() -> ())? = nil
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new("UICorner")
@@ -39,11 +42,14 @@ local function clear()
 end
 
 function Panels.build(screen: ScreenGui, callbacks: {
-	buy: (string) -> (), place: (string) -> (), cosmetic: (string, string) -> () })
+	buy: (string) -> (), place: (string) -> (), cosmetic: (string, string) -> (),
+	setting: (string, boolean) -> (), eventClaim: () -> () })
 	gui = screen
 	onBuy = callbacks.buy
 	onPlace = callbacks.place
 	onCosmetic = callbacks.cosmetic
+	onSetting = callbacks.setting
+	onEventClaim = callbacks.eventClaim
 
 	overlay = Instance.new("Frame")
 	overlay.Name = "Overlay"
@@ -291,6 +297,181 @@ function Panels.openCosmetics(state)
 			end)
 		end
 	end
+	overlay.Visible = true
+end
+
+-- ── le menu (§9, contrainte mobile) ──────────────────────────────────────
+-- Sur ordinateur, les trois écrans ajoutés s'ouvrent à la touche (V, L, P).
+-- Sur téléphone, chaque action liée par `ContextActionService` fabrique un
+-- bouton tactile : trois de plus en auraient fait NEUF empilés dans un coin de
+-- l'écran. Le CDC demande une interface « lisible sur ordinateur et mobile ».
+-- Donc un seul bouton tactile, « MENU », qui mène aux trois.
+function Panels.openMenu(entries: { { Name: string, Desc: string, Open: () -> () } })
+	current = "menu"
+	titleLabel.Text = "Menu"
+	clear()
+	for _, entry in ipairs(entries) do
+		local frame = row(56)
+		text(frame, entry.Name, 13.5, INK, UDim2.new(0, 12, 0, 8),
+			UDim2.new(1, -130, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, entry.Desc, 11, DIM, UDim2.new(0, 12, 0, 30), UDim2.new(1, -130, 0, 20))
+		local b = button(frame, "Ouvrir", true)
+		b.Activated:Connect(entry.Open)
+	end
+	overlay.Visible = true
+end
+
+-- ── l'événement en cours (§13) ────────────────────────────────────────────
+function Panels.openEvent(state)
+	current = "event"
+	titleLabel.Text = "Événement"
+	clear()
+
+	local active = state.Event
+	if not active then
+		local frame = row(54)
+		text(frame, "Aucun événement en cours.", 13, DIM,
+			UDim2.new(0, 12, 0, 16), UDim2.new(1, -24, 0, 30))
+		overlay.Visible = true
+		return
+	end
+
+	local head = row(96)
+	text(head, active.Name, 16, INK, UDim2.new(0, 12, 0, 10),
+		UDim2.new(1, -24, 0, 22)).Font = Enum.Font.GothamBold
+	text(head, active.Text, 11.5, DIM, UDim2.new(0, 12, 0, 34), UDim2.new(1, -24, 0, 34))
+	local scope = active.Zone == "any" and "toutes les zones" or ("zone : " .. active.Zone)
+	text(head, ("gains x%.2f  ·  %s"):format(active.RewardMultiplier, scope), 11,
+		CASH, UDim2.new(0, 12, 0, 70), UDim2.new(1, -24, 0, 20))
+
+	-- Ce que l'événement change réellement, dit sans détour.
+	local effects = {}
+	if active.MonsterMultiplier > 1 then
+		table.insert(effects, ("%.0f%% de monstres en plus")
+			:format((active.MonsterMultiplier - 1) * 100))
+	end
+	if active.MonsterSpeed > 1 then
+		table.insert(effects, ("monstres %.0f%% plus rapides")
+			:format((active.MonsterSpeed - 1) * 100))
+	end
+	if active.MiniBoss then
+		table.insert(effects, "un mini-boss rôde")
+	end
+	if #effects > 0 then
+		local frame = row(44)
+		text(frame, "Ce que ça change : " .. table.concat(effects, ", ") .. ".", 11.5,
+			DANGER, UDim2.new(0, 12, 0, 12), UDim2.new(1, -24, 0, 24))
+	end
+
+	local col = state.EventCollective
+	if col and col.Open then
+		local frame = row(64)
+		text(frame, "Défi collectif — tout le serveur", 13, INK,
+			UDim2.new(0, 12, 0, 8), UDim2.new(1, -24, 0, 20)).Font = Enum.Font.GothamBold
+		local line = ("%d / %d sessions tenues  ·  %d mort%s sur %d permise%s")
+			:format(col.Sessions, col.Target, col.Deaths, col.Deaths == 1 and "" or "s",
+				col.MaxDeaths, col.MaxDeaths == 1 and "" or "s")
+		text(frame, col.Failed and "Défi perdu. Rendez-vous au prochain." or line, 11.5,
+			col.Failed and DANGER or DIM, UDim2.new(0, 12, 0, 32), UDim2.new(1, -24, 0, 24))
+	end
+
+	local claimable = not (col and col.Open) or (col.Done == true)
+	local frame = row(54)
+	text(frame, claimable and "Récompense disponible"
+		or "Récompense verrouillée par le défi", 13,
+		claimable and INK or DIM, UDim2.new(0, 12, 0, 16), UDim2.new(1, -130, 0, 24))
+	local b = button(frame, "Réclamer", claimable)
+	if claimable and onEventClaim then
+		b.Activated:Connect(function()
+			(onEventClaim :: any)()
+		end)
+	end
+	overlay.Visible = true
+end
+
+-- ── classements saisonniers (§8) ──────────────────────────────────────────
+function Panels.openLeaderboard(view)
+	current = "leaderboard"
+	titleLabel.Text = "Classements  ·  saison " .. (view and view.Season or "?")
+	clear()
+
+	if not view then
+		local frame = row(54)
+		text(frame, "Chargement des classements…", 13, DIM,
+			UDim2.new(0, 12, 0, 16), UDim2.new(1, -24, 0, 30))
+		overlay.Visible = true
+		return
+	end
+
+	if view.Local then
+		-- On le dit franchement plutôt que de faire passer six joueurs pour
+		-- un classement mondial.
+		local frame = row(52)
+		text(frame, "Classement limité aux joueurs de ce serveur : "
+			.. "le stockage classé n'est pas accessible.", 11.5, DANGER,
+			UDim2.new(0, 12, 0, 12), UDim2.new(1, -24, 0, 32))
+	end
+
+	for _, board in ipairs(view.Boards) do
+		local head = row(40)
+		text(head, board.Name, 14, INK, UDim2.new(0, 12, 0, 10),
+			UDim2.new(1, -140, 0, 20)).Font = Enum.Font.GothamBold
+		local mine = board.Kind == "money" and Format.money(board.Mine) or tostring(board.Mine)
+		text(head, "toi : " .. mine, 11, CASH, UDim2.new(1, -128, 0, 13),
+			UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
+
+		if #board.Entries == 0 then
+			local frame = row(34)
+			text(frame, "Personne encore. La place est libre.", 11, DIM,
+				UDim2.new(0, 12, 0, 9), UDim2.new(1, -24, 0, 18))
+		end
+		for _, entry in ipairs(board.Entries) do
+			local frame = row(30)
+			if entry.IsMe then
+				frame.BackgroundColor3 = Color3.fromRGB(34, 40, 34)
+			end
+			text(frame, ("%d."):format(entry.Rank), 11.5, DIM,
+				UDim2.new(0, 12, 0, 7), UDim2.new(0, 28, 0, 18))
+			text(frame, entry.Name, 11.5, entry.IsMe and CASH or INK,
+				UDim2.new(0, 42, 0, 7), UDim2.new(1, -170, 0, 18))
+			local value = board.Kind == "money" and Format.money(entry.Value)
+				or tostring(entry.Value)
+			text(frame, value, 11.5, INK, UDim2.new(1, -128, 0, 7),
+				UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
+		end
+	end
+	overlay.Visible = true
+end
+
+-- ── paramètres (§9) ───────────────────────────────────────────────────────
+function Panels.openSettings(state, entries)
+	current = "settings"
+	titleLabel.Text = "Paramètres"
+	clear()
+
+	for _, entry in ipairs(entries) do
+		local on = state.Settings == nil or state.Settings[entry.Id] ~= false
+		local frame = row(58)
+		text(frame, entry.Name, 13.5, INK, UDim2.new(0, 12, 0, 8),
+			UDim2.new(1, -130, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, entry.Desc, 11, DIM, UDim2.new(0, 12, 0, 30), UDim2.new(1, -130, 0, 20))
+		local b = button(frame, on and "ACTIVÉ" or "COUPÉ", true)
+		if not on then
+			b.BackgroundColor3 = Color3.fromRGB(44, 44, 52)
+			b.TextColor3 = DIM
+		end
+		if onSetting then
+			b.Activated:Connect(function()
+				(onSetting :: any)(entry.Id, not on)
+			end)
+		end
+	end
+
+	local note = row(58)
+	text(note, "Le brouillard et la nappe sonore ne sont pas réglables : "
+		.. "ce sont des objets partagés par tout le serveur. Les couper pour "
+		.. "toi les couperait pour les autres.", 11, DIM,
+		UDim2.new(0, 12, 0, 10), UDim2.new(1, -24, 0, 40))
 	overlay.Visible = true
 end
 

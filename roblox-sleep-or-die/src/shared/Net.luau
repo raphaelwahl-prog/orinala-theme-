@@ -19,6 +19,7 @@ Net.Events = {
 	"AwakeningChanged",  -- jauge d'éveil partagée
 	"DownedChanged",     -- un joueur à terre, et le temps qu'il lui reste
 	"DeathReport",       -- bilan de mort
+	"LeaderboardData",   -- classements saisonniers (§8)
 	-- client → serveur
 	"RequestClaim",      -- réserver un refuge
 	"RequestSleep",      -- démarrer une session
@@ -32,6 +33,9 @@ Net.Events = {
 	"RequestMission",    -- accepter / rendre une mission
 	"RequestPurchase",   -- ouvrir une fenêtre d'achat Robux
 	"RequestCosmetic",   -- débloquer ou équiper un skin
+	"RequestEventClaim", -- réclamer la récompense de l'événement en cours
+	"RequestLeaderboard",-- demander les classements
+	"RequestSetting",    -- changer un réglage (§9)
 }
 
 local cache: { [string]: RemoteEvent } = {}

@@ -14,7 +14,11 @@ export type Cosmetic = {
 	Shirt: Color3,
 	Pants: Color3,
 	Head: Color3,
-	Requires: { Nights: number?, Deaths: number?, Zone: string?, Achievement: string? }?,
+	-- `Reason` dit, en français, ce qu'il faut faire. Sans lui, un deuxième skin
+	-- à condition d'exploit afficherait le motif du premier : le message était
+	-- codé en dur sur « battre le boss du carnaval ».
+	Requires: { Nights: number?, Deaths: number?, Zone: string?,
+		Achievement: string?, Reason: string? }?,
 }
 
 local CosmeticConfig = {}
@@ -45,7 +49,16 @@ CosmeticConfig.List = {
 	{ Id = "clown", Name = "Trophée du Clown", Desc = "Tu l'as fait tomber. Porte-le.",
 		Price = 0, Shirt = Color3.fromRGB(180, 40, 70), Pants = Color3.fromRGB(240, 240, 240),
 		Head = Color3.fromRGB(250, 250, 250),
-		Requires = { Achievement = "carnival_cleared" } },
+		Requires = { Achievement = "carnival_cleared",
+			Reason = "battre le boss du carnaval" } },
+
+	-- §13 — le cosmétique exclusif du « Carnaval interdit ». Il ne s'achète
+	-- jamais : il ne s'obtient qu'en abattant le mini-boss d'un événement.
+	{ Id = "reveler", Name = "Le Fêtard", Desc = "Tu as mis à terre quelque chose de démesuré.",
+		Price = 0, Shirt = Color3.fromRGB(96, 40, 130), Pants = Color3.fromRGB(28, 22, 40),
+		Head = Color3.fromRGB(226, 198, 120),
+		Requires = { Achievement = "miniboss_down",
+			Reason = "abattre le mini-boss d'un événement" } },
 }
 
 CosmeticConfig.ById = {}
@@ -72,7 +85,7 @@ function CosmeticConfig.check(item: Cosmetic, stats: {
 		return false, "débloquer la zone correspondante"
 	end
 	if req.Achievement and not stats.Achievements[req.Achievement] then
-		return false, "battre le boss du carnaval"
+		return false, req.Reason or "accomplir l'exploit correspondant"
 	end
 	return true, ""
 end

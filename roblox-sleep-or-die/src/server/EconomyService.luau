@@ -25,6 +25,16 @@ function EconomyService.setAwakeningBonus(fn: () -> number)
 	awakeningBonus = fn
 end
 
+-- Même mécanique pour le multiplicateur de l'événement en cours (§13). Il
+-- était déclaré dans la configuration et calculé par EventService, mais
+-- personne ne le lisait : les gains ne bougeaient pas d'un gramme pendant un
+-- événement. Il est maintenant injecté ici, comme celui de l'éveil.
+local eventBonus: (() -> number)? = nil
+
+function EconomyService.setEventBonus(fn: () -> number)
+	eventBonus = fn
+end
+
 function EconomyService.onChanged(fn: (Player) -> ())
 	table.insert(listeners, fn)
 end
@@ -63,6 +73,9 @@ function EconomyService.accrue(player: Player, zoneId: string, seconds: number, 
 		-- Contrepartie du risque partagé : plus la maison est réveillée, plus
 		-- ça paie. Sans ça, personne n'aurait intérêt à remplir la jauge.
 		rate *= awakeningBonus()
+	end
+	if eventBonus then
+		rate *= eventBonus()
 	end
 	-- Plafond souple : au-delà, le taux est divisé. Sans ça, la zone 7 à
 	-- 100 000 $/s rend toute la progression précédente sans objet.

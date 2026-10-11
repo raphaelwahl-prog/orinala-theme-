@@ -29,6 +29,10 @@ le coffre, la boutique, les six PNJ, l'entrée des égouts et les rôdeurs.
 | `M` | missions |
 | `N` | les sept zones |
 | `C` | skins |
+| `V` | l'événement en cours, et sa récompense |
+| `L` | les classements de la saison |
+| `P` | paramètres (flashs, bandeaux, invites, sons d'interface) |
+| `G` | menu — les trois écrans ci-dessus, pour le tactile |
 | `F` ou clic | frapper (étourdit, ne tue pas) |
 | `E` maintenu | relever un coéquipier à terre |
 | `Échap` | fermer un panneau |
@@ -177,8 +181,10 @@ rétention et lancement.
 ## Vérifier avant de publier
 
 ```sh
-node /tmp/luaucheck/check.mjs src/*/*.luau   # compile les 28 fichiers
-python3 tools/crosscheck.py                  # 364 liens entre modules
+npm install luau-web                         # une fois, pour les deux premiers
+node check.mjs src/*/*.luau                  # compile les 37 fichiers
+python3 tools/logictests.py                  # 48 contrôles : le code FAIT-il ce qu'il dit ?
+python3 tools/crosscheck.py                  # 542 liens entre modules
 python3 tools/checkzones.py                  # 68 contrôles sur les 7 cartes
 python3 tools/simulate.py                    # la courbe de progression
 python3 tools/build_place.py                 # régénère SleepOrDie.rbxlx
@@ -187,6 +193,14 @@ python3 tools/build_place.py                 # régénère SleepOrDie.rbxlx
 `crosscheck.py` attrape ce que le compilateur ne voit pas : un appel vers une
 fonction qui n'existe pas, un remote jamais déclaré, un service que le
 bootstrap n'utilise jamais.
+
+`logictests.py` attrape ce que `crosscheck.py` ne voit pas : du code qui existe,
+qui s'appelle correctement, et qui ne fait rien. Il monte un faux Roblox autour
+du vrai code source et l'**exécute** — c'est comme ça qu'on a découvert que les
+événements du §13 ne changeaient absolument rien à la partie, bien que tous
+leurs réglages soient écrits dans `GameConfig` depuis le début. Il est validé
+par mutation : casse une des règles qu'il surveille, il doit échouer. Sinon
+c'est lui qui est cassé, pas le jeu.
 
 ## Avant de mettre en ligne
 
@@ -202,9 +216,10 @@ bootstrap n'utilise jamais.
 ```
 src/shared/   GameConfig · ZoneConfig · ItemConfig · MissionConfig
               MonsterConfig · Net · Format
-src/server/   init.server + 17 services (noms du CDC §10, plus
+src/server/   init.server + 18 services (noms du CDC §10, plus
               WorldService · ZoneBuilder · ZoneLayouts · BossService
               · ObjectiveService)
 src/client/   init.client + Hud + Panels
-tools/        build_place.py · crosscheck.py · checkzones.py · simulate.py
+tools/        build_place.py · crosscheck.py · checkzones.py
+              · logictests.py · simulate.py
 ```

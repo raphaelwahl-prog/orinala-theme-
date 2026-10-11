@@ -65,6 +65,37 @@ function MonsterService.globals(): (number, number)
 	return globalSpeed, globalSight
 end
 
+-- Multiplicateurs imposés par l'événement du serveur (§13). Ils sont tenus
+-- SÉPARÉS de ceux de l'éveil, et pas écrits dans les mêmes variables : sinon
+-- le dernier des deux services à parler effacerait l'autre, et on aurait un
+-- événement qui annule l'éveil ou l'inverse selon l'ordre d'appel.
+-- Les deux se cumulent par multiplication.
+local eventSpeed, eventPopulation = 1, 1
+local eventZone = "any"
+
+function MonsterService.applyEvent(speed: number, population: number, zoneId: string)
+	eventSpeed, eventPopulation, eventZone = speed, population, zoneId
+end
+
+local function factorsFor(zoneId: string): (number, number)
+	if eventZone ~= "any" and eventZone ~= zoneId then
+		return 1, 1
+	end
+	return eventSpeed, eventPopulation
+end
+
+function MonsterService.eventFactors(zoneId: string): (number, number)
+	return factorsFor(zoneId)
+end
+
+-- Plafond de monstres d'un type dans une zone. Un seul endroit le calcule :
+-- si le peuplement et l'apparition ne sont pas d'accord, la zone se remplit à
+-- moitié et l'événement « Invasion de la rue » ne se voit jamais.
+function MonsterService.capFor(def: MonsterConfig.Monster, zoneId: string): number
+	local _, population = factorsFor(zoneId)
+	return math.max(1, math.floor(def.MaxAlive * population))
+end
+
 function MonsterService.onSignal(fn: (string, string, Vector3) -> ())
 	table.insert(signalListeners, fn)
 end
@@ -275,7 +306,8 @@ local function move(agent: Agent, dt: number)
 		return
 	end
 
-	local speed = agent.Def.WalkSpeed * globalSpeed
+	local eSpeed = (factorsFor(agent.ZoneId))
+	local speed = agent.Def.WalkSpeed * globalSpeed * eSpeed
 	if agent.State == S.PATROL then
 		speed *= 0.55
 	end
@@ -312,12 +344,8 @@ local function move(agent: Agent, dt: number)
 	end
 end
 
-function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
-	patrol: { Vector3 }): Model?
-	if MonsterService.countInZone(zoneId) >= def.MaxAlive then
-		return nil
-	end
-
+local function create(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
+	patrol: { Vector3 }): Model
 	-- Un vrai squelette R6, avec des membres qui bougent.
 	local model, rig = MonsterRig.build(def, position)
 	local root = model.PrimaryPart :: BasePart
@@ -338,6 +366,23 @@ function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, positi
 	}
 	table.insert(agents, agent)
 	return model
+end
+
+function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
+	patrol: { Vector3 }): Model?
+	if MonsterService.countInZone(zoneId) >= MonsterService.capFor(def, zoneId) then
+		return nil
+	end
+	return create(def, zoneId, position, patrol)
+end
+
+-- Apparition qui ignore le plafond, pour les monstres uniques : le boss du
+-- carnaval et le mini-boss d'événement. Sans elle, un unique ne naît pas quand
+-- la zone est pleine — et c'est exactement pendant un événement d'invasion
+-- qu'elle est pleine, donc précisément quand on a besoin de lui.
+function MonsterService.spawnUnique(def: MonsterConfig.Monster, zoneId: string,
+	position: Vector3, patrol: { Vector3 }): Model
+	return create(def, zoneId, position, patrol)
 end
 
 function MonsterService.stun(model: Model, seconds: number)

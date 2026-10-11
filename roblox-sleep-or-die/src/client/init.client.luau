@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
+local GameConfig = require(Shared.GameConfig)
 local Net = require(Shared.Net)
 
 local Hud = require(script.Hud)
@@ -37,10 +38,17 @@ Panels.build(screen, {
 	cosmetic = function(action, id)
 		Net.get("RequestCosmetic"):FireServer(action, id)
 	end,
+	setting = function(id, value)
+		Net.get("RequestSetting"):FireServer(id, value)
+	end,
+	eventClaim = function()
+		Net.get("RequestEventClaim"):FireServer()
+	end,
 })
 
 local state: any = nil
 local lastReport: any = nil
+local boards: any = nil
 
 Net.get("StateChanged").OnClientEvent:Connect(function(payload)
 	state = payload
@@ -57,6 +65,27 @@ Net.get("StateChanged").OnClientEvent:Connect(function(payload)
 		Panels.openZones(state)
 	elseif kind == "cosmetics" then
 		Panels.openCosmetics(state)
+	elseif kind == "event" then
+		Panels.openEvent(state)
+	elseif kind == "settings" then
+		Panels.openSettings(state, GameConfig.Ui.Settings)
+	end
+end)
+
+Net.get("LeaderboardData").OnClientEvent:Connect(function(view)
+	boards = view
+	if Panels.currentKind() == "leaderboard" then
+		Panels.openLeaderboard(boards)
+	end
+end)
+
+Net.get("EventChanged").OnClientEvent:Connect(function(active)
+	-- L'état complet suit juste derrière (le serveur le renvoie), mais on met
+	-- la ligne du HUD à jour tout de suite : l'annonce et l'affichage doivent
+	-- dire la même chose au même moment.
+	if state then
+		state.Event = active
+		Hud.update(state)
 	end
 end)
 
@@ -241,6 +270,33 @@ local function attack()
 	end
 end
 
+-- Les trois écrans ajoutés, derrière un seul bouton tactile (voir
+-- `Panels.openMenu` : neuf boutons empilés sur un téléphone, ce n'est plus une
+-- interface).
+local function openLeaderboard()
+	Panels.openLeaderboard(boards)
+	Net.get("RequestLeaderboard"):FireServer()
+end
+
+local function menuEntries()
+	return {
+		{ Name = "Événement", Desc = "L'événement du serveur et sa récompense.",
+			Open = function()
+				if state then
+					Panels.openEvent(state)
+				end
+			end },
+		{ Name = "Classements", Desc = "Les trois classements de la saison.",
+			Open = openLeaderboard },
+		{ Name = "Paramètres", Desc = "Flashs, bandeaux, invites, sons d'interface.",
+			Open = function()
+				if state then
+					Panels.openSettings(state, GameConfig.Ui.Settings)
+				end
+			end },
+	}
+end
+
 local function onAction(name: string, inputState: Enum.UserInputState)
 	if inputState ~= Enum.UserInputState.Begin then
 		return Enum.ContextActionResult.Pass
@@ -265,6 +321,21 @@ local function onAction(name: string, inputState: Enum.UserInputState)
 		if state then
 			Panels.openCosmetics(state)
 		end
+	elseif name == "Event" then
+		if state then
+			Panels.openEvent(state)
+		end
+	elseif name == "Leaderboard" then
+		-- On ouvre tout de suite avec ce qu'on a (« Chargement… » au premier
+		-- coup) et on demande la suite : un écran qui s'ouvre vide pendant un
+		-- aller-retour réseau donne l'impression d'un bouton cassé.
+		openLeaderboard()
+	elseif name == "Settings" then
+		if state then
+			Panels.openSettings(state, GameConfig.Ui.Settings)
+		end
+	elseif name == "Menu" then
+		Panels.openMenu(menuEntries())
 	elseif name == "Attack" then
 		attack()
 	elseif name == "Close" then
@@ -281,6 +352,12 @@ ContextActionService:BindAction("Zones", onAction, true, Enum.KeyCode.N)
 ContextActionService:BindAction("Attack", onAction, true, Enum.KeyCode.F,
 	Enum.UserInputType.MouseButton1)
 ContextActionService:BindAction("Skins", onAction, true, Enum.KeyCode.C)
+-- `false` en troisième argument : PAS de bouton tactile pour ces trois-là.
+-- C'est « Menu » qui les porte sur téléphone, et lui seul en fabrique un.
+ContextActionService:BindAction("Event", onAction, false, Enum.KeyCode.V)
+ContextActionService:BindAction("Leaderboard", onAction, false, Enum.KeyCode.L)
+ContextActionService:BindAction("Settings", onAction, false, Enum.KeyCode.P)
+ContextActionService:BindAction("Menu", onAction, true, Enum.KeyCode.G)
 ContextActionService:BindAction("Close", onAction, false, Enum.KeyCode.Escape)
 
 ContextActionService:SetTitle("Interact", "E")
@@ -288,5 +365,6 @@ ContextActionService:SetTitle("Defenses", "DÉFENSES")
 ContextActionService:SetTitle("Missions", "MISSIONS")
 ContextActionService:SetTitle("Attack", "FRAPPER")
 ContextActionService:SetTitle("Skins", "SKINS")
+ContextActionService:SetTitle("Menu", "MENU")
 
 Hud.toast("Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.", "info")
