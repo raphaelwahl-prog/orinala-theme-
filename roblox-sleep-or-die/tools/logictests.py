@@ -46,9 +46,11 @@ REAL = [
     ("ZoneConfig", "shared/ZoneConfig.luau"),
     ("MonsterConfig", "shared/MonsterConfig.luau"),
     ("CosmeticConfig", "shared/CosmeticConfig.luau"),
+    ("EndgameConfig", "shared/EndgameConfig.luau"),
     ("PlayerDataService", "server/PlayerDataService.luau"),
     ("MonsterService", "server/MonsterService.luau"),
     ("EventService", "server/EventService.luau"),
+    ("EndgameService", "server/EndgameService.luau"),
 ]
 
 PRELUDE = r"""
@@ -597,6 +599,374 @@ ok(string.find(clownReason, "carnaval") ~= nil, "le trophée du clown parle du c
 ok(string.find(revelerReason, "mini%-boss") ~= nil, "Le Fêtard parle du mini-boss")
 ok(clownReason ~= revelerReason,
 	"deux skins à exploit n'affichent pas le même motif (c'était le cas avant)")
+
+
+say("")
+say("— §8 : la porte. Rien ne s'ouvre avant le boss final —")
+local EndgameConfig = require(node("EndgameConfig"))
+local EndgameService = require(node("EndgameService"))
+
+local zoe = { Name = "Zoe", UserId = 21 }
+players = { zoe }
+savedData = nil
+local zp = PlayerDataService.load(zoe)
+zp.CurrentZone = "street"
+
+-- On force les tirages : un test qui dépend de math.random ne prouve rien.
+GameConfig.Endgame.VariantChance = 1
+GameConfig.Endgame.ContractChance = 1
+GameConfig.Endgame.ContractCooldown = 0
+
+ok(not EndgameService.unlocked(zoe), "le §8 est fermé tant que le carnaval n'est pas tombé")
+eq(EndgameService.rollVariant("street"), nil,
+	"aucune variante avant la victoire, même avec une probabilité de 1")
+eq(EndgameService.offerContract(zoe), nil, "aucun contrat avant la victoire")
+local armedOk = (EndgameService.arm(zoe, "no_defense"))
+ok(not armedOk, "aucun défi avant la victoire")
+
+-- La clé exacte que BossService.finish pose.
+zp.Achievements.carnival_cleared = true
+ok(EndgameService.unlocked(zoe), "la victoire au carnaval ouvre le §8")
+
+say("")
+say("— §8 : les variantes modifient le monstre sans toucher au catalogue —")
+local baseSpeed = prowler.WalkSpeed
+local baseRule = prowler.Rule
+local ancien = EndgameConfig.variant("ancien")
+local shaped = EndgameService.applyVariant(prowler, ancien)
+
+eq(shaped.Id, prowler.Id,
+	"l'identifiant ne change pas : c'est lui qui choisit la silhouette et les sons")
+ok(shaped.Name ~= prowler.Name, "le nom affiché, lui, change")
+eq(shaped.WalkSpeed, baseSpeed * ancien.Speed, "la vitesse est multipliée")
+eq(shaped.SightRange, prowler.SightRange * ancien.Sight, "la vue est multipliée")
+eq(shaped.GiveUpSeconds, prowler.GiveUpSeconds * ancien.GiveUp, "la patience est multipliée")
+ok(shaped.Damage >= 1, "les dégâts ne tombent jamais à zéro")
+eq(prowler.WalkSpeed, baseSpeed, "le CATALOGUE partagé est intact (clone, pas mutation)")
+eq(prowler.Rule, baseRule, "la règle du catalogue est intacte")
+
+local blind = EndgameService.applyVariant(prowler, EndgameConfig.variant("aveugle"))
+eq(blind.Rule, "sound",
+	"L'AVEUGLE remplace la mécanique de la zone : c'est tout l'intérêt de la variante")
+ok(blind.SightRange < prowler.SightRange, "et il voit moins loin")
+
+say("")
+say("— §8 : une variante ne naît que là où quelqu'un a fini le jeu —")
+zp.CurrentZone = "sewers"
+eq(EndgameService.rollVariant("street"), nil,
+	"la rue est vide de vainqueur : pas de variante (les monstres sont partagés)")
+ok(EndgameService.rollVariant("sewers") ~= nil, "là où il est, oui")
+zp.CurrentZone = "street"
+
+GameConfig.Endgame.VariantChance = 0
+eq(EndgameService.rollVariant("street"), nil, "probabilité nulle : jamais de variante")
+GameConfig.Endgame.VariantChance = 1
+
+say("")
+say("— §8 : la prime de zone suit les variantes VIVANTES —")
+MonsterService.applyEvent(1, 1, "any")
+for _, model in ipairs(CollectionService:GetTagged("Monster")) do
+	MonsterService.despawn(model)
+end
+eq(EndgameService.zoneBounty("street"), 1, "aucune variante en vie : pas de prime")
+
+local variantModel = MonsterService.spawn(shaped, "street", Vector3.new(0, 0, 0), {}, "ancien")
+ok(variantModel ~= nil, "la variante apparaît")
+eq(#MonsterService.variantsInZone("street"), 1, "et elle est comptée comme variante")
+eq(EndgameService.zoneBounty("street"), ancien.Bounty, "la prime est celle de la variante")
+eq(EndgameService.zoneBounty("sewers"), 1, "et elle ne déborde pas sur une autre zone")
+
+MonsterService.despawn(variantModel)
+eq(EndgameService.zoneBounty("street"), 1, "morte, la variante ne paie plus")
+
+say("")
+say("— §8 : « croisée » veut dire qu'elle t'a vu —")
+eq(EndgameService.collections(zoe).variants.Have, 0, "aucune variante au compteur au départ")
+EndgameService.noteDetect(zoe, "prowler", nil)
+eq(EndgameService.collections(zoe).variants.Have, 0,
+	"un monstre ordinaire qui te repère ne remplit pas la collection")
+EndgameService.noteDetect(zoe, "prowler", "inconnue")
+eq(EndgameService.collections(zoe).variants.Have, 0, "une variante inconnue est ignorée")
+
+EndgameService.noteDetect(zoe, "prowler", "ancien")
+eq(EndgameService.collections(zoe).variants.Have, 1, "celle-là compte")
+EndgameService.noteDetect(zoe, "prowler", "ancien")
+eq(EndgameService.collections(zoe).variants.Have, 1, "et elle ne compte qu'une fois")
+
+-- « Croise trois variantes DIFFÉRENTES » : la même trois fois ne vaut qu'une.
+-- Cette règle-là n'était pas tenue avant qu'une mutation le montre — le
+-- contrat se remplissait en croisant trois fois LE FAMÉLIQUE.
+zp.Contract = "c_variants"
+zp.ContractProgress = 0
+zp.ContractSeen = {}
+zp.ContractUntil = os.time() + 600
+EndgameService.noteDetect(zoe, "prowler", "famelique")
+EndgameService.noteDetect(zoe, "prowler", "famelique")
+EndgameService.noteDetect(zoe, "prowler", "famelique")
+eq(zp.ContractProgress, 1, "trois fois la MÊME variante ne compte qu'une fois")
+EndgameService.noteDetect(zoe, "prowler", "aveugle")
+eq(zp.ContractProgress, 2, "une autre variante fait avancer")
+EndgameService.note(zoe, "variant_met", 1, nil, nil)
+eq(zp.ContractProgress, 2, "un comptage distinct sans jeton n'avance pas")
+zp.Contract = ""
+zp.ContractProgress = 0
+zp.ContractSeen = {}
+zp.ContractUntil = 0
+
+say("")
+say("— §8 : un contrat neuf ne naît jamais déjà rempli —")
+-- On force le tirage sur « RELEVÉ DE FORMES » en mettant les autres poids à
+-- zéro : un test qui espère tomber sur le bon contrat au hasard ne prouve rien.
+local savedWeights = {}
+for _, contract in ipairs(EndgameConfig.Contracts) do
+	savedWeights[contract.Id] = contract.Weight
+	contract.Weight = contract.Id == "c_variants" and 1 or 0
+end
+
+zp.ContractRestUntil = 0
+local firstDraw = EndgameService.offerContract(zoe)
+eq(firstDraw ~= nil and firstDraw.Id or "", "c_variants", "le tirage forcé donne bien ce contrat")
+EndgameService.noteDetect(zoe, "prowler", "ancien")
+eq(zp.ContractProgress, 1, "L'ANCIEN compte pour ce contrat-ci")
+
+-- Le contrat tombe (périmé), un autre est tiré : L'ANCIEN doit recompter.
+zp.ContractUntil = os.time() - 1
+EndgameService.contractOf(zoe)
+zp.ContractRestUntil = 0
+local secondDraw = EndgameService.offerContract(zoe)
+ok(secondDraw ~= nil, "un nouveau contrat est tiré")
+EndgameService.noteDetect(zoe, "prowler", "ancien")
+eq(zp.ContractProgress, 1,
+	"et il recompte : un contrat neuf n'hérite pas de ce qui a été croisé avant lui")
+
+-- Et la garantie que `offerContract` donne pour elle-même : un contrat tiré
+-- part d'une ardoise propre, quoi qu'il y ait eu avant. Les trois chemins qui
+-- libèrent la place l'effacent déjà, donc on plante l'état sale à la main —
+-- sinon la règle est vraie par accident et non parce qu'elle est écrite.
+zp.Contract = ""
+zp.ContractProgress = 0
+zp.ContractUntil = 0
+zp.ContractRestUntil = 0
+zp.ContractSeen = { ancien = true, famelique = true, aveugle = true }
+ok(EndgameService.offerContract(zoe) ~= nil, "un contrat est tiré sur un état sale")
+local leftovers = 0
+for _ in pairs(zp.ContractSeen) do
+	leftovers += 1
+end
+eq(leftovers, 0, "et il remet l'ardoise à zéro lui-même")
+
+for _, contract in ipairs(EndgameConfig.Contracts) do
+	contract.Weight = savedWeights[contract.Id]
+end
+zp.Contract = ""
+zp.ContractProgress = 0
+zp.ContractSeen = {}
+zp.ContractUntil = 0
+zp.ContractRestUntil = 0
+
+say("")
+say("— §8 : LE HURLEUR réveille la maison, mais pas en boucle —")
+-- LA POUPÉE s'arrête quand on la regarde : fixer puis détourner le regard la
+-- fait repasser en poursuite à chaque bascule. Sans temporisation, un
+-- hurleur-poupée remplirait la jauge PARTAGÉE depuis un seul couloir.
+local jolts = 0
+EndgameService.setAwakeningJolt(function(amount)
+	jolts += amount
+end)
+EndgameService.forgetHowl(zoe)
+EndgameService.noteDetect(zoe, "doll", "hurleur")
+eq(jolts, EndgameConfig.HowlerFeed, "le premier cri réveille la maison")
+for _ = 1, 30 do
+	EndgameService.noteDetect(zoe, "doll", "hurleur")
+end
+eq(jolts, EndgameConfig.HowlerFeed,
+	"trente bascules de regard n'ajoutent rien : la temporisation tient")
+EndgameService.forgetHowl(zoe)
+EndgameService.noteDetect(zoe, "doll", "hurleur")
+eq(jolts, EndgameConfig.HowlerFeed * 2, "passé le délai, il crie de nouveau")
+
+-- Et une variante qui n'est pas le hurleur ne touche jamais à la jauge. On
+-- lève le délai d'abord : sinon c'est la temporisation qui bloque l'à-coup et
+-- le test passe sans rien prouver sur la condition de variante.
+EndgameService.forgetHowl(zoe)
+local before = jolts
+EndgameService.noteDetect(zoe, "doll", "ancien")
+eq(jolts, before, "L'ANCIEN ne réveille pas la maison, délai levé ou non")
+
+say("")
+say("— §8 : armer n'est pas tenir —")
+local okArm, armMessage = EndgameService.arm(zoe, "no_defense")
+ok(okArm, "le défi s'arme : " .. tostring(armMessage))
+eq(EndgameService.armedChallenge(zoe), "no_defense", "il est bien armé")
+eq(EndgameService.activeChallenge(zoe), nil,
+	"mais il n'agit pas encore : armé n'est pas en cours")
+ok(not EndgameService.hasRule(zoe, "no_defense"),
+	"donc sa règle ne s'applique pas tant qu'on n'a pas dormi")
+
+EndgameService.beginSession(zoe)
+ok(EndgameService.activeChallenge(zoe) ~= nil, "dormir le met en route")
+ok(EndgameService.hasRule(zoe, "no_defense"), "et sa règle s'applique")
+ok(not EndgameService.hasRule(zoe, "all_in"), "une seule règle à la fois")
+
+local midOk = (EndgameService.arm(zoe, "all_in"))
+ok(not midOk, "on ne change pas de défi au milieu d'une session")
+
+eq(EndgameService.earningBonus(zoe), EndgameConfig.challenge("no_defense").Reward,
+	"le bonus de gain est celui du défi")
+
+say("")
+say("— §8 : défi + prime se multiplient —")
+local bountyModel = MonsterService.spawn(shaped, "street", Vector3.new(0, 0, 0), {}, "ancien")
+eq(EndgameService.earningBonus(zoe),
+	EndgameConfig.challenge("no_defense").Reward * ancien.Bounty,
+	"risque pris et risque subi se cumulent")
+MonsterService.despawn(bountyModel)
+
+say("")
+say("— §8 : une session complète tient le défi, une interruption non —")
+eq(zp.ChallengesDone, 0, "aucun défi tenu au départ")
+EndgameService.endSession(zoe, "interrupted", "street")
+eq(zp.ChallengesDone, 0, "une session interrompue ne tient rien")
+eq(EndgameService.activeChallenge(zoe), nil, "et la règle est levée")
+
+EndgameService.arm(zoe, "light_sleep")
+EndgameService.beginSession(zoe)
+EndgameService.endSession(zoe, "challenge", "street")
+eq(zp.ChallengesDone, 1,
+	"« SOMMEIL LÉGER » coupé au premier assaut EST tenu : c'est sa règle")
+eq(EndgameService.armedChallenge(zoe), nil, "et le défi est consommé")
+
+-- …mais une session coupée n'est pas une session COMPLÈTE. On le mesure par
+-- `endSession` et pas par `note` : c'est `endSession` qui porte la décision,
+-- et c'est elle qu'une mutation peut casser sans que rien ne le dise.
+zp.Contract = "c_carnival"
+zp.ContractProgress = 0
+zp.ContractUntil = os.time() + 600
+EndgameService.arm(zoe, "light_sleep")
+EndgameService.beginSession(zoe)
+EndgameService.endSession(zoe, "challenge", "carnival")
+eq(zp.ContractProgress, 0,
+	"une session coupée au carnaval ne remplit pas « une session complète »")
+EndgameService.endSession(zoe, "complete", "carnival")
+eq(zp.ContractProgress, 1, "une session menée à terme, oui")
+
+say("")
+say("— §8 : les contrats sont rares et uniques —")
+zp.Contract = ""
+zp.ContractProgress = 0
+zp.ContractUntil = 0
+zp.ContractRestUntil = 0
+
+local drawn = EndgameService.offerContract(zoe)
+ok(drawn ~= nil, "un contrat est proposé")
+eq(EndgameService.offerContract(zoe), nil, "un seul à la fois")
+
+-- On en impose un connu, pour tester le compteur sans dépendre du tirage.
+zp.Contract = "c_archive"
+zp.ContractProgress = 0
+zp.ContractUntil = os.time() + 600
+local archive = EndgameConfig.contract("c_archive")
+
+EndgameService.note(zoe, "challenge_done", 1)
+eq(zp.ContractProgress, 0, "un compteur qui n'est pas celui du contrat ne le fait pas avancer")
+EndgameService.note(zoe, "document_found", 1)
+eq(zp.ContractProgress, 1, "le bon compteur, si")
+EndgameService.note(zoe, "document_found", 99)
+eq(zp.ContractProgress, archive.Target, "la progression ne dépasse jamais la cible")
+
+say("")
+say("— §8 : un contrat zoné ne compte que dans sa zone —")
+zp.Contract = "c_carnival"
+zp.ContractProgress = 0
+zp.ContractUntil = os.time() + 600
+EndgameService.note(zoe, "session_done", 1, "street")
+eq(zp.ContractProgress, 0, "une session dans la rue ne remplit pas le contrat du carnaval")
+EndgameService.note(zoe, "session_done", 1, nil)
+eq(zp.ContractProgress, 0, "ni une session sans zone")
+EndgameService.note(zoe, "session_done", 1, "carnival")
+eq(zp.ContractProgress, 1, "au carnaval, oui")
+
+say("")
+say("— §8 : la réclamation, et le délai qui court —")
+local carnival = EndgameConfig.contract("c_carnival")
+local before = zp.Cash
+local paidOk, paidMessage = EndgameService.claimContract(zoe)
+ok(paidOk, "le contrat rempli se réclame : " .. tostring(paidMessage))
+eq(zp.Cash, before + carnival.Cash, "et il paie le montant annoncé")
+eq(zp.ContractsDone, 1, "le compteur de contrats tenus monte")
+local twiceOk = (EndgameService.claimContract(zoe))
+ok(not twiceOk, "on ne le réclame pas deux fois")
+-- Et pour la bonne raison : la place est libre, pas seulement la progression
+-- remise à zéro. Sans cette ligne, un contrat jamais effacé passait le test
+-- précédent en échouant sur « pas encore rempli ».
+eq((EndgameService.contractOf(zoe)), nil, "le contrat payé a libéré la place")
+
+zp.Contract = "c_archive"
+zp.ContractProgress = 3
+zp.ContractUntil = os.time() - 1
+eq((EndgameService.contractOf(zoe)), nil, "un contrat périmé n'existe plus")
+eq(zp.Contract, "", "et il libère la place, sinon aucun tirage ne pourrait plus avoir lieu")
+local lateOk = (EndgameService.claimContract(zoe))
+ok(not lateOk, "un contrat périmé ne paie pas, même rempli")
+
+say("")
+say("— §8 : collections, documents et titres —")
+local unknownOk = (EndgameService.noteDocument(zoe, "d_inexistant"))
+ok(not unknownOk, "un document inconnu est refusé")
+
+local firstOk = (EndgameService.noteDocument(zoe, "d_street"))
+ok(firstOk, "le premier document compte")
+local againOk, againMessage = EndgameService.noteDocument(zoe, "d_street")
+ok(not againOk, "le relire ne recompte pas")
+ok(string.find(tostring(againMessage), "archives") ~= nil,
+	"et ça se dit, puisque l'objet reste dans le monde pour les autres")
+
+ok(not zp.Titles.t_archiviste, "le titre n'est pas donné pour un seul document")
+for _, document in ipairs(EndgameConfig.Documents) do
+	EndgameService.noteDocument(zoe, document.Id)
+end
+eq(EndgameService.collections(zoe).documents.Have, #EndgameConfig.Documents,
+	"les sept documents sont dans la collection")
+ok(zp.Titles.t_archiviste, "la collection complète donne le titre")
+
+for _, variant in ipairs(EndgameConfig.Variants) do
+	EndgameService.noteDetect(zoe, "prowler", variant.Id)
+end
+eq(EndgameService.collections(zoe).variants.Have, #EndgameConfig.Variants,
+	"les cinq variantes sont croisées")
+ok(zp.Titles.t_formes, "et le titre des formes suit")
+ok(not zp.Titles.t_veilleur,
+	"mais celui des monstres non : aucun monstre n'a encore été révélé")
+
+say("")
+say("— §8 : l'écran ne raconte pas un document qu'on n'a pas trouvé —")
+zp.Documents = {}
+local view = EndgameService.view(zoe)
+ok(view.Unlocked, "la vue dit que le chapitre est ouvert")
+eq(#view.Challenges, #EndgameConfig.Challenges, "les quatre défis sont listés")
+eq(#view.Variants, #EndgameConfig.Variants, "les cinq variantes aussi")
+local hidden = 0
+for _, document in ipairs(view.Documents) do
+	if document.Text == nil and not document.Found then
+		hidden += 1
+	end
+end
+eq(hidden, #EndgameConfig.Documents,
+	"et aucun texte de document non trouvé n'est envoyé au client")
+
+say("")
+say("— §8 : le tirage pondéré ne sort jamais de la liste —")
+local strays = 0
+for _ = 1, 400 do
+	local pick = EndgameConfig.draw(EndgameConfig.Variants, function(v) return v.Weight end)
+	if pick == nil or EndgameConfig.variant(pick.Id) == nil then
+		strays += 1
+	end
+end
+eq(strays, 0, "400 tirages, aucun hors de la liste")
+eq(EndgameConfig.draw({}, function() return 1 end), nil, "une liste vide ne tire rien")
+eq(EndgameConfig.draw(EndgameConfig.Variants, function() return 0 end), nil,
+	"des poids tous nuls ne tirent rien non plus (pas de division par zéro)")
 
 say("")
 say(string.format("%d/%d vérifications passées.", checks - fails, checks))

@@ -15,7 +15,7 @@ skins.
 
 ## Ouvrir et jouer
 
-Double-clique **`SleepOrDie.rbxlx`**. Roblox Studio s'ouvre avec les 24 scripts
+Double-clique **`SleepOrDie.rbxlx`**. Roblox Studio s'ouvre avec les 39 scripts
 en place. Appuie sur **F5**. Rien à installer, pas de Rojo.
 
 Au démarrage, le serveur construit la rue : immeubles, ruelles, six refuges,
@@ -31,8 +31,9 @@ le coffre, la boutique, les six PNJ, l'entrée des égouts et les rôdeurs.
 | `C` | skins |
 | `V` | l'événement en cours, et sa récompense |
 | `L` | les classements de la saison |
+| `K` | après le carnaval — variantes, défis, contrats, collections |
 | `P` | paramètres (flashs, bandeaux, invites, sons d'interface) |
-| `G` | menu — les trois écrans ci-dessus, pour le tactile |
+| `G` | menu — les quatre écrans ci-dessus, pour le tactile |
 | `F` ou clic | frapper (étourdit, ne tue pas) |
 | `E` maintenu | relever un coéquipier à terre |
 | `Échap` | fermer un panneau |
@@ -174,17 +175,39 @@ et c'est ce qui rend le retour obligatoire.
 ## Ce qui est fait, ce qui ne l'est pas
 
 Le détail honnête, section par section du cahier des charges, est dans
-**[docs/CDC.md](docs/CDC.md)**. En résumé : §2, 3, 4, 5, 6, 7, 10, 11 et 12
-sont faits ; §8, 9 et 13 sont partiels. Restent les étapes 9 et 10 du §14 :
-rétention et lancement.
+**[docs/CDC.md](docs/CDC.md)**. En résumé : tout est fait côté code sauf le §9
+bis (rendu), qui attend des MeshPart et des animations importées — deux choses
+qui demandent de téléverser, donc toi. Le §12 est écrit mais **les identifiants
+de produits Robux sont à `0`** : il faut les créer sur le tableau de bord
+Roblox. Reste l'étape 10 du §14, le lancement : mesures de performances, test
+sur un vrai téléphone, équilibrage d'après les retours — trois choses qui se
+mesurent et ne s'écrivent pas.
+
+### Après le carnaval (§8)
+
+Battre LE CLOWN ouvre un chapitre entier, et c'est la seule porte :
+`Achievements.carnival_cleared`, lue à un seul endroit du code.
+
+| | |
+|---|---|
+| **5 variantes** | Le monstre de la zone avec d'autres chiffres — même silhouette, mêmes sons, donc tout ce que tu as appris sert encore. Sauf avec **L'AVEUGLE**, qui ne voit plus rien et t'entend partout : la mécanique de la zone est remplacée par celle des égouts. Une apparition sur cinq. Tant qu'une variante vit là où tu dors, ça paie plus. |
+| **4 défis** | Une règle particulière, armée avant de dormir, valable une session. À NU (tes défenses ne retardent plus rien), SOMMEIL LÉGER (le premier assaut met fin à la session), TOUT OU RIEN (aucun délai de grâce, la mort prend tout), SANS ALERTE (plus un seul message). Chacun est appliqué à **un seul endroit** du code. |
+| **5 contrats rares** | Un seul à la fois, proposé à la fin d'une session, trois fois sur quatre refusé. Le délai court en temps réel : se déconnecter ne l'arrête pas. |
+| **2 collections** | 7 monstres, 5 formes, et **7 documents** posés dans le monde — sur un point de ronde, donc là où le monstre passe. Un document ne disparaît pas quand on le lit : il reste pour les autres joueurs. |
+| **3 titres** | Ils ne s'achètent pas et ne se tirent pas au sort. Ils se remplissent. |
+
+Les multiplicateurs se cumulent, jusqu'à **×4,62** — mais il faut un défi en
+cours *et* une variante en vie à côté de toi, c'est-à-dire avoir accepté de
+dormir sans défenses auprès de quelque chose qui frappe plus fort.
 
 ## Vérifier avant de publier
 
 ```sh
 npm install luau-web                         # une fois, pour les deux premiers
-node check.mjs src/*/*.luau                  # compile les 37 fichiers
-python3 tools/logictests.py                  # 48 contrôles : le code FAIT-il ce qu'il dit ?
-python3 tools/crosscheck.py                  # 542 liens entre modules
+node check.mjs src/*/*.luau                  # compile les 39 fichiers
+python3 tools/logictests.py                  # 140 contrôles : le code FAIT-il ce qu'il dit ?
+python3 tools/crosscheck.py                  # 638 liens entre modules
+python3 tools/mutate.py                      # 19 mutations : le TEST tient-il ?
 python3 tools/checkzones.py                  # 68 contrôles sur les 7 cartes
 python3 tools/simulate.py                    # la courbe de progression
 python3 tools/build_place.py                 # régénère SleepOrDie.rbxlx

@@ -39,6 +39,24 @@ export type Profile = {
 	Skin: string,
 	Achievements: { [string]: boolean },
 
+	-- §8 — l'après-boss. Les collections et les titres restent acquis ; le
+	-- contrat en cours aussi, et c'est voulu : son délai court en temps réel
+	-- (`os.time`), donc se déconnecter pour échapper au chrono ne marche pas.
+	Variants: { [string]: boolean },
+	Documents: { [string]: boolean },
+	Titles: { [string]: boolean },
+	Contract: string,
+	ContractProgress: number,
+	-- Ce qui a déjà été compté pour le contrat EN COURS. Remis à zéro à chaque
+	-- tirage : un contrat qui demande trois variantes différentes ne doit pas
+	-- hériter de celles croisées avant qu'il soit proposé, sinon il s'ouvre
+	-- déjà rempli.
+	ContractSeen: { [string]: boolean },
+	ContractUntil: number,
+	ContractRestUntil: number,
+	ContractsDone: number,
+	ChallengesDone: number,
+
 	SurvivalSeconds: number,
 	NightsSurvived: number,
 	Deaths: number,
@@ -88,6 +106,16 @@ local function blank(): Profile
 		Cosmetics = { default = true },
 		Skin = "default",
 		Achievements = {},
+		Variants = {},
+		Documents = {},
+		Titles = {},
+		Contract = "",
+		ContractProgress = 0,
+		ContractSeen = {},
+		ContractUntil = 0,
+		ContractRestUntil = 0,
+		ContractsDone = 0,
+		ChallengesDone = 0,
 		SurvivalSeconds = 0,
 		NightsSurvived = 0,
 		Deaths = 0,

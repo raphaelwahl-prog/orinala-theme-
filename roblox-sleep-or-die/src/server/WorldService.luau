@@ -8,6 +8,8 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 
+local EndgameConfig = require(script.Parent.Parent.Shared.EndgameConfig)
+local EndgameService = require(script.Parent.EndgameService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
 local MonsterService = require(script.Parent.MonsterService)
@@ -107,6 +109,61 @@ function WorldService.spawnMiniBoss(zoneId: string): (Model?, string)
 	return model, copy.Name
 end
 
+-- §8 — les documents de la collection. Un par zone, posé sur un point de
+-- ronde : donc dans un endroit où le monstre passe, et pas dans un coin sûr.
+--
+-- Même procédé que les objectifs du §7 (une Part taguée, une invite de
+-- proximité), avec une différence qui compte : un document ne disparaît pas
+-- quand on le ramasse. Il est noté dans le profil du lecteur et reste là pour
+-- les autres — le faire disparaître le rendrait introuvable pour tout le
+-- serveur dès qu'un seul joueur passe devant.
+function WorldService.placeDocuments()
+	local placed = 0
+	for _, document in ipairs(EndgameConfig.Documents) do
+		local layout = layouts[document.Zone]
+		if layout and #layout.Patrol > 0 then
+			local point = layout.Patrol[(placed % #layout.Patrol) + 1]
+			local part = Instance.new("Part")
+			part.Name = "Document_" .. document.Id
+			part.Size = Vector3.new(2.2, 3, 0.2)
+			part.Anchored = true
+			part.CanCollide = false
+			part.Color = Color3.fromRGB(226, 216, 189)
+			part.Material = Enum.Material.SmoothPlastic
+			part.CFrame = CFrame.new(point + Vector3.new(0, 3.2, 0))
+			part:SetAttribute("Document", document.Id)
+			CollectionService:AddTag(part, "Document")
+
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.ActionText = "Lire"
+			prompt.ObjectText = document.Name
+			prompt.HoldDuration = 0.4
+			prompt.MaxActivationDistance = 9
+			prompt.RequiresLineOfSight = false
+			prompt.Parent = part
+
+			local folder = ZoneBuilder.folder(document.Zone)
+			part.Parent = folder
+			placed += 1
+		end
+	end
+	return placed
+end
+
+-- Branche les invites des documents. Appelé une fois, après `placeDocuments`.
+function WorldService.bindDocuments(onRead: (Player, string) -> ())
+	for _, part in ipairs(CollectionService:GetTagged("Document")) do
+		local prompt = part:FindFirstChildOfClass("ProximityPrompt")
+		local id = part:GetAttribute("Document")
+		if prompt and type(id) == "string" and not part:GetAttribute("Bound") then
+			part:SetAttribute("Bound", true)
+			prompt.Triggered:Connect(function(player)
+				onRead(player, id)
+			end)
+		end
+	end
+end
+
 function WorldService.startPopulating()
 	task.spawn(function()
 		while true do
@@ -120,7 +177,17 @@ function WorldService.startPopulating()
 					-- relèvement du plafond pendant un événement d'invasion.
 					if MonsterService.countInZone(zone.Id) < MonsterService.capFor(def, zone.Id) then
 						local point = layout.Spawns[math.random(1, #layout.Spawns)]
-						MonsterService.spawn(def, zone.Id, point, layout.Patrol)
+						-- §8 — après le carnaval, une apparition sur cinq est
+						-- une variante. `rollVariant` renvoie nil la plupart
+						-- du temps, et toujours nil avant la victoire : le
+						-- monstre normal naît alors, exactement comme avant.
+						local variant = EndgameService.rollVariant(zone.Id)
+						if variant then
+							MonsterService.spawn(EndgameService.applyVariant(def, variant),
+								zone.Id, point, layout.Patrol, variant.Id)
+						else
+							MonsterService.spawn(def, zone.Id, point, layout.Patrol)
+						end
 					end
 				end
 			end

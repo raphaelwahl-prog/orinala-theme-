@@ -281,7 +281,10 @@ function ShelterService.absorbAssault(shelter: Shelter): number
 end
 
 function ShelterService.profileOf(shelter: Shelter)
-	if shelter.DisabledUntil and os.clock() < shelter.DisabledUntil then
+	-- On passe par `defensesDisabled` et non par `DisabledUntil` en direct :
+	-- sinon le défi « À NU » annulerait l'absorption des assauts mais pas le
+	-- délai ni l'avertissement, et le refuge protégerait encore à moitié.
+	if ShelterService.defensesDisabled(shelter) then
 		-- Défenses neutralisées : le refuge est nu, mais pas détruit.
 		return { Delay = 0, Warning = 0, Detection = 1, Slots = 0 }
 	end
@@ -296,8 +299,23 @@ function ShelterService.disableDefenses(shelter: Shelter, seconds: number)
 	fire(shelter)
 end
 
+-- §8, défi « À NU ». Prédicat injecté plutôt que `require(EndgameService)` :
+-- Endgame a déjà besoin de Shelter par la chaîne Monster → Shelter, et un
+-- `require` en retour ferait un cycle.
+local challengeNullifies: ((Player) -> boolean)? = nil
+
+function ShelterService.setDefenseVeto(fn: (Player) -> boolean)
+	challengeNullifies = fn
+end
+
 function ShelterService.defensesDisabled(shelter: Shelter): boolean
-	return shelter.DisabledUntil ~= nil and os.clock() < shelter.DisabledUntil
+	if shelter.DisabledUntil ~= nil and os.clock() < shelter.DisabledUntil then
+		return true
+	end
+	-- Le défi ne neutralise que les défenses de CELUI qui l'a pris. Un refuge
+	-- sans propriétaire n'a de toute façon rien de posé.
+	local owner = shelter.Owner
+	return owner ~= nil and challengeNullifies ~= nil and challengeNullifies(owner)
 end
 
 function ShelterService.cleanup(player: Player)

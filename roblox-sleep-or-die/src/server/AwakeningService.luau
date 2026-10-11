@@ -84,6 +84,25 @@ function AwakeningService.feed(zoneId: string, seconds: number)
 	end
 end
 
+-- À-coup direct, sans passer par le rang de la zone. `feed` modélise le
+-- sommeil profond qui s'accumule, et son gain est volontairement nul dans la
+-- rue (rang 1) : on ne réveille pas la maison en dormant au rez-de-chaussée.
+--
+-- Un cri n'est pas du sommeil accumulé, c'est un événement — et LE HURLEUR du
+-- §8 doit réveiller la maison partout, y compris dans la rue, sinon la
+-- description de la variante est fausse là où elle apparaît le plus souvent.
+function AwakeningService.jolt(amount: number)
+	if amount <= 0 then
+		return
+	end
+	points += amount
+	local newStage = AwakeningConfig.stageFor(points)
+	if newStage ~= stage then
+		stage = newStage
+		applyStage()
+	end
+end
+
 function AwakeningService.init()
 	applyStage()
 	-- Décroissance : sans elle, un serveur qui tourne longtemps finit toujours

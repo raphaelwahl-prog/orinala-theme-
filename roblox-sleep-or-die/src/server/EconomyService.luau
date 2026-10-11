@@ -35,6 +35,27 @@ function EconomyService.setEventBonus(fn: () -> number)
 	eventBonus = fn
 end
 
+-- §8 — le bonus d'après-boss : le défi de survie en cours et la prime de la
+-- variante vivante dans la zone. Celui-ci prend le joueur en argument, à la
+-- différence des deux autres : un défi est individuel, et deux joueurs de la
+-- même zone peuvent n'avoir pas pris le même risque.
+local endgameBonus: ((Player) -> number)? = nil
+
+function EconomyService.setEndgameBonus(fn: (Player) -> number)
+	endgameBonus = fn
+end
+
+-- Second volet du même §8 : le défi « TOUT OU RIEN » fait perdre la totalité
+-- du non sécurisé au lieu de la part prévue par la zone. C'est un prédicat
+-- distinct du bonus parce qu'il agit à un autre moment — à la mort, pas à la
+-- seconde créditée — et qu'un bonus qui renverrait aussi un taux de perte
+-- serait une fonction qui fait deux choses.
+local endgameTotalLoss: ((Player) -> boolean)? = nil
+
+function EconomyService.setEndgameTotalLoss(fn: (Player) -> boolean)
+	endgameTotalLoss = fn
+end
+
 function EconomyService.onChanged(fn: (Player) -> ())
 	table.insert(listeners, fn)
 end
@@ -77,6 +98,9 @@ function EconomyService.accrue(player: Player, zoneId: string, seconds: number, 
 	if eventBonus then
 		rate *= eventBonus()
 	end
+	if endgameBonus then
+		rate *= endgameBonus(player)
+	end
 	-- Plafond souple : au-delà, le taux est divisé. Sans ça, la zone 7 à
 	-- 100 000 $/s rend toute la progression précédente sans objet.
 	if earnedThisSession >= zone.SoftCapPerSession then
@@ -118,6 +142,9 @@ function EconomyService.applyDeath(player: Player, zoneId: string): number
 		return 0
 	end
 	local ratio = zone and zone.DeathLossRatio or 0.5
+	if endgameTotalLoss and endgameTotalLoss(player) then
+		ratio = 1
+	end
 	local lost = profile.UnbankedCash * ratio
 	profile.UnbankedCash = math.max(0, profile.UnbankedCash - lost)
 	profile.Deaths += 1

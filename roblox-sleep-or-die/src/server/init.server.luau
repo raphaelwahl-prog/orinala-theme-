@@ -11,6 +11,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
 local GameConfig = require(Shared.GameConfig)
 local MissionConfig = require(Shared.MissionConfig)
+local EndgameConfig = require(Shared.EndgameConfig)
 local MonsterConfig = require(Shared.MonsterConfig)
 local Net = require(Shared.Net)
 local ZoneConfig = require(Shared.ZoneConfig)
@@ -21,6 +22,7 @@ local BossService = require(script.BossService)
 local CombatService = require(script.CombatService)
 local CosmeticService = require(script.CosmeticService)
 local EconomyService = require(script.EconomyService)
+local EndgameService = require(script.EndgameService)
 local EventService = require(script.EventService)
 local InventoryService = require(script.InventoryService)
 local LeaderboardService = require(script.LeaderboardService)
@@ -50,6 +52,13 @@ local SOUND_BY_KIND = {
 }
 
 local function alert(player: Player, text: string, kind: string?)
+	-- §8, défi « SANS ALERTE » : plus un seul message n'arrive. C'est ici que
+	-- ça se joue et nulle part ailleurs — `alert` est le seul chemin par
+	-- lequel un texte atteint un joueur, donc le seul endroit où la règle
+	-- peut être tenue sans oubli possible.
+	if EndgameService.hasRule(player, "blind") then
+		return
+	end
 	send(player, "Alert", text, kind or "info")
 	local effect = SOUND_BY_KIND[kind or "info"]
 	if effect then
@@ -92,6 +101,14 @@ local function pushState(player: Player)
 		Skin = profile.Skin,
 		Settings = profile.Settings,
 		Downed = LifeService.isDowned(player),
+		-- §8 — juste ce qu'il faut pour le bandeau ; l'écran complet passe par
+		-- « EndgameData », qui n'est envoyé que quand on l'ouvre.
+		Endgame = {
+			Unlocked = EndgameService.unlocked(player),
+			Armed = EndgameService.armedChallenge(player),
+			Running = EndgameService.activeChallenge(player) ~= nil,
+			Titles = profile.Titles,
+		},
 		Stats = {
 			Nights = profile.NightsSurvived,
 			Deaths = profile.Deaths,
@@ -133,8 +150,43 @@ EventService.onReward(function(player, amount)
 	EconomyService.grant(player, amount, "événement")
 	pushState(player)
 end)
+
+-- §8 — l'après-boss. Quatre branchements, parce que quatre choses agissent :
+--   · le bonus de gain (défi en cours + prime de la variante vivante) ;
+--   · la perte totale à la mort sous « TOUT OU RIEN » ;
+--   · la neutralisation des défenses sous « À NU » ;
+--   · le réveil brutal de la maison quand LE HURLEUR repère quelqu'un.
+EconomyService.setEndgameBonus(EndgameService.earningBonus)
+EconomyService.setEndgameTotalLoss(function(player)
+	return EndgameService.hasRule(player, "all_in")
+end)
+ShelterService.setDefenseVeto(function(player)
+	return EndgameService.hasRule(player, "no_defense")
+end)
+EndgameService.setAwakeningJolt(AwakeningService.jolt)
+EndgameService.onAlert(alert)
+EndgameService.onChanged(function(player)
+	pushState(player)
+	-- Et la vue complète, pour que l'écran du §8 se mette à jour en direct
+	-- quand une variante est croisée ou qu'un contrat avance. Le client ne
+	-- redessine que si le panneau est ouvert ; la vue est petite et ces
+	-- changements sont rares, donc l'envoyer coûte moins cher que de laisser
+	-- un écran afficher un contrat déjà rempli.
+	send(player, "EndgameData", EndgameService.view(player))
+end)
+MonsterService.onDetect(EndgameService.noteDetect)
+
 WorldService.startPopulating()
 ZoneService.setTeleporter(WorldService.teleport)
+
+-- Les documents de la collection : posés puis branchés, dans cet ordre.
+local documents = WorldService.placeDocuments()
+WorldService.bindDocuments(function(player, documentId)
+	local fresh, message = EndgameService.noteDocument(player, documentId)
+	if message ~= "" then
+		alert(player, message, fresh and "unlock" or "info")
+	end
+end)
 
 AwakeningService.onChanged(function(points, stage, data)
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -388,6 +440,29 @@ local function onLeaderboard(player: Player)
 	send(player, "LeaderboardData", LeaderboardService.view(player))
 end
 
+local function onEndgame(player: Player)
+	send(player, "EndgameData", EndgameService.view(player))
+end
+
+local function onChallenge(player: Player, id: unknown)
+	-- `nil` et la chaîne vide retirent le défi ; tout le reste doit être un
+	-- identifiant connu, et c'est le service qui le vérifie.
+	if id ~= nil and type(id) ~= "string" then
+		return
+	end
+	local ok, message = EndgameService.arm(player, id :: string?)
+	alert(player, message, ok and "unlock" or "warn")
+	onEndgame(player)
+	pushState(player)
+end
+
+local function onContract(player: Player)
+	local ok, message = EndgameService.claimContract(player)
+	alert(player, message, ok and "cash" or "warn")
+	onEndgame(player)
+	pushState(player)
+end
+
 local function onSetting(player: Player, id: unknown, value: unknown)
 	if type(id) ~= "string" or type(value) ~= "boolean" then
 		return
@@ -438,6 +513,9 @@ Net.get("RequestCosmetic").OnServerEvent:Connect(onCosmetic)
 Net.get("RequestEventClaim").OnServerEvent:Connect(onEventClaim)
 Net.get("RequestLeaderboard").OnServerEvent:Connect(onLeaderboard)
 Net.get("RequestSetting").OnServerEvent:Connect(onSetting)
+Net.get("RequestEndgame").OnServerEvent:Connect(onEndgame)
+Net.get("RequestChallenge").OnServerEvent:Connect(onChallenge)
+Net.get("RequestContract").OnServerEvent:Connect(onContract)
 Net.get("RequestRepair").OnServerEvent:Connect(function(player)
 	alert(player, "Les défenses se remplacent à la boutique.", "info")
 end)
@@ -477,6 +555,7 @@ Players.PlayerRemoving:Connect(function(player)
 	-- joueur pour une histoire de classement.
 	pcall(LeaderboardService.publish, player)
 	LeaderboardService.forget(player)
+	EndgameService.cleanup(player)
 	SoundLib.forget(player)
 	PlayerDataService.release(player)
 end)
@@ -488,5 +567,6 @@ for _, zone in ipairs(ZoneConfig.List) do
 	end
 end
 print(("[SLEEP OR DIE] serveur prêt — %d zones construites sur %d, %d missions, "
-	.. "espacement %d studs.")
-	:format(built, #ZoneConfig.List, #MissionConfig.List, ZoneBuilder.SPACING))
+	.. "%d documents sur %d, espacement %d studs.")
+	:format(built, #ZoneConfig.List, #MissionConfig.List,
+		documents, #EndgameConfig.Documents, ZoneBuilder.SPACING))

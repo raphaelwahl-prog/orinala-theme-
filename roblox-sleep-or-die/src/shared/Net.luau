@@ -20,6 +20,7 @@ Net.Events = {
 	"DownedChanged",     -- un joueur à terre, et le temps qu'il lui reste
 	"DeathReport",       -- bilan de mort
 	"LeaderboardData",   -- classements saisonniers (§8)
+	"EndgameData",       -- variantes, défis, contrats, collections (§8)
 	-- client → serveur
 	"RequestClaim",      -- réserver un refuge
 	"RequestSleep",      -- démarrer une session
@@ -36,6 +37,9 @@ Net.Events = {
 	"RequestEventClaim", -- réclamer la récompense de l'événement en cours
 	"RequestLeaderboard",-- demander les classements
 	"RequestSetting",    -- changer un réglage (§9)
+	"RequestEndgame",    -- demander la vue d'après-boss (§8)
+	"RequestChallenge",  -- armer ou retirer un défi de survie (§8)
+	"RequestContract",   -- réclamer le contrat rempli (§8)
 }
 
 local cache: { [string]: RemoteEvent } = {}

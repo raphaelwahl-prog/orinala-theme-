@@ -126,6 +126,29 @@ GameConfig.Leaderboards = {
 	},
 }
 
+GameConfig.Endgame = {
+	-- CDC §8 : tout ce bloc ne s'ouvre qu'« après la victoire contre le boss
+	-- final ». La porte est `Achievements.carnival_cleared`, tenue par
+	-- EndgameService.unlocked — un seul endroit, pour qu'on ne puisse pas
+	-- l'oublier dans un chemin.
+
+	-- Probabilité qu'une apparition de monstre soit une variante. À 0,22 et
+	-- une apparition toutes les 15 s par zone, on en croise une par poignée
+	-- de minutes : assez pour que ce soit un événement, pas une surprise.
+	VariantChance = 0.22,
+
+	-- Les contrats sont « rares » (mot du CDC). Le tirage n'a lieu qu'à la fin
+	-- d'une session, échoue trois fois sur quatre, et ne peut pas se
+	-- représenter avant le délai de repos. Un seul contrat actif à la fois.
+	ContractChance = 0.25,
+	ContractCooldown = 900,
+
+	-- Une variante « croisée » est une variante qui t'a vu, pas une variante
+	-- qui existait quelque part dans la zone. Sinon le compteur se remplit
+	-- sans que le joueur ait rien fait.
+	CountOnDetect = true,
+}
+
 GameConfig.Ui = {
 	ToastSeconds = 5,
 	AlertSeconds = 4,

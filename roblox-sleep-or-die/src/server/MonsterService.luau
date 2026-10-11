@@ -41,6 +41,11 @@ type Agent = {
 	Rig: any,
 	Walk: number,
 	LastStep: number,
+	-- §8 — l'identifiant de la variante, quand l'agent en est une. Le `Def`
+	-- est déjà un clone modifié ; cette clé-là sert à dire LAQUELLE, parce que
+	-- `Def.Id` reste celui du monstre de base (c'est lui qui choisit la
+	-- silhouette et les sons, on ne peut pas le changer).
+	Variant: string?,
 	NextThink: number,
 	LostSince: number,
 	StunUntil: number,
@@ -52,6 +57,10 @@ type Agent = {
 
 local agents: { Agent } = {}
 local signalListeners: { (string, string, Vector3) -> () } = {}
+-- Repérage nominatif : `signal` ne dit pas QUI a été vu, et les signaux
+-- partent à tout le serveur. Le §8 a besoin du couple (joueur, variante) pour
+-- compter une variante « croisée ». D'où une liste à part.
+local detectListeners: { (Player, string, string?) -> () } = {}
 
 -- Multiplicateurs imposés par l'éveil de la maison. Ils s'appliquent à TOUS
 -- les monstres du serveur, y compris ceux déjà sur le terrain.
@@ -100,6 +109,18 @@ function MonsterService.onSignal(fn: (string, string, Vector3) -> ())
 	table.insert(signalListeners, fn)
 end
 
+-- Appelée une fois par poursuite, au moment où l'agent acquiert sa cible —
+-- pas à chaque image, sinon le compteur de variantes grimperait tout seul.
+function MonsterService.onDetect(fn: (Player, string, string?) -> ())
+	table.insert(detectListeners, fn)
+end
+
+local function detected(agent: Agent, player: Player)
+	for _, fn in ipairs(detectListeners) do
+		task.spawn(fn, player, agent.Def.Id, agent.Variant)
+	end
+end
+
 local function signal(agent: Agent, kind: string)
 	for _, fn in ipairs(signalListeners) do
 		task.spawn(fn, agent.Def.Id, kind, agent.Root.Position)
@@ -114,6 +135,19 @@ function MonsterService.countInZone(zoneId: string): number
 		end
 	end
 	return n
+end
+
+-- Les variantes vivantes dans une zone. MonsterService ne sait pas ce qu'une
+-- variante vaut — c'est EndgameConfig qui porte la prime — il sait seulement
+-- lesquelles sont sur le terrain.
+function MonsterService.variantsInZone(zoneId: string): { string }
+	local found = {}
+	for _, agent in ipairs(agents) do
+		if agent.ZoneId == zoneId and agent.Variant then
+			table.insert(found, agent.Variant)
+		end
+	end
+	return found
 end
 
 -- Le joueur regarde-t-il l'agent ? (mécanique « gaze » de la poupée)
@@ -213,9 +247,17 @@ local function decide(agent: Agent)
 
 	if target then
 		local root = (target.Character :: Model):FindFirstChild("HumanoidRootPart") :: BasePart
+		-- « Fraîche » = l'agent ne poursuivait pas déjà. On le mesure AVANT de
+		-- toucher à l'état, et on couvre les deux portes : passer en CHASE, et
+		-- passer directement en ATTACK quand le joueur est déjà à portée — ce
+		-- second cas ne fait jamais partir le signal « spotted ».
+		local fresh = agent.State ~= S.CHASE and agent.State ~= S.ATTACK
 		agent.Target = target
 		agent.LastKnown = root.Position
 		agent.LostSince = 0
+		if fresh then
+			detected(agent, target)
+		end
 
 		-- Mécanique « disable » (le couvent) : en approchant, l'entité éteint
 		-- les défenses du refuge de sa cible. Le CDC le dit : « Les défenses
@@ -345,7 +387,7 @@ local function move(agent: Agent, dt: number)
 end
 
 local function create(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
-	patrol: { Vector3 }): Model
+	patrol: { Vector3 }, variant: string?): Model
 	-- Un vrai squelette R6, avec des membres qui bougent.
 	local model, rig = MonsterRig.build(def, position)
 	local root = model.PrimaryPart :: BasePart
@@ -363,17 +405,21 @@ local function create(def: MonsterConfig.Monster, zoneId: string, position: Vect
 		Rig = rig, Walk = 0, LastStep = 0,
 		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
+		Variant = variant,
 	}
+	if variant then
+		model:SetAttribute("Variant", variant)
+	end
 	table.insert(agents, agent)
 	return model
 end
 
 function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
-	patrol: { Vector3 }): Model?
+	patrol: { Vector3 }, variant: string?): Model?
 	if MonsterService.countInZone(zoneId) >= MonsterService.capFor(def, zoneId) then
 		return nil
 	end
-	return create(def, zoneId, position, patrol)
+	return create(def, zoneId, position, patrol, variant)
 end
 
 -- Apparition qui ignore le plafond, pour les monstres uniques : le boss du

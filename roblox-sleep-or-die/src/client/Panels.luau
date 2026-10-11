@@ -1,6 +1,6 @@
 --!strict
 -- Boutique, défenses, missions, carte, skins, événement, classements,
--- paramètres et écran de mort (§9).
+-- après-boss, paramètres et écran de mort (§9).
 -- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -26,6 +26,8 @@ local onPlace: ((string) -> ())? = nil
 local onCosmetic: ((string, string) -> ())? = nil
 local onSetting: ((string, boolean) -> ())? = nil
 local onEventClaim: (() -> ())? = nil
+local onChallenge: ((string?) -> ())? = nil
+local onContract: (() -> ())? = nil
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new("UICorner")
@@ -43,13 +45,16 @@ end
 
 function Panels.build(screen: ScreenGui, callbacks: {
 	buy: (string) -> (), place: (string) -> (), cosmetic: (string, string) -> (),
-	setting: (string, boolean) -> (), eventClaim: () -> () })
+	setting: (string, boolean) -> (), eventClaim: () -> (),
+	challenge: (string?) -> (), contract: () -> () })
 	gui = screen
 	onBuy = callbacks.buy
 	onPlace = callbacks.place
 	onCosmetic = callbacks.cosmetic
 	onSetting = callbacks.setting
 	onEventClaim = callbacks.eventClaim
+	onChallenge = callbacks.challenge
+	onContract = callbacks.contract
 
 	overlay = Instance.new("Frame")
 	overlay.Name = "Overlay"
@@ -440,6 +445,165 @@ function Panels.openLeaderboard(view)
 				UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
 		end
 	end
+	overlay.Visible = true
+end
+
+-- ── après-boss (§8) ───────────────────────────────────────────────────────
+--
+-- Un seul écran pour les quatre mécaniques, parce qu'elles ne veulent rien
+-- dire séparées : on arme un défi POUR gagner plus face à une variante, et le
+-- contrat en cours dit ce qu'on cherche. Les éclater en quatre onglets
+-- obligerait à faire des allers-retours pour comprendre sa propre partie.
+function Panels.openEndgame(view)
+	current = "endgame"
+	titleLabel.Text = "Après le carnaval"
+	clear()
+
+	if not view then
+		local frame = row(54)
+		text(frame, "Chargement…", 13, DIM,
+			UDim2.new(0, 12, 0, 16), UDim2.new(1, -24, 0, 30))
+		overlay.Visible = true
+		return
+	end
+
+	if not view.Unlocked then
+		-- On dit ce qu'il y a derrière la porte sans rien en montrer : une
+		-- porte dont on ignore le contenu ne donne envie de rien.
+		local frame = row(96)
+		text(frame, "Verrouillé", 14, DANGER, UDim2.new(0, 12, 0, 10),
+			UDim2.new(1, -24, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, "Bats LE CLOWN au carnaval. Après ça : des variantes de "
+			.. "monstres, des défis de survie à règles particulières, des "
+			.. "contrats rares, et deux collections à remplir.", 11.5, DIM,
+			UDim2.new(0, 12, 0, 34), UDim2.new(1, -24, 0, 54))
+		overlay.Visible = true
+		return
+	end
+
+	-- Le contrat d'abord : c'est ce qui périme.
+	local head = row(30)
+	text(head, "CONTRAT RARE", 11, DIM, UDim2.new(0, 12, 0, 6),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+
+	if view.Contract then
+		local c = view.Contract
+		local done = c.Progress >= c.Target
+		local frame = row(done and 78 or 72)
+		text(frame, c.Name, 13.5, done and CASH or INK, UDim2.new(0, 12, 0, 9),
+			UDim2.new(1, -140, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, c.Text, 11.5, DIM, UDim2.new(0, 12, 0, 30),
+			UDim2.new(1, -140, 0, 32))
+		local left = math.max(0, c.Until - os.time())
+		text(frame, ("%d/%d  ·  %s  ·  %d min"):format(c.Progress, c.Target,
+			Format.money(c.Cash), math.floor(left / 60)), 11, done and CASH or DIM,
+			UDim2.new(0, 12, 0, 56), UDim2.new(1, -140, 0, 18))
+		local claim = button(frame, done and "RÉCLAMER" or "EN COURS", done)
+		if done and onContract then
+			claim.Activated:Connect(function()
+				(onContract :: () -> ())()
+			end)
+		end
+	else
+		local frame = row(44)
+		text(frame, "Aucun contrat. Ils se proposent rarement, "
+			.. "à la fin d'une session.", 11.5, DIM,
+			UDim2.new(0, 12, 0, 12), UDim2.new(1, -24, 0, 22))
+	end
+
+	-- Les défis.
+	local chead = row(34)
+	text(chead, "DÉFIS DE SURVIE", 11, DIM, UDim2.new(0, 12, 0, 9),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+	if view.Running then
+		text(chead, "en cours", 11, DANGER, UDim2.new(1, -128, 0, 9),
+			UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
+	end
+
+	for _, challenge in ipairs(view.Challenges) do
+		local isArmed = view.Armed == challenge.Id
+		local frame = row(62)
+		if isArmed then
+			frame.BackgroundColor3 = Color3.fromRGB(34, 40, 34)
+		end
+		text(frame, challenge.Name, 13, isArmed and CASH or INK,
+			UDim2.new(0, 12, 0, 9), UDim2.new(1, -140, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, challenge.Text, 11.5, DIM, UDim2.new(0, 12, 0, 29),
+			UDim2.new(1, -140, 0, 28))
+		text(frame, ("×%.2f"):format(challenge.Reward), 11.5, CASH,
+			UDim2.new(1, -196, 0, 21), UDim2.new(0, 56, 0, 18))
+			.TextXAlignment = Enum.TextXAlignment.Right
+
+		-- Pendant une session, on ne peut ni armer ni désarmer : la règle est
+		-- déjà en train de s'appliquer. Le bouton le dit au lieu de refuser.
+		local label = view.Running and "VERROUILLÉ"
+			or (isArmed and "RETIRER" or "ARMER")
+		local pick = button(frame, label, not view.Running)
+		if not view.Running and onChallenge then
+			pick.Activated:Connect(function()
+				(onChallenge :: (string?) -> ())(isArmed and "" or challenge.Id)
+			end)
+		end
+	end
+
+	-- Les collections.
+	local sets = view.Collections
+	local shead = row(34)
+	text(shead, "COLLECTIONS", 11, DIM, UDim2.new(0, 12, 0, 9),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+	text(shead, ("monstres %d/%d  ·  formes %d/%d  ·  documents %d/%d"):format(
+		sets.monsters.Have, sets.monsters.Total,
+		sets.variants.Have, sets.variants.Total,
+		sets.documents.Have, sets.documents.Total), 11, INK,
+		UDim2.new(1, -300, 0, 9), UDim2.new(0, 288, 0, 18))
+		.TextXAlignment = Enum.TextXAlignment.Right
+
+	for _, variant in ipairs(view.Variants) do
+		local frame = row(variant.Seen and 54 or 32)
+		text(frame, variant.Seen and variant.Name or "— pas encore croisée —",
+			12.5, variant.Seen and INK or DIM, UDim2.new(0, 12, 0, 8),
+			UDim2.new(1, -140, 0, 18))
+		if variant.Seen then
+			text(frame, variant.Tell, 11, DIM, UDim2.new(0, 12, 0, 27),
+				UDim2.new(1, -140, 0, 22))
+			text(frame, ("prime ×%.1f"):format(variant.Bounty), 11, CASH,
+				UDim2.new(1, -124, 0, 8), UDim2.new(0, 112, 0, 18))
+				.TextXAlignment = Enum.TextXAlignment.Right
+		end
+	end
+
+	for _, document in ipairs(view.Documents) do
+		local frame = row(document.Found and 58 or 30)
+		text(frame, document.Found and document.Name or "document introuvable",
+			12, document.Found and INK or DIM, UDim2.new(0, 12, 0, 7),
+			UDim2.new(1, -140, 0, 18))
+		text(frame, document.Zone, 10.5, DIM, UDim2.new(1, -124, 0, 7),
+			UDim2.new(0, 112, 0, 16)).TextXAlignment = Enum.TextXAlignment.Right
+		-- Le serveur n'envoie pas le texte d'un document non trouvé : il n'y a
+		-- donc rien à cacher ici, et rien à révéler par mégarde.
+		if document.Found and document.Text then
+			text(frame, document.Text, 11, DIM, UDim2.new(0, 12, 0, 27),
+				UDim2.new(1, -24, 0, 26))
+		end
+	end
+
+	-- Les titres.
+	local thead = row(30)
+	text(thead, "TITRES", 11, DIM, UDim2.new(0, 12, 0, 6),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+	for _, title in ipairs(view.Titles) do
+		local frame = row(44)
+		text(frame, title.Name, 12.5, title.Held and CASH or DIM,
+			UDim2.new(0, 12, 0, 7), UDim2.new(1, -140, 0, 18)).Font = Enum.Font.GothamBold
+		text(frame, title.Text, 11, DIM, UDim2.new(0, 12, 0, 25),
+			UDim2.new(1, -24, 0, 16))
+	end
+
+	local tail = row(30)
+	text(tail, ("%d contrat(s) tenu(s)  ·  %d défi(s) tenu(s)"):format(
+		view.ContractsDone, view.ChallengesDone), 11, DIM,
+		UDim2.new(0, 12, 0, 6), UDim2.new(1, -24, 0, 18))
+
 	overlay.Visible = true
 end
 

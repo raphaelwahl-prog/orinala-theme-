@@ -1,4 +1,4 @@
-<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX46"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX47"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">4</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX11"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX10"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX48"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX49"><Properties><string name="Name">Lighting</string><float name="Brightness">1</float><float name="ClockTime">0.4</float><token name="Technology">4</token><float name="FogEnd">320</float><float name="FogStart">40</float><Color3 name="Ambient"><R>0.06</R><G>0.06</G><B>0.09</B></Color3><Color3 name="OutdoorAmbient"><R>0.08</R><G>0.08</G><B>0.12</B></Color3><Color3 name="FogColor"><R>0.03</R><G>0.03</G><B>0.05</B></Color3></Properties></Item><Item class="ReplicatedStorage" referent="RBX12"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX11"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">AwakeningConfig</string><ProtectedString name="Source">--!strict
 -- L'ÉVEIL DE LA MAISON — la jauge partagée par tout le serveur.
 --
 -- Reprise de la première version du jeu, parce que c'est la seule mécanique
@@ -166,7 +166,292 @@ function CosmeticConfig.check(item: Cosmetic, stats: {
 end
 
 return CosmeticConfig
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX3"><Properties><string name="Name">Format</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX3"><Properties><string name="Name">EndgameConfig</string><ProtectedString name="Source">--!strict
+-- §8 — ce que le jeu propose APRÈS la victoire contre le boss final.
+--
+-- Le cahier des charges est explicite sur la condition d'ouverture : « Après
+-- la victoire contre le boss final, le jeu doit proposer : des variantes de
+-- monstres, des défis de survie avec des règles particulières, des contrats
+-- rares, des classements saisonniers, des collections de monstres et de
+-- documents, des succès et titres, des cosmétiques exclusifs, des événements
+-- limités dans le temps. »
+--
+-- Les classements (LeaderboardService), les cosmétiques exclusifs
+-- (CosmeticConfig) et les événements (EventService) existaient déjà. Ce
+-- fichier porte les quatre qui manquaient : variantes, défis, contrats,
+-- collections — et les titres qui couronnent les collections.
+--
+-- Rien ici ne s'applique tant que `Achievements.carnival_cleared` est faux.
+-- C'est EndgameService qui tient cette porte, à un seul endroit.
+
+local EndgameConfig = {}
+
+-- ── variantes de monstres ─────────────────────────────────────────────────
+--
+-- Une variante n'est pas un monstre neuf : c'est le monstre de la zone avec
+-- d'autres chiffres. Même silhouette, mêmes sons, même code — seul le
+-- `table.clone` du def change, exactement comme le mini-boss d'événement.
+--
+-- Deux raisons de faire comme ça plutôt que d'ajouter sept monstres : le
+-- joueur a passé cinq heures à apprendre à lire les signaux de chacun, et une
+-- variante qui garde la silhouette mais déplace les chiffres récompense cet
+-- apprentissage au lieu de l'annuler. Et `MaxAlive`, les sons et les gabarits
+-- restent ceux qui ont été réglés.
+--
+-- `Rule` est le champ dangereux : L'AVEUGLE remplace la mécanique de la zone
+-- par celle des égouts. C'est voulu, c'est le cœur de l'intérêt — mais il faut
+-- que son nom le dise, sinon c'est une trahison et pas une variante.
+
+export type Variant = {
+	Id: string,
+	Name: string,            -- suffixe accolé au nom du monstre
+	Speed: number,
+	Sight: number,
+	Hear: number,
+	Damage: number,
+	Scale: number,
+	GiveUp: number,
+	Bounty: number,          -- multiplicateur de gain tant qu'elle est en vie
+	Weight: number,          -- poids du tirage
+	Rule: string?,           -- remplace la mécanique de la zone, si présent
+	Tell: string,
+}
+
+EndgameConfig.Variants = {
+	{ Id = &quot;ancien&quot;, Name = &quot;L'ANCIEN&quot;,
+		Speed = 0.85, Sight = 1.6, Hear = 1.2, Damage = 1.5, Scale = 1.25,
+		GiveUp = 1.5, Bounty = 2, Weight = 3,
+		Tell = &quot;Plus grand, plus lent, et il voit de bien plus loin.&quot; },
+
+	{ Id = &quot;famelique&quot;, Name = &quot;LE FAMÉLIQUE&quot;,
+		Speed = 1.45, Sight = 0.9, Hear = 1.4, Damage = 0.7, Scale = 0.85,
+		GiveUp = 0.8, Bounty = 1.6, Weight = 4,
+		Tell = &quot;Maigre et rapide. Il frappe moins fort mais il te rattrape.&quot; },
+
+	{ Id = &quot;aveugle&quot;, Name = &quot;L'AVEUGLE&quot;,
+		Speed = 1, Sight = 0.15, Hear = 2.2, Damage = 1.2, Scale = 1,
+		GiveUp = 1, Bounty = 1.8, Weight = 3, Rule = &quot;sound&quot;,
+		Tell = &quot;Il ne voit rien. Tout ce que tu as appris sur son regard ne sert plus : c'est le bruit, maintenant.&quot; },
+
+	{ Id = &quot;hurleur&quot;, Name = &quot;LE HURLEUR&quot;,
+		Speed = 1.1, Sight = 1.1, Hear = 1.6, Damage = 1, Scale = 1.05,
+		GiveUp = 1.2, Bounty = 1.7, Weight = 3,
+		Tell = &quot;Quand il te repère, la maison entière se réveille d'un coup.&quot; },
+
+	{ Id = &quot;patient&quot;, Name = &quot;LE PATIENT&quot;,
+		Speed = 0.7, Sight = 1.2, Hear = 1, Damage = 1.8, Scale = 1.1,
+		GiveUp = 4, Bounty = 2.2, Weight = 2,
+		Tell = &quot;Il n'abandonne pas. Casser la ligne de vue ne suffit plus, il faut partir.&quot; },
+} :: { Variant }
+
+EndgameConfig.VariantById = {}
+for _, variant in ipairs(EndgameConfig.Variants) do
+	EndgameConfig.VariantById[variant.Id] = variant
+end
+
+-- Points d'éveil que LE HURLEUR ajoute d'un coup quand il repère quelqu'un.
+-- La valeur vit ici et pas dans AwakeningConfig : c'est une propriété de la
+-- variante. Les seuils de stade sont à 16, 40 et 76 — 14 points font donc
+-- presque basculer un stade à eux seuls, ce qui est l'effet voulu.
+EndgameConfig.HowlerFeed = 14
+
+-- ── défis de survie ───────────────────────────────────────────────────────
+--
+-- « Des défis de survie avec des règles particulières. » Un défi s'arme avant
+-- de dormir et vaut pour une session. Chaque règle est appliquée à UN seul
+-- endroit du code — c'est la condition pour qu'elle soit vraiment là et pas
+-- seulement écrite ici :
+--
+--   no_defense   → ShelterService.defensesDisabled
+--   light_sleep  → SurvivalService, à l'assaut
+--   all_in       → SurvivalService, le délai de grâce
+--   blind        → init.server, l'envoi des alertes
+--
+-- Tous sont strictement individuels. Un défi ne change jamais le jeu des
+-- autres joueurs du serveur : ce serait leur imposer un choix qu'ils n'ont
+-- pas fait.
+
+export type Challenge = {
+	Id: string,
+	Name: string,
+	Reward: number,          -- multiplicateur de gain pendant la session
+	Text: string,
+}
+
+EndgameConfig.Challenges = {
+	{ Id = &quot;no_defense&quot;, Name = &quot;À NU&quot;, Reward = 1.5,
+		Text = &quot;Tes défenses ne retardent plus rien. Le refuge n'est qu'un lit.&quot; },
+	{ Id = &quot;light_sleep&quot;, Name = &quot;SOMMEIL LÉGER&quot;, Reward = 2.1,
+		Text = &quot;Le premier assaut sur ton refuge met fin à la session. Tu gardes ce que tu as gagné.&quot; },
+	{ Id = &quot;all_in&quot;, Name = &quot;TOUT OU RIEN&quot;, Reward = 1.6,
+		Text = &quot;Aucun délai de grâce, et mourir te prend tout ce qui n'est pas en banque.&quot; },
+	{ Id = &quot;blind&quot;, Name = &quot;SANS ALERTE&quot;, Reward = 1.75,
+		Text = &quot;Plus un seul message. Ni les assauts, ni les repérages, ni les monstres.&quot; },
+} :: { Challenge }
+
+EndgameConfig.ChallengeById = {}
+for _, challenge in ipairs(EndgameConfig.Challenges) do
+	EndgameConfig.ChallengeById[challenge.Id] = challenge
+end
+
+-- ── contrats rares ────────────────────────────────────────────────────────
+--
+-- « Rares » est une contrainte, pas une décoration : un contrat qu'on peut
+-- relancer à volonté est une mission secondaire. Un seul à la fois, un tirage
+-- qui échoue la plupart du temps, un délai qui court en temps réel même
+-- déconnecté — c'est `os.time` et pas `os.clock` pour cette raison.
+--
+-- `Kind` est compté par EndgameService.note, appelé depuis init.server. Aucun
+-- contrat ne dépend d'un compteur que personne n'incrémente : c'est
+-- exactement le défaut qu'avaient les événements du §13 avant correction.
+
+export type Contract = {
+	Id: string,
+	Name: string,
+	Kind: string,            -- compteur suivi
+	Target: number,
+	Zone: string?,           -- si présent, ne compte que dans cette zone
+	-- Si vrai, compte des éléments DIFFÉRENTS et non des occurrences.
+	-- « Croise trois variantes » veut dire trois variantes, pas trois fois la
+	-- même — et c'est le genre de nuance qu'un test par mutation attrape et
+	-- qu'une relecture laisse passer : sans ce champ, le contrat se remplissait
+	-- en croisant trois fois LE FAMÉLIQUE.
+	Distinct: boolean?,
+	Cash: number,
+	Seconds: number,         -- délai pour le tenir
+	Weight: number,
+	Text: string,
+}
+
+EndgameConfig.Contracts = {
+	{ Id = &quot;c_variants&quot;, Name = &quot;RELEVÉ DE FORMES&quot;, Kind = &quot;variant_met&quot;, Target = 3,
+		Distinct = true, Cash = 4000000, Seconds = 1200, Weight = 4,
+		Text = &quot;Croise trois variantes DIFFÉRENTES, n'importe où.&quot; },
+
+	{ Id = &quot;c_patient&quot;, Name = &quot;CELUI QUI ATTEND&quot;, Kind = &quot;variant_patient&quot;, Target = 1,
+		Cash = 5000000, Seconds = 1800, Weight = 2,
+		Text = &quot;Croise LE PATIENT. Il est le plus rare des cinq.&quot; },
+
+	{ Id = &quot;c_challenges&quot;, Name = &quot;DEUX FOIS DE SUITE&quot;, Kind = &quot;challenge_done&quot;, Target = 2,
+		Cash = 6000000, Seconds = 1800, Weight = 3,
+		Text = &quot;Termine deux sessions sous défi. Peu importe lesquels.&quot; },
+
+	{ Id = &quot;c_archive&quot;, Name = &quot;L'ARCHIVE&quot;, Kind = &quot;document_found&quot;, Target = 3,
+		Cash = 3000000, Seconds = 2400, Weight = 3,
+		Text = &quot;Retrouve trois documents dans les zones.&quot; },
+
+	{ Id = &quot;c_carnival&quot;, Name = &quot;RETOUR AU CARNAVAL&quot;, Kind = &quot;session_done&quot;, Target = 1,
+		Zone = &quot;carnival&quot;, Cash = 9000000, Seconds = 900, Weight = 1,
+		Text = &quot;Une session complète au carnaval. Là où tu l'as battu.&quot; },
+} :: { Contract }
+
+EndgameConfig.ContractById = {}
+for _, contract in ipairs(EndgameConfig.Contracts) do
+	EndgameConfig.ContractById[contract.Id] = contract
+end
+
+-- ── collections ───────────────────────────────────────────────────────────
+--
+-- « Des collections de monstres et de documents. » Les monstres se remplissent
+-- tout seuls, avec `MonstersSeen` qui existait déjà pour l'écran des
+-- révélations. Les documents demandent des objets dans le monde : un par zone,
+-- posés par WorldService sur un point de ronde, sur le modèle des objectifs du
+-- §7 (une Part taguée, une invite de proximité).
+--
+-- Un document ne disparaît pas quand on le ramasse, contrairement aux
+-- objectifs : il est noté dans le profil du joueur et reste là pour les
+-- autres. Le faire disparaître le rendrait introuvable pour tout le serveur
+-- dès qu'un seul joueur passe.
+
+export type Document = {
+	Id: string,
+	Zone: string,
+	Name: string,
+	Text: string,
+}
+
+EndgameConfig.Documents = {
+	{ Id = &quot;d_street&quot;, Zone = &quot;street&quot;, Name = &quot;AVIS D'ÉVACUATION&quot;,
+		Text = &quot;« Quartier fermé jusqu'à nouvel ordre. Ne dormez pas dehors. » Le tampon est daté, le mois est illisible.&quot; },
+	{ Id = &quot;d_sewers&quot;, Zone = &quot;sewers&quot;, Name = &quot;RAPPORT D'ENTRETIEN&quot;,
+		Text = &quot;« Bruit dans la conduite 4 depuis trois semaines. Ne descendez pas seuls. » Deux noms sont rayés.&quot; },
+	{ Id = &quot;d_dollhouse&quot;, Zone = &quot;dollhouse&quot;, Name = &quot;PAGE DE CARNET&quot;,
+		Text = &quot;« Elle ne bouge pas quand on la regarde. On a essayé de ne plus jamais la regarder. Ça n'a pas marché. »&quot; },
+	{ Id = &quot;d_slasher&quot;, Zone = &quot;slasher&quot;, Name = &quot;COUPURE DE PRESSE&quot;,
+		Text = &quot;« Sixième disparition dans le quartier. L'enquête ne retient aucune piste. » Le reste de la page manque.&quot; },
+	{ Id = &quot;d_convent&quot;, Zone = &quot;convent&quot;, Name = &quot;REGISTRE DU COUVENT&quot;,
+		Text = &quot;« Les lampes s'éteignent avant qu'elle entre. Nous avons cessé de les rallumer. »&quot; },
+	{ Id = &quot;d_hospital&quot;, Zone = &quot;hospital&quot;, Name = &quot;FEUILLE DE GARDE&quot;,
+		Text = &quot;« L'interphone appelle des chambres vides. Ne répondez jamais au premier appel. »&quot; },
+	{ Id = &quot;d_carnival&quot;, Zone = &quot;carnival&quot;, Name = &quot;AFFICHE DE LA FÊTE&quot;,
+		Text = &quot;« Trois tours, trois visages, un seul gagnant. » Au dos, à la main : « il recommence ».&quot; },
+} :: { Document }
+
+EndgameConfig.DocumentById = {}
+for _, document in ipairs(EndgameConfig.Documents) do
+	EndgameConfig.DocumentById[document.Id] = document
+end
+
+-- ── titres ────────────────────────────────────────────────────────────────
+--
+-- « Des succès et titres. » Le boss donnait déjà un trophée et un titre ; ces
+-- trois-là couronnent les collections, donc ils ne s'achètent pas et ne se
+-- tirent pas au sort : ils se remplissent.
+
+export type Title = {
+	Id: string,
+	Name: string,
+	Set: string,             -- &quot;monsters&quot; | &quot;variants&quot; | &quot;documents&quot;
+	Text: string,
+}
+
+EndgameConfig.Titles = {
+	{ Id = &quot;t_veilleur&quot;, Name = &quot;VEILLEUR&quot;, Set = &quot;monsters&quot;,
+		Text = &quot;Les sept monstres croisés au moins une fois.&quot; },
+	{ Id = &quot;t_formes&quot;, Name = &quot;LECTEUR DE FORMES&quot;, Set = &quot;variants&quot;,
+		Text = &quot;Les cinq variantes croisées au moins une fois.&quot; },
+	{ Id = &quot;t_archiviste&quot;, Name = &quot;ARCHIVISTE&quot;, Set = &quot;documents&quot;,
+		Text = &quot;Les sept documents retrouvés.&quot; },
+} :: { Title }
+
+function EndgameConfig.variant(id: string): Variant?
+	return EndgameConfig.VariantById[id]
+end
+
+function EndgameConfig.challenge(id: string): Challenge?
+	return EndgameConfig.ChallengeById[id]
+end
+
+function EndgameConfig.contract(id: string): Contract?
+	return EndgameConfig.ContractById[id]
+end
+
+function EndgameConfig.document(id: string): Document?
+	return EndgameConfig.DocumentById[id]
+end
+
+-- Tirage pondéré. Renvoie nil si la liste est vide, jamais une erreur : un
+-- tirage raté ne doit pas casser une apparition de monstre.
+function EndgameConfig.draw&lt;T&gt;(list: { T }, weightOf: (T) -&gt; number): T?
+	local total = 0
+	for _, entry in ipairs(list) do
+		total += math.max(0, weightOf(entry))
+	end
+	if total &lt;= 0 then
+		return nil
+	end
+	local roll = math.random() * total
+	for _, entry in ipairs(list) do
+		roll -= math.max(0, weightOf(entry))
+		if roll &lt;= 0 then
+			return entry
+		end
+	end
+	return list[#list]
+end
+
+return EndgameConfig
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX4"><Properties><string name="Name">Format</string><ProtectedString name="Source">--!strict
 -- Mise en forme des nombres.
 --
 -- ⚠️ POINT TECHNIQUE QUI A DES CONSÉQUENCES SUR TOUT LE JEU
@@ -219,7 +504,7 @@ function Format.clock(seconds: number): string
 end
 
 return Format
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX4"><Properties><string name="Name">GameConfig</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX5"><Properties><string name="Name">GameConfig</string><ProtectedString name="Source">--!strict
 -- Réglages globaux. Tout ce qui s'équilibre est ici, pas dispersé dans les
 -- services. Les valeurs issues du cahier des charges sont marquées « CDC ».
 
@@ -347,6 +632,29 @@ GameConfig.Leaderboards = {
 	},
 }
 
+GameConfig.Endgame = {
+	-- CDC §8 : tout ce bloc ne s'ouvre qu'« après la victoire contre le boss
+	-- final ». La porte est `Achievements.carnival_cleared`, tenue par
+	-- EndgameService.unlocked — un seul endroit, pour qu'on ne puisse pas
+	-- l'oublier dans un chemin.
+
+	-- Probabilité qu'une apparition de monstre soit une variante. À 0,22 et
+	-- une apparition toutes les 15 s par zone, on en croise une par poignée
+	-- de minutes : assez pour que ce soit un événement, pas une surprise.
+	VariantChance = 0.22,
+
+	-- Les contrats sont « rares » (mot du CDC). Le tirage n'a lieu qu'à la fin
+	-- d'une session, échoue trois fois sur quatre, et ne peut pas se
+	-- représenter avant le délai de repos. Un seul contrat actif à la fois.
+	ContractChance = 0.25,
+	ContractCooldown = 900,
+
+	-- Une variante « croisée » est une variante qui t'a vu, pas une variante
+	-- qui existait quelque part dans la zone. Sinon le compteur se remplit
+	-- sans que le joueur ait rien fait.
+	CountOnDetect = true,
+}
+
 GameConfig.Ui = {
 	ToastSeconds = 5,
 	AlertSeconds = 4,
@@ -372,7 +680,7 @@ GameConfig.Debug = {
 }
 
 return GameConfig
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX5"><Properties><string name="Name">ItemConfig</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX6"><Properties><string name="Name">ItemConfig</string><ProtectedString name="Source">--!strict
 -- Équipements du §6. Les prix sont ceux du cahier des charges.
 --
 -- Le CDC précise : « Ils ne doivent jamais rendre le joueur invincible. »
@@ -479,7 +787,7 @@ function ItemConfig.defenseProfile(placed: { [string]: number }): {
 end
 
 return ItemConfig
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX6"><Properties><string name="Name">MissionConfig</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX7"><Properties><string name="Name">MissionConfig</string><ProtectedString name="Source">--!strict
 -- §7 — missions principales, secondaires, quotidiennes et hebdomadaires.
 -- Les missions principales débloquent les zones (leur compte alimente
 -- `MainMissions` dans ZoneConfig.canEnter).
@@ -603,7 +911,7 @@ function MissionConfig.ofKind(kind: Kind): { Mission }
 end
 
 return MissionConfig
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX7"><Properties><string name="Name">MonsterConfig</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX8"><Properties><string name="Name">MonsterConfig</string><ProtectedString name="Source">--!strict
 -- §5 — un monstre par zone, chacun avec une mécanique différente.
 -- Le CDC insiste : « Chaque zone doit introduire une mécanique différente
 -- plutôt que simplement augmenter les dégâts et la résistance. » C'est le
@@ -702,7 +1010,7 @@ function MonsterConfig.get(id: string): Monster?
 end
 
 return MonsterConfig
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX8"><Properties><string name="Name">Net</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX9"><Properties><string name="Name">Net</string><ProtectedString name="Source">--!strict
 -- Tous les RemoteEvents / RemoteFunctions du jeu, déclarés au même endroit.
 -- Le serveur les crée au démarrage ; le client ne fait que les attendre.
 -- Aucun remote ne transporte de montant d'argent depuis le client : le client
@@ -724,6 +1032,7 @@ Net.Events = {
 	&quot;DownedChanged&quot;,     -- un joueur à terre, et le temps qu'il lui reste
 	&quot;DeathReport&quot;,       -- bilan de mort
 	&quot;LeaderboardData&quot;,   -- classements saisonniers (§8)
+	&quot;EndgameData&quot;,       -- variantes, défis, contrats, collections (§8)
 	-- client → serveur
 	&quot;RequestClaim&quot;,      -- réserver un refuge
 	&quot;RequestSleep&quot;,      -- démarrer une session
@@ -740,6 +1049,9 @@ Net.Events = {
 	&quot;RequestEventClaim&quot;, -- réclamer la récompense de l'événement en cours
 	&quot;RequestLeaderboard&quot;,-- demander les classements
 	&quot;RequestSetting&quot;,    -- changer un réglage (§9)
+	&quot;RequestEndgame&quot;,    -- demander la vue d'après-boss (§8)
+	&quot;RequestChallenge&quot;,  -- armer ou retirer un défi de survie (§8)
+	&quot;RequestContract&quot;,   -- réclamer le contrat rempli (§8)
 }
 
 local cache: { [string]: RemoteEvent } = {}
@@ -773,7 +1085,7 @@ function Net.get(name: string): RemoteEvent
 end
 
 return Net
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX9"><Properties><string name="Name">ZoneConfig</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX10"><Properties><string name="Name">ZoneConfig</string><ProtectedString name="Source">--!strict
 -- Les 7 zones, telles que décrites au §3 du cahier des charges.
 --
 -- Les gains et les seuils sont ceux du document. Deux remarques honnêtes, à
@@ -912,7 +1224,7 @@ function ZoneConfig.canEnter(zone: Zone, stats: {
 end
 
 return ZoneConfig
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX37"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX36"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX39"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX38"><Properties><string name="Name">Server</string><ProtectedString name="Source">--!strict
 -- Point d'entrée serveur. Tout le câblage est ici, et nulle part ailleurs :
 -- les services ne se connaissent que par appel direct, jamais par événement
 -- global, pour qu'on puisse lire le jeu de haut en bas depuis ce fichier.
@@ -925,6 +1237,7 @@ local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot
 local Format = require(Shared.Format)
 local GameConfig = require(Shared.GameConfig)
 local MissionConfig = require(Shared.MissionConfig)
+local EndgameConfig = require(Shared.EndgameConfig)
 local MonsterConfig = require(Shared.MonsterConfig)
 local Net = require(Shared.Net)
 local ZoneConfig = require(Shared.ZoneConfig)
@@ -935,6 +1248,7 @@ local BossService = require(script.BossService)
 local CombatService = require(script.CombatService)
 local CosmeticService = require(script.CosmeticService)
 local EconomyService = require(script.EconomyService)
+local EndgameService = require(script.EndgameService)
 local EventService = require(script.EventService)
 local InventoryService = require(script.InventoryService)
 local LeaderboardService = require(script.LeaderboardService)
@@ -964,6 +1278,13 @@ local SOUND_BY_KIND = {
 }
 
 local function alert(player: Player, text: string, kind: string?)
+	-- §8, défi « SANS ALERTE » : plus un seul message n'arrive. C'est ici que
+	-- ça se joue et nulle part ailleurs — `alert` est le seul chemin par
+	-- lequel un texte atteint un joueur, donc le seul endroit où la règle
+	-- peut être tenue sans oubli possible.
+	if EndgameService.hasRule(player, &quot;blind&quot;) then
+		return
+	end
 	send(player, &quot;Alert&quot;, text, kind or &quot;info&quot;)
 	local effect = SOUND_BY_KIND[kind or &quot;info&quot;]
 	if effect then
@@ -1006,6 +1327,14 @@ local function pushState(player: Player)
 		Skin = profile.Skin,
 		Settings = profile.Settings,
 		Downed = LifeService.isDowned(player),
+		-- §8 — juste ce qu'il faut pour le bandeau ; l'écran complet passe par
+		-- « EndgameData », qui n'est envoyé que quand on l'ouvre.
+		Endgame = {
+			Unlocked = EndgameService.unlocked(player),
+			Armed = EndgameService.armedChallenge(player),
+			Running = EndgameService.activeChallenge(player) ~= nil,
+			Titles = profile.Titles,
+		},
 		Stats = {
 			Nights = profile.NightsSurvived,
 			Deaths = profile.Deaths,
@@ -1047,8 +1376,43 @@ EventService.onReward(function(player, amount)
 	EconomyService.grant(player, amount, &quot;événement&quot;)
 	pushState(player)
 end)
+
+-- §8 — l'après-boss. Quatre branchements, parce que quatre choses agissent :
+--   · le bonus de gain (défi en cours + prime de la variante vivante) ;
+--   · la perte totale à la mort sous « TOUT OU RIEN » ;
+--   · la neutralisation des défenses sous « À NU » ;
+--   · le réveil brutal de la maison quand LE HURLEUR repère quelqu'un.
+EconomyService.setEndgameBonus(EndgameService.earningBonus)
+EconomyService.setEndgameTotalLoss(function(player)
+	return EndgameService.hasRule(player, &quot;all_in&quot;)
+end)
+ShelterService.setDefenseVeto(function(player)
+	return EndgameService.hasRule(player, &quot;no_defense&quot;)
+end)
+EndgameService.setAwakeningJolt(AwakeningService.jolt)
+EndgameService.onAlert(alert)
+EndgameService.onChanged(function(player)
+	pushState(player)
+	-- Et la vue complète, pour que l'écran du §8 se mette à jour en direct
+	-- quand une variante est croisée ou qu'un contrat avance. Le client ne
+	-- redessine que si le panneau est ouvert ; la vue est petite et ces
+	-- changements sont rares, donc l'envoyer coûte moins cher que de laisser
+	-- un écran afficher un contrat déjà rempli.
+	send(player, &quot;EndgameData&quot;, EndgameService.view(player))
+end)
+MonsterService.onDetect(EndgameService.noteDetect)
+
 WorldService.startPopulating()
 ZoneService.setTeleporter(WorldService.teleport)
+
+-- Les documents de la collection : posés puis branchés, dans cet ordre.
+local documents = WorldService.placeDocuments()
+WorldService.bindDocuments(function(player, documentId)
+	local fresh, message = EndgameService.noteDocument(player, documentId)
+	if message ~= &quot;&quot; then
+		alert(player, message, fresh and &quot;unlock&quot; or &quot;info&quot;)
+	end
+end)
 
 AwakeningService.onChanged(function(points, stage, data)
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -1302,6 +1666,29 @@ local function onLeaderboard(player: Player)
 	send(player, &quot;LeaderboardData&quot;, LeaderboardService.view(player))
 end
 
+local function onEndgame(player: Player)
+	send(player, &quot;EndgameData&quot;, EndgameService.view(player))
+end
+
+local function onChallenge(player: Player, id: unknown)
+	-- `nil` et la chaîne vide retirent le défi ; tout le reste doit être un
+	-- identifiant connu, et c'est le service qui le vérifie.
+	if id ~= nil and type(id) ~= &quot;string&quot; then
+		return
+	end
+	local ok, message = EndgameService.arm(player, id :: string?)
+	alert(player, message, ok and &quot;unlock&quot; or &quot;warn&quot;)
+	onEndgame(player)
+	pushState(player)
+end
+
+local function onContract(player: Player)
+	local ok, message = EndgameService.claimContract(player)
+	alert(player, message, ok and &quot;cash&quot; or &quot;warn&quot;)
+	onEndgame(player)
+	pushState(player)
+end
+
 local function onSetting(player: Player, id: unknown, value: unknown)
 	if type(id) ~= &quot;string&quot; or type(value) ~= &quot;boolean&quot; then
 		return
@@ -1352,6 +1739,9 @@ Net.get(&quot;RequestCosmetic&quot;).OnServerEvent:Connect(onCosmetic)
 Net.get(&quot;RequestEventClaim&quot;).OnServerEvent:Connect(onEventClaim)
 Net.get(&quot;RequestLeaderboard&quot;).OnServerEvent:Connect(onLeaderboard)
 Net.get(&quot;RequestSetting&quot;).OnServerEvent:Connect(onSetting)
+Net.get(&quot;RequestEndgame&quot;).OnServerEvent:Connect(onEndgame)
+Net.get(&quot;RequestChallenge&quot;).OnServerEvent:Connect(onChallenge)
+Net.get(&quot;RequestContract&quot;).OnServerEvent:Connect(onContract)
 Net.get(&quot;RequestRepair&quot;).OnServerEvent:Connect(function(player)
 	alert(player, &quot;Les défenses se remplacent à la boutique.&quot;, &quot;info&quot;)
 end)
@@ -1391,6 +1781,7 @@ Players.PlayerRemoving:Connect(function(player)
 	-- joueur pour une histoire de classement.
 	pcall(LeaderboardService.publish, player)
 	LeaderboardService.forget(player)
+	EndgameService.cleanup(player)
 	SoundLib.forget(player)
 	PlayerDataService.release(player)
 end)
@@ -1402,9 +1793,10 @@ for _, zone in ipairs(ZoneConfig.List) do
 	end
 end
 print((&quot;[SLEEP OR DIE] serveur prêt — %d zones construites sur %d, %d missions, &quot;
-	.. &quot;espacement %d studs.&quot;)
-	:format(built, #ZoneConfig.List, #MissionConfig.List, ZoneBuilder.SPACING))
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX12"><Properties><string name="Name">AtmosphereService</string><ProtectedString name="Source">--!strict
+	.. &quot;%d documents sur %d, espacement %d studs.&quot;)
+	:format(built, #ZoneConfig.List, #MissionConfig.List,
+		documents, #EndgameConfig.Documents, ZoneBuilder.SPACING))
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX13"><Properties><string name="Name">AtmosphereService</string><ProtectedString name="Source">--!strict
 -- Tout ce qui touche à Lighting vit ici, et nulle part ailleurs.
 --
 -- Roblox sans Atmosphere ni post-traitement a l'air d'un jeu de 2015 : des
@@ -1552,7 +1944,7 @@ function AtmosphereService.setAwakening(stage: number, data)
 end
 
 return AtmosphereService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13"><Properties><string name="Name">AwakeningService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX14"><Properties><string name="Name">AwakeningService</string><ProtectedString name="Source">--!strict
 -- L'éveil de la maison : une jauge, un serveur, tout le monde dedans.
 --
 -- Elle monte pendant que des joueurs dorment dans les zones profondes, et
@@ -1638,6 +2030,25 @@ function AwakeningService.feed(zoneId: string, seconds: number)
 	end
 end
 
+-- À-coup direct, sans passer par le rang de la zone. `feed` modélise le
+-- sommeil profond qui s'accumule, et son gain est volontairement nul dans la
+-- rue (rang 1) : on ne réveille pas la maison en dormant au rez-de-chaussée.
+--
+-- Un cri n'est pas du sommeil accumulé, c'est un événement — et LE HURLEUR du
+-- §8 doit réveiller la maison partout, y compris dans la rue, sinon la
+-- description de la variante est fausse là où elle apparaît le plus souvent.
+function AwakeningService.jolt(amount: number)
+	if amount &lt;= 0 then
+		return
+	end
+	points += amount
+	local newStage = AwakeningConfig.stageFor(points)
+	if newStage ~= stage then
+		stage = newStage
+		applyStage()
+	end
+end
+
 function AwakeningService.init()
 	applyStage()
 	-- Décroissance : sans elle, un serveur qui tourne longtemps finit toujours
@@ -1658,7 +2069,7 @@ function AwakeningService.init()
 end
 
 return AwakeningService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX14"><Properties><string name="Name">BossService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX15"><Properties><string name="Name">BossService</string><ProtectedString name="Source">--!strict
 -- §3 zone 7 — le combat de boss.
 --
 -- Le CDC demande « plusieurs phases » et « de maîtriser les mécaniques apprises
@@ -1820,7 +2231,7 @@ function BossService.init()
 end
 
 return BossService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX15"><Properties><string name="Name">CombatService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX16"><Properties><string name="Name">CombatService</string><ProtectedString name="Source">--!strict
 -- §5 et §15 — tous les dégâts passent ici, et tous sont validés côté serveur.
 --
 -- Les deux critères de validation du CDC §15 (« les monstres ne frappent pas à
@@ -1958,7 +2369,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 return CombatService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX16"><Properties><string name="Name">CosmeticService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX17"><Properties><string name="Name">CosmeticService</string><ProtectedString name="Source">--!strict
 -- Les skins. Achetés avec l'argent du jeu ou gagnés en jouant, jamais les
 -- deux : un skin qu'on ne peut pas acheter vaut plus qu'un skin à 299 Robux.
 
@@ -2061,7 +2472,7 @@ function CosmeticService.apply(player: Player)
 end
 
 return CosmeticService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX17"><Properties><string name="Name">EconomyService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">EconomyService</string><ProtectedString name="Source">--!strict
 -- §6 — les deux soldes, et toutes les règles d'argent.
 --
 -- Rien n'ajoute d'argent sans passer par ici, et rien ici n'accepte un montant
@@ -2096,6 +2507,27 @@ local eventBonus: (() -&gt; number)? = nil
 
 function EconomyService.setEventBonus(fn: () -&gt; number)
 	eventBonus = fn
+end
+
+-- §8 — le bonus d'après-boss : le défi de survie en cours et la prime de la
+-- variante vivante dans la zone. Celui-ci prend le joueur en argument, à la
+-- différence des deux autres : un défi est individuel, et deux joueurs de la
+-- même zone peuvent n'avoir pas pris le même risque.
+local endgameBonus: ((Player) -&gt; number)? = nil
+
+function EconomyService.setEndgameBonus(fn: (Player) -&gt; number)
+	endgameBonus = fn
+end
+
+-- Second volet du même §8 : le défi « TOUT OU RIEN » fait perdre la totalité
+-- du non sécurisé au lieu de la part prévue par la zone. C'est un prédicat
+-- distinct du bonus parce qu'il agit à un autre moment — à la mort, pas à la
+-- seconde créditée — et qu'un bonus qui renverrait aussi un taux de perte
+-- serait une fonction qui fait deux choses.
+local endgameTotalLoss: ((Player) -&gt; boolean)? = nil
+
+function EconomyService.setEndgameTotalLoss(fn: (Player) -&gt; boolean)
+	endgameTotalLoss = fn
 end
 
 function EconomyService.onChanged(fn: (Player) -&gt; ())
@@ -2140,6 +2572,9 @@ function EconomyService.accrue(player: Player, zoneId: string, seconds: number, 
 	if eventBonus then
 		rate *= eventBonus()
 	end
+	if endgameBonus then
+		rate *= endgameBonus(player)
+	end
 	-- Plafond souple : au-delà, le taux est divisé. Sans ça, la zone 7 à
 	-- 100 000 $/s rend toute la progression précédente sans objet.
 	if earnedThisSession &gt;= zone.SoftCapPerSession then
@@ -2181,6 +2616,9 @@ function EconomyService.applyDeath(player: Player, zoneId: string): number
 		return 0
 	end
 	local ratio = zone and zone.DeathLossRatio or 0.5
+	if endgameTotalLoss and endgameTotalLoss(player) then
+		ratio = 1
+	end
 	local lost = profile.UnbankedCash * ratio
 	profile.UnbankedCash = math.max(0, profile.UnbankedCash - lost)
 	profile.Deaths += 1
@@ -2251,7 +2689,580 @@ function EconomyService.setMultiplier(player: Player, value: number, seconds: nu
 end
 
 return EconomyService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">EventService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">EndgameService</string><ProtectedString name="Source">--!strict
+-- §8 — les quatre mécaniques d'après-boss : variantes, défis, contrats,
+-- collections. Le catalogue est dans `EndgameConfig` ; ici, ce qui agit.
+--
+-- La règle que je me suis donnée sur ce dépôt — « si ce n'est pas branché,
+-- c'est pas fait » — vaut surtout ici, parce que le §13 avait précisément ce
+-- défaut : une configuration complète, un calcul correct, et personne qui
+-- l'appelait. Donc chaque chose de ce fichier a un appelant nommé dans
+-- `init.server.luau`, et `tools/logictests.py` l'exécute.
+--
+-- La porte commune est `Achievements.carnival_cleared`, posée par
+-- `BossService.finish`. Elle est lue à UN seul endroit, `unlocked`.
+
+local Players = game:GetService(&quot;Players&quot;)
+
+local EndgameConfig = require(script.Parent.Parent.Shared.EndgameConfig)
+local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
+local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
+local MonsterService = require(script.Parent.MonsterService)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+
+local EndgameService = {}
+
+local alertHandlers: { (Player, string, string) -&gt; () } = {}
+local changeHandlers: { (Player) -&gt; () } = {}
+local awakeningJolt: ((number) -&gt; ())? = nil
+
+-- Défi armé pour la session en cours, par joueur. Volontairement hors du
+-- profil : un défi ne survit pas à une déconnexion, sinon on se reconnecte
+-- avec une règle qu'on ne se souvient pas d'avoir choisie.
+local armed: { [Player]: string } = {}
+local running: { [Player]: string } = {}
+
+-- Dernier à-coup d'éveil provoqué par un hurleur, par joueur.
+--
+-- Sans ça : LA POUPÉE s'arrête quand on la regarde (mécanique « gaze »), donc
+-- fixer puis détourner le regard la fait repasser en poursuite à chaque
+-- bascule. Un hurleur-poupée laisserait alors remplir la jauge d'éveil — qui
+-- est PARTAGÉE par tout le serveur — en quelques secondes, en dérangeant tout
+-- le monde depuis un seul couloir.
+local lastHowl: { [Player]: number } = {}
+local HOWL_COOLDOWN = 20
+
+function EndgameService.onAlert(fn: (Player, string, string) -&gt; ())
+	table.insert(alertHandlers, fn)
+end
+
+function EndgameService.onChanged(fn: (Player) -&gt; ())
+	table.insert(changeHandlers, fn)
+end
+
+-- AwakeningService est injecté plutôt que requis : sans ça, Awakening →
+-- Monster → Endgame → Awakening ferait un cycle de `require`.
+function EndgameService.setAwakeningJolt(fn: (number) -&gt; ())
+	awakeningJolt = fn
+end
+
+local function tell(player: Player, text: string, kind: string)
+	for _, fn in ipairs(alertHandlers) do
+		task.spawn(fn, player, text, kind)
+	end
+end
+
+local function changed(player: Player)
+	for _, fn in ipairs(changeHandlers) do
+		task.spawn(fn, player)
+	end
+end
+
+-- ── la porte ──────────────────────────────────────────────────────────────
+
+function EndgameService.unlocked(player: Player): boolean
+	local profile = PlayerDataService.get(player)
+	return profile ~= nil and profile.Achievements.carnival_cleared == true
+end
+
+-- Une variante peut naître dans une zone si au moins un joueur PRÉSENT dans
+-- cette zone a battu le boss. Les monstres sont partagés par tout le serveur :
+-- on ne peut pas faire apparaître une variante pour un joueur et pas pour son
+-- voisin. Au moins, de cette façon, personne ne croise de variante avant
+-- d'avoir ouvert le chapitre — et celui qui l'a ouvert les voit.
+function EndgameService.variantsAllowedIn(zoneId: string): boolean
+	for _, player in ipairs(Players:GetPlayers()) do
+		local profile = PlayerDataService.get(player)
+		if profile and profile.Loaded and profile.CurrentZone == zoneId
+			and profile.Achievements.carnival_cleared then
+			return true
+		end
+	end
+	return false
+end
+
+-- ── variantes ─────────────────────────────────────────────────────────────
+
+-- Fabrique le def d'une variante à partir de celui du monstre de la zone.
+-- Même procédé que le mini-boss d'événement : on clone, on multiplie, on
+-- renomme. On ne touche JAMAIS au catalogue partagé, et `Id` reste celui du
+-- monstre de base parce que c'est lui qui choisit la silhouette et les sons.
+function EndgameService.applyVariant(def: MonsterConfig.Monster, variant: EndgameConfig.Variant)
+	local copy = table.clone(def)
+	copy.Name = def.Name .. &quot; — &quot; .. variant.Name
+	copy.WalkSpeed = def.WalkSpeed * variant.Speed
+	copy.SightRange = def.SightRange * variant.Sight
+	copy.HearRange = def.HearRange * variant.Hear
+	copy.Damage = math.max(1, math.floor(def.Damage * variant.Damage))
+	copy.Height = def.Height * variant.Scale
+	copy.GiveUpSeconds = def.GiveUpSeconds * variant.GiveUp
+	if variant.Rule then
+		copy.Rule = variant.Rule
+	end
+	return copy
+end
+
+-- Tirage d'une variante pour une apparition. Renvoie nil la plupart du temps :
+-- c'est l'appelant (WorldService) qui fait naître le monstre normal dans ce
+-- cas. Jamais d'erreur levée — une apparition de monstre ne doit pas pouvoir
+-- échouer à cause du §8.
+function EndgameService.rollVariant(zoneId: string): EndgameConfig.Variant?
+	if not EndgameService.variantsAllowedIn(zoneId) then
+		return nil
+	end
+	if math.random() &gt;= GameConfig.Endgame.VariantChance then
+		return nil
+	end
+	return EndgameConfig.draw(EndgameConfig.Variants, function(v)
+		return v.Weight
+	end)
+end
+
+-- Prime de zone : tant qu'une variante est en vie là où tu dors, ça paie plus.
+-- C'est la contrepartie du risque, comme l'éveil. On prend la meilleure et on
+-- ne les cumule pas : deux variantes dans une zone, c'est déjà assez dur.
+function EndgameService.zoneBounty(zoneId: string): number
+	local best = 1
+	for _, id in ipairs(MonsterService.variantsInZone(zoneId)) do
+		local variant = EndgameConfig.variant(id)
+		if variant and variant.Bounty &gt; best then
+			best = variant.Bounty
+		end
+	end
+	return best
+end
+
+-- Une variante est « croisée » quand elle t'a vu. Branché sur
+-- `MonsterService.onDetect`, qui ne part qu'une fois par poursuite.
+function EndgameService.noteDetect(player: Player, _monsterId: string, variantId: string?)
+	if not variantId then
+		return
+	end
+	local variant = EndgameConfig.variant(variantId)
+	if not variant then
+		return
+	end
+
+	-- LE HURLEUR réveille la maison d'un coup quand il repère quelqu'un.
+	-- Un à-coup et non `feed` : `feed` multiplie par le rang de la zone, et ce
+	-- rang vaut 0 dans la rue — le hurleur n'y réveillerait rien du tout.
+	if variantId == &quot;hurleur&quot; and awakeningJolt then
+		local now = os.clock()
+		if now - (lastHowl[player] or -math.huge) &gt;= HOWL_COOLDOWN then
+			lastHowl[player] = now
+			awakeningJolt(EndgameConfig.HowlerFeed)
+		end
+	end
+
+	local profile = PlayerDataService.get(player)
+	if not profile or not profile.Loaded then
+		return
+	end
+
+	EndgameService.note(player, &quot;variant_met&quot;, 1, nil, variantId)
+	EndgameService.note(player, &quot;variant_&quot; .. variantId, 1)
+
+	if not profile.Variants[variantId] then
+		profile.Variants[variantId] = true
+		PlayerDataService.markDirty(player)
+		tell(player, variant.Name .. &quot; — &quot; .. variant.Tell, &quot;unlock&quot;)
+		EndgameService.checkTitles(player)
+		changed(player)
+	end
+end
+
+-- ── défis ─────────────────────────────────────────────────────────────────
+
+-- On arme avant de dormir. `start` ne vérifie pas si le joueur dort : c'est
+-- SurvivalService qui décide quand une session commence, et lui seul appelle
+-- `beginSession`.
+function EndgameService.arm(player: Player, challengeId: string?): (boolean, string)
+	if not EndgameService.unlocked(player) then
+		return false, &quot;Les défis s'ouvrent après le carnaval.&quot;
+	end
+	if challengeId == nil or challengeId == &quot;&quot; then
+		armed[player] = nil
+		changed(player)
+		return true, &quot;Défi retiré.&quot;
+	end
+	local challenge = EndgameConfig.challenge(challengeId)
+	if not challenge then
+		return false, &quot;Défi inconnu.&quot;
+	end
+	if running[player] then
+		return false, &quot;Tu es déjà en train d'en tenir un.&quot;
+	end
+	armed[player] = challengeId
+	changed(player)
+	return true, challenge.Name .. &quot; armé. &quot; .. challenge.Text
+end
+
+function EndgameService.armedChallenge(player: Player): string?
+	return armed[player]
+end
+
+-- Le défi en cours — celui qui agit. `armed` est une intention, `running` est
+-- une règle. Les séparer évite qu'un joueur arme un défi au milieu d'une
+-- session pour en toucher le bonus sans en avoir subi les règles.
+function EndgameService.activeChallenge(player: Player): EndgameConfig.Challenge?
+	local id = running[player]
+	return id and EndgameConfig.challenge(id) or nil
+end
+
+function EndgameService.beginSession(player: Player)
+	local id = armed[player]
+	if id and EndgameService.unlocked(player) and EndgameConfig.challenge(id) then
+		running[player] = id
+		local challenge = EndgameConfig.challenge(id) :: EndgameConfig.Challenge
+		tell(player, challenge.Name .. &quot; — &quot; .. challenge.Text, &quot;danger&quot;)
+	else
+		running[player] = nil
+	end
+	changed(player)
+end
+
+-- Fin de session. La politique tient en deux lignes et vit ici, à un seul
+-- endroit, parce que les deux notions se ressemblent assez pour être
+-- confondues :
+--
+--   · un défi est TENU s'il s'est terminé sans mort ni interruption —
+--     « SOMMEIL LÉGER » se termine au premier assaut, c'est sa règle, donc il
+--     compte ;
+--   · une session est COMPLÈTE si elle est allée jusqu'à MaxSessionSeconds.
+--     Celle que « SOMMEIL LÉGER » coupe ne l'est pas, et ne remplit donc pas
+--     le contrat du carnaval qui demande « une session complète ».
+--
+-- Sans cette distinction, un joueur armerait « SOMMEIL LÉGER », se ferait
+-- couper au bout de dix secondes et empocherait une nuit survécue au
+-- classement saisonnier.
+function EndgameService.endSession(player: Player, reason: string, zoneId: string?)
+	local held = reason == &quot;complete&quot; or reason == &quot;challenge&quot;
+	local full = reason == &quot;complete&quot;
+
+	local id = running[player]
+	running[player] = nil
+	if id then
+		armed[player] = nil
+		if held then
+			local profile = PlayerDataService.get(player)
+			if profile then
+				profile.ChallengesDone += 1
+				PlayerDataService.markDirty(player)
+			end
+			EndgameService.note(player, &quot;challenge_done&quot;, 1)
+			local challenge = EndgameConfig.challenge(id)
+			tell(player, (challenge and challenge.Name or &quot;Défi&quot;) .. &quot; tenu.&quot;, &quot;unlock&quot;)
+		end
+	end
+	if full then
+		EndgameService.note(player, &quot;session_done&quot;, 1, zoneId)
+	end
+	changed(player)
+	if held then
+		EndgameService.offerContract(player)
+	end
+end
+
+-- Les quatre règles, lues chacune à son point d'application.
+function EndgameService.hasRule(player: Player, ruleId: string): boolean
+	local challenge = EndgameService.activeChallenge(player)
+	return challenge ~= nil and challenge.Id == ruleId
+end
+
+-- Multiplicateur de gain du défi en cours. Injecté dans EconomyService, au
+-- même titre que celui de l'éveil et celui de l'événement — avec la prime de
+-- zone des variantes, qui est l'autre moitié du §8 côté économie.
+function EndgameService.earningBonus(player: Player): number
+	local bonus = 1
+	local challenge = EndgameService.activeChallenge(player)
+	if challenge then
+		bonus *= challenge.Reward
+	end
+	local profile = PlayerDataService.get(player)
+	if profile then
+		bonus *= EndgameService.zoneBounty(profile.CurrentZone)
+	end
+	return bonus
+end
+
+-- ── contrats rares ────────────────────────────────────────────────────────
+
+local function activeContract(profile: any)
+	local id = profile.Contract
+	if id == &quot;&quot; or not EndgameConfig.contract(id) then
+		return nil
+	end
+	if profile.ContractUntil &gt; 0 and os.time() &gt; profile.ContractUntil then
+		return nil
+	end
+	return EndgameConfig.contract(id)
+end
+
+function EndgameService.contractOf(player: Player)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return nil, 0, 0
+	end
+	-- Un contrat périmé est effacé à la lecture : sans ça, le tirage suivant
+	-- ne pourrait jamais avoir lieu puisqu'un contrat occuperait la place.
+	if profile.Contract ~= &quot;&quot; and not activeContract(profile) then
+		profile.Contract = &quot;&quot;
+		profile.ContractProgress = 0
+		profile.ContractSeen = {}
+		profile.ContractUntil = 0
+		PlayerDataService.markDirty(player)
+	end
+	local contract = activeContract(profile)
+	if not contract then
+		return nil, 0, 0
+	end
+	return contract, profile.ContractProgress, profile.ContractUntil
+end
+
+-- Tirage, à la fin d'une session seulement, et rare. Ne propose jamais un
+-- contrat quand un autre court, ni avant la fin du délai de repos.
+function EndgameService.offerContract(player: Player)
+	if not EndgameService.unlocked(player) then
+		return nil
+	end
+	local profile = PlayerDataService.get(player)
+	if not profile or not profile.Loaded then
+		return nil
+	end
+	if EndgameService.contractOf(player) then
+		return nil
+	end
+	if os.time() &lt; profile.ContractRestUntil then
+		return nil
+	end
+	if math.random() &gt;= GameConfig.Endgame.ContractChance then
+		return nil
+	end
+
+	local contract = EndgameConfig.draw(EndgameConfig.Contracts, function(c)
+		return c.Weight
+	end)
+	if not contract then
+		return nil
+	end
+
+	profile.Contract = contract.Id
+	profile.ContractProgress = 0
+	profile.ContractSeen = {}
+	profile.ContractUntil = os.time() + contract.Seconds
+	profile.ContractRestUntil = os.time() + GameConfig.Endgame.ContractCooldown
+	PlayerDataService.markDirty(player)
+	tell(player, &quot;CONTRAT — &quot; .. contract.Name .. &quot; : &quot; .. contract.Text, &quot;unlock&quot;)
+	changed(player)
+	return contract
+end
+
+-- Compteur unique de tout le §8.
+--
+--   · `zoneId` ne sert qu'aux contrats zonés ; passé nil, un contrat zoné ne
+--     progresse pas.
+--   · `token` identifie CE QUI est compté, pour les contrats marqués
+--     `Distinct` : deux fois le même jeton ne comptent qu'une fois. Un contrat
+--     distinct sans jeton ne progresse pas du tout — mieux vaut un contrat qui
+--     n'avance pas qu'un contrat qui se remplit de doublons.
+function EndgameService.note(player: Player, kind: string, amount: number,
+	zoneId: string?, token: string?)
+	local profile = PlayerDataService.get(player)
+	if not profile or not profile.Loaded then
+		return
+	end
+	local contract = EndgameService.contractOf(player)
+	if not contract or contract.Kind ~= kind then
+		return
+	end
+	if contract.Zone and contract.Zone ~= zoneId then
+		return
+	end
+	if contract.Distinct then
+		if token == nil then
+			return
+		end
+		if profile.ContractSeen[token] then
+			return
+		end
+		profile.ContractSeen[token] = true
+		amount = 1
+	end
+
+	profile.ContractProgress = math.min(contract.Target, profile.ContractProgress + amount)
+	PlayerDataService.markDirty(player)
+	if profile.ContractProgress &gt;= contract.Target then
+		tell(player, &quot;CONTRAT rempli : &quot; .. contract.Name .. &quot;. Réclame-le.&quot;, &quot;unlock&quot;)
+	end
+	changed(player)
+end
+
+-- Réclamation. Le serveur revérifie tout : le client ne transporte aucun
+-- montant, il demande seulement.
+function EndgameService.claimContract(player: Player): (boolean, string)
+	local profile = PlayerDataService.get(player)
+	if not profile or not profile.Loaded then
+		return false, &quot;Profil pas encore chargé.&quot;
+	end
+	local contract = EndgameService.contractOf(player)
+	if not contract then
+		return false, &quot;Aucun contrat en cours.&quot;
+	end
+	if profile.ContractProgress &lt; contract.Target then
+		return false, &quot;Pas encore rempli.&quot;
+	end
+
+	profile.Cash += contract.Cash
+	profile.Contract = &quot;&quot;
+	profile.ContractProgress = 0
+	profile.ContractSeen = {}
+	profile.ContractUntil = 0
+	profile.ContractsDone += 1
+	PlayerDataService.markDirty(player)
+	changed(player)
+	return true, contract.Name .. &quot; payé.&quot;
+end
+
+-- ── collections et titres ─────────────────────────────────────────────────
+
+function EndgameService.noteDocument(player: Player, documentId: string): (boolean, string)
+	local document = EndgameConfig.document(documentId)
+	if not document then
+		return false, &quot;&quot;
+	end
+	local profile = PlayerDataService.get(player)
+	if not profile or not profile.Loaded then
+		return false, &quot;&quot;
+	end
+	if profile.Documents[documentId] then
+		-- Déjà lu : on le redit, mais on ne recompte pas. L'objet reste dans
+		-- le monde pour les autres joueurs, donc on repasse forcément dessus.
+		return false, document.Name .. &quot; — déjà dans tes archives.&quot;
+	end
+	profile.Documents[documentId] = true
+	PlayerDataService.markDirty(player)
+	EndgameService.note(player, &quot;document_found&quot;, 1)
+	EndgameService.checkTitles(player)
+	changed(player)
+	return true, document.Name .. &quot; — &quot; .. document.Text
+end
+
+-- Où en est chaque collection. Sert à l'écran et aux titres : un seul calcul,
+-- pour que les deux ne puissent pas se contredire.
+function EndgameService.collections(player: Player)
+	local profile = PlayerDataService.get(player)
+	local seen, variants, documents = 0, 0, 0
+	if profile then
+		for _, monster in ipairs(MonsterConfig.List) do
+			if profile.MonstersSeen[monster.Id] then
+				seen += 1
+			end
+		end
+		for _, variant in ipairs(EndgameConfig.Variants) do
+			if profile.Variants[variant.Id] then
+				variants += 1
+			end
+		end
+		for _, document in ipairs(EndgameConfig.Documents) do
+			if profile.Documents[document.Id] then
+				documents += 1
+			end
+		end
+	end
+	return {
+		monsters = { Have = seen, Total = #MonsterConfig.List },
+		variants = { Have = variants, Total = #EndgameConfig.Variants },
+		documents = { Have = documents, Total = #EndgameConfig.Documents },
+	}
+end
+
+function EndgameService.checkTitles(player: Player)
+	local profile = PlayerDataService.get(player)
+	if not profile or not profile.Loaded then
+		return
+	end
+	local sets = EndgameService.collections(player)
+	for _, title in ipairs(EndgameConfig.Titles) do
+		local set = sets[title.Set]
+		if set and set.Have &gt;= set.Total and not profile.Titles[title.Id] then
+			profile.Titles[title.Id] = true
+			PlayerDataService.markDirty(player)
+			tell(player, &quot;TITRE — « &quot; .. title.Name .. &quot; » : &quot; .. title.Text, &quot;unlock&quot;)
+		end
+	end
+end
+
+-- Vue complète pour l'écran du §8. Tout est calculé serveur : le client
+-- n'affiche que ce qu'on lui envoie.
+function EndgameService.view(player: Player)
+	local profile = PlayerDataService.get(player)
+	local contract, progress, until_ = EndgameService.contractOf(player)
+	local challenges = {}
+	for _, challenge in ipairs(EndgameConfig.Challenges) do
+		table.insert(challenges, {
+			Id = challenge.Id, Name = challenge.Name,
+			Text = challenge.Text, Reward = challenge.Reward,
+		})
+	end
+	local variants = {}
+	for _, variant in ipairs(EndgameConfig.Variants) do
+		table.insert(variants, {
+			Id = variant.Id, Name = variant.Name,
+			Seen = profile ~= nil and profile.Variants[variant.Id] == true,
+			Tell = variant.Tell, Bounty = variant.Bounty,
+		})
+	end
+	local documents = {}
+	for _, document in ipairs(EndgameConfig.Documents) do
+		local found = profile ~= nil and profile.Documents[document.Id] == true
+		table.insert(documents, {
+			Id = document.Id, Zone = document.Zone, Name = document.Name,
+			Found = found,
+			-- On n'envoie le texte que s'il a été trouvé : sinon l'écran
+			-- raconte le document que le joueur n'a pas encore cherché.
+			Text = found and document.Text or nil,
+		})
+	end
+	local titles = {}
+	for _, title in ipairs(EndgameConfig.Titles) do
+		table.insert(titles, {
+			Id = title.Id, Name = title.Name, Text = title.Text,
+			Held = profile ~= nil and profile.Titles[title.Id] == true,
+		})
+	end
+	return {
+		Unlocked = EndgameService.unlocked(player),
+		Armed = armed[player],
+		Running = running[player],
+		Challenges = challenges,
+		Variants = variants,
+		Documents = documents,
+		Titles = titles,
+		Collections = EndgameService.collections(player),
+		Contract = contract and {
+			Id = contract.Id, Name = contract.Name, Text = contract.Text,
+			Target = contract.Target, Progress = progress,
+			Cash = contract.Cash, Until = until_,
+		} or nil,
+		ContractsDone = profile and profile.ContractsDone or 0,
+		ChallengesDone = profile and profile.ChallengesDone or 0,
+	}
+end
+
+function EndgameService.cleanup(player: Player)
+	armed[player] = nil
+	running[player] = nil
+	lastHowl[player] = nil
+end
+
+-- Exposé pour le banc d'essai : la temporisation du hurleur se mesure en temps
+-- réel, et un test ne peut pas attendre vingt secondes.
+function EndgameService.forgetHowl(player: Player)
+	lastHowl[player] = nil
+end
+
+return EndgameService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">EventService</string><ProtectedString name="Source">--!strict
 -- §13 — événements. Le serveur seul décide de l'événement actif, et une
 -- récompense d'événement ne peut pas être réclamée deux fois (clé = identifiant
 -- de l'événement + sa période).
@@ -2537,7 +3548,7 @@ function EventService.isMiniBoss(model: Instance): boolean
 end
 
 return EventService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">InventoryService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">InventoryService</string><ProtectedString name="Source">--!strict
 -- §6 — inventaire. Court, parce que tout l'argent est dans EconomyService et
 -- toute la pose de défenses dans ShelterService.
 
@@ -2597,7 +3608,7 @@ function InventoryService.bestWeapon(player: Player): ItemConfig.Item?
 end
 
 return InventoryService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">LeaderboardService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">LeaderboardService</string><ProtectedString name="Source">--!strict
 -- §8 — les classements saisonniers.
 --
 -- Trois classements (argent déposé, nuits survécues, boss battus), remis à zéro
@@ -2863,7 +3874,7 @@ function LeaderboardService.init()
 end
 
 return LeaderboardService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">LifeService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">LifeService</string><ProtectedString name="Source">--!strict
 -- À terre, pas mort : le coéquipier peut te relever.
 --
 -- Sans ça, une mort en multijoueur ne fait que renvoyer chacun à son coin.
@@ -3026,7 +4037,7 @@ function LifeService.init()
 end
 
 return LifeService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">MissionService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">MissionService</string><ProtectedString name="Source">--!strict
 -- §7 — missions. Le CDC §15 exige qu'une mission ne puisse pas être réclamée
 -- plusieurs fois : c'est `MissionsDone` pour les principales et secondaires, et
 -- les clés de jour / de semaine pour les répétables.
@@ -3162,7 +4173,7 @@ function MissionService.list(player: Player)
 end
 
 return MissionService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--!strict
 -- §12 — Robux.
 --
 -- Deux règles non négociables du CDC :
@@ -3270,7 +4281,7 @@ function MonetizationService.prompt(player: Player, productKey: string)
 end
 
 return MonetizationService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">MonsterRig</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">MonsterRig</string><ProtectedString name="Source">--!strict
 -- Le corps des monstres.
 --
 -- Avant, un monstre c'était deux boîtes soudées qui glissaient sur le sol.
@@ -3559,7 +4570,7 @@ function MonsterRig.animate(rig, phase: number, amount: number)
 end
 
 return MonsterRig
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX25"><Properties><string name="Name">MonsterService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX27"><Properties><string name="Name">MonsterService</string><ProtectedString name="Source">--!strict
 -- §5 — les monstres et leur IA.
 --
 -- Deux boucles, comme toujours quand il y a du pathfinding :
@@ -3602,6 +4613,11 @@ type Agent = {
 	Rig: any,
 	Walk: number,
 	LastStep: number,
+	-- §8 — l'identifiant de la variante, quand l'agent en est une. Le `Def`
+	-- est déjà un clone modifié ; cette clé-là sert à dire LAQUELLE, parce que
+	-- `Def.Id` reste celui du monstre de base (c'est lui qui choisit la
+	-- silhouette et les sons, on ne peut pas le changer).
+	Variant: string?,
 	NextThink: number,
 	LostSince: number,
 	StunUntil: number,
@@ -3613,6 +4629,10 @@ type Agent = {
 
 local agents: { Agent } = {}
 local signalListeners: { (string, string, Vector3) -&gt; () } = {}
+-- Repérage nominatif : `signal` ne dit pas QUI a été vu, et les signaux
+-- partent à tout le serveur. Le §8 a besoin du couple (joueur, variante) pour
+-- compter une variante « croisée ». D'où une liste à part.
+local detectListeners: { (Player, string, string?) -&gt; () } = {}
 
 -- Multiplicateurs imposés par l'éveil de la maison. Ils s'appliquent à TOUS
 -- les monstres du serveur, y compris ceux déjà sur le terrain.
@@ -3661,6 +4681,18 @@ function MonsterService.onSignal(fn: (string, string, Vector3) -&gt; ())
 	table.insert(signalListeners, fn)
 end
 
+-- Appelée une fois par poursuite, au moment où l'agent acquiert sa cible —
+-- pas à chaque image, sinon le compteur de variantes grimperait tout seul.
+function MonsterService.onDetect(fn: (Player, string, string?) -&gt; ())
+	table.insert(detectListeners, fn)
+end
+
+local function detected(agent: Agent, player: Player)
+	for _, fn in ipairs(detectListeners) do
+		task.spawn(fn, player, agent.Def.Id, agent.Variant)
+	end
+end
+
 local function signal(agent: Agent, kind: string)
 	for _, fn in ipairs(signalListeners) do
 		task.spawn(fn, agent.Def.Id, kind, agent.Root.Position)
@@ -3675,6 +4707,19 @@ function MonsterService.countInZone(zoneId: string): number
 		end
 	end
 	return n
+end
+
+-- Les variantes vivantes dans une zone. MonsterService ne sait pas ce qu'une
+-- variante vaut — c'est EndgameConfig qui porte la prime — il sait seulement
+-- lesquelles sont sur le terrain.
+function MonsterService.variantsInZone(zoneId: string): { string }
+	local found = {}
+	for _, agent in ipairs(agents) do
+		if agent.ZoneId == zoneId and agent.Variant then
+			table.insert(found, agent.Variant)
+		end
+	end
+	return found
 end
 
 -- Le joueur regarde-t-il l'agent ? (mécanique « gaze » de la poupée)
@@ -3774,9 +4819,17 @@ local function decide(agent: Agent)
 
 	if target then
 		local root = (target.Character :: Model):FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart
+		-- « Fraîche » = l'agent ne poursuivait pas déjà. On le mesure AVANT de
+		-- toucher à l'état, et on couvre les deux portes : passer en CHASE, et
+		-- passer directement en ATTACK quand le joueur est déjà à portée — ce
+		-- second cas ne fait jamais partir le signal « spotted ».
+		local fresh = agent.State ~= S.CHASE and agent.State ~= S.ATTACK
 		agent.Target = target
 		agent.LastKnown = root.Position
 		agent.LostSince = 0
+		if fresh then
+			detected(agent, target)
+		end
 
 		-- Mécanique « disable » (le couvent) : en approchant, l'entité éteint
 		-- les défenses du refuge de sa cible. Le CDC le dit : « Les défenses
@@ -3906,7 +4959,7 @@ local function move(agent: Agent, dt: number)
 end
 
 local function create(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
-	patrol: { Vector3 }): Model
+	patrol: { Vector3 }, variant: string?): Model
 	-- Un vrai squelette R6, avec des membres qui bougent.
 	local model, rig = MonsterRig.build(def, position)
 	local root = model.PrimaryPart :: BasePart
@@ -3924,17 +4977,21 @@ local function create(def: MonsterConfig.Monster, zoneId: string, position: Vect
 		Rig = rig, Walk = 0, LastStep = 0,
 		StunUntil = 0, NextAttack = 0, NextTrick = 0,
 		PatrolPoints = patrol, PatrolIndex = 1,
+		Variant = variant,
 	}
+	if variant then
+		model:SetAttribute(&quot;Variant&quot;, variant)
+	end
 	table.insert(agents, agent)
 	return model
 end
 
 function MonsterService.spawn(def: MonsterConfig.Monster, zoneId: string, position: Vector3,
-	patrol: { Vector3 }): Model?
+	patrol: { Vector3 }, variant: string?): Model?
 	if MonsterService.countInZone(zoneId) &gt;= MonsterService.capFor(def, zoneId) then
 		return nil
 	end
-	return create(def, zoneId, position, patrol)
+	return create(def, zoneId, position, patrol, variant)
 end
 
 -- Apparition qui ignore le plafond, pour les monstres uniques : le boss du
@@ -4076,7 +5133,7 @@ function MonsterService.assault(shelterId: string)
 end
 
 return MonsterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">ObjectiveService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX28"><Properties><string name="Name">ObjectiveService</string><ProtectedString name="Source">--!strict
 -- §7 — les objectifs de mission qui ont besoin d'objets dans le monde.
 --
 -- Les quatre types ramassables (`collect`, `repair`, `rescue`, `deliver`) sont
@@ -4208,7 +5265,7 @@ function ObjectiveService.noteZoneEntered(player: Player, zoneId: string)
 end
 
 return ObjectiveService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX27"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">PlayerDataService</string><ProtectedString name="Source">--!strict
 -- §11 — profils joueurs et DataStore.
 --
 -- Règle qui compte le plus (CDC §11) : « Si les données ne peuvent pas être
@@ -4248,6 +5305,24 @@ export type Profile = {
 	Cosmetics: { [string]: boolean },
 	Skin: string,
 	Achievements: { [string]: boolean },
+
+	-- §8 — l'après-boss. Les collections et les titres restent acquis ; le
+	-- contrat en cours aussi, et c'est voulu : son délai court en temps réel
+	-- (`os.time`), donc se déconnecter pour échapper au chrono ne marche pas.
+	Variants: { [string]: boolean },
+	Documents: { [string]: boolean },
+	Titles: { [string]: boolean },
+	Contract: string,
+	ContractProgress: number,
+	-- Ce qui a déjà été compté pour le contrat EN COURS. Remis à zéro à chaque
+	-- tirage : un contrat qui demande trois variantes différentes ne doit pas
+	-- hériter de celles croisées avant qu'il soit proposé, sinon il s'ouvre
+	-- déjà rempli.
+	ContractSeen: { [string]: boolean },
+	ContractUntil: number,
+	ContractRestUntil: number,
+	ContractsDone: number,
+	ChallengesDone: number,
 
 	SurvivalSeconds: number,
 	NightsSurvived: number,
@@ -4298,6 +5373,16 @@ local function blank(): Profile
 		Cosmetics = { default = true },
 		Skin = &quot;default&quot;,
 		Achievements = {},
+		Variants = {},
+		Documents = {},
+		Titles = {},
+		Contract = &quot;&quot;,
+		ContractProgress = 0,
+		ContractSeen = {},
+		ContractUntil = 0,
+		ContractRestUntil = 0,
+		ContractsDone = 0,
+		ChallengesDone = 0,
 		SurvivalSeconds = 0,
 		NightsSurvived = 0,
 		Deaths = 0,
@@ -4474,7 +5559,7 @@ function PlayerDataService.startAutosave()
 end
 
 return PlayerDataService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX28"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">ShelterService</string><ProtectedString name="Source">--!strict
 -- §4 — refuges : réservation, défenses, contestation.
 --
 -- Les refuges sont des modèles du Workspace marqués par l'attribut `Zone` et
@@ -4757,7 +5842,10 @@ function ShelterService.absorbAssault(shelter: Shelter): number
 end
 
 function ShelterService.profileOf(shelter: Shelter)
-	if shelter.DisabledUntil and os.clock() &lt; shelter.DisabledUntil then
+	-- On passe par `defensesDisabled` et non par `DisabledUntil` en direct :
+	-- sinon le défi « À NU » annulerait l'absorption des assauts mais pas le
+	-- délai ni l'avertissement, et le refuge protégerait encore à moitié.
+	if ShelterService.defensesDisabled(shelter) then
 		-- Défenses neutralisées : le refuge est nu, mais pas détruit.
 		return { Delay = 0, Warning = 0, Detection = 1, Slots = 0 }
 	end
@@ -4772,8 +5860,23 @@ function ShelterService.disableDefenses(shelter: Shelter, seconds: number)
 	fire(shelter)
 end
 
+-- §8, défi « À NU ». Prédicat injecté plutôt que `require(EndgameService)` :
+-- Endgame a déjà besoin de Shelter par la chaîne Monster → Shelter, et un
+-- `require` en retour ferait un cycle.
+local challengeNullifies: ((Player) -&gt; boolean)? = nil
+
+function ShelterService.setDefenseVeto(fn: (Player) -&gt; boolean)
+	challengeNullifies = fn
+end
+
 function ShelterService.defensesDisabled(shelter: Shelter): boolean
-	return shelter.DisabledUntil ~= nil and os.clock() &lt; shelter.DisabledUntil
+	if shelter.DisabledUntil ~= nil and os.clock() &lt; shelter.DisabledUntil then
+		return true
+	end
+	-- Le défi ne neutralise que les défenses de CELUI qui l'a pris. Un refuge
+	-- sans propriétaire n'a de toute façon rien de posé.
+	local owner = shelter.Owner
+	return owner ~= nil and challengeNullifies ~= nil and challengeNullifies(owner)
 end
 
 function ShelterService.cleanup(player: Player)
@@ -4793,7 +5896,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 return ShelterService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--!strict
 -- §6 — la boutique. Le client envoie un identifiant d'objet, rien d'autre :
 -- le prix vient toujours du serveur.
 
@@ -4848,7 +5951,7 @@ function ShopService.buy(player: Player, itemId: string): (boolean, string)
 end
 
 return ShopService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX30"><Properties><string name="Name">SoundService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX32"><Properties><string name="Name">SoundService</string><ProtectedString name="Source">--!strict
 -- LE SON.
 --
 -- Roblox ne sait pas fabriquer un son : il lui faut des fichiers. Mais toutes
@@ -5118,7 +6221,7 @@ function SoundLib.available(): { string }
 end
 
 return SoundLib
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX31"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX33"><Properties><string name="Name">SurvivalService</string><ProtectedString name="Source">--!strict
 -- §2 et §4 — la session de survie : la boucle centrale du jeu.
 --
 -- Une session démarre quand le joueur dort dans SON refuge. Elle crédite
@@ -5135,6 +6238,7 @@ local Players = game:GetService(&quot;Players&quot;)
 local RunService = game:GetService(&quot;RunService&quot;)
 
 local EconomyService = require(script.Parent.EconomyService)
+local EndgameService = require(script.Parent.EndgameService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local PlayerDataService = require(script.Parent.PlayerDataService)
 local AwakeningService = require(script.Parent.AwakeningService)
@@ -5217,6 +6321,10 @@ function SurvivalService.start(player: Player): (boolean, string)
 	ShelterService.setOccupied(player, true)
 	profile.CurrentZone = zone.Id
 	PlayerDataService.markDirty(player)
+	-- §8 — le défi armé devient la règle de CETTE session. Appelé après
+	-- l'enregistrement de la session : avant, `beginSession` parlerait d'une
+	-- session qui pourrait encore échouer à démarrer.
+	EndgameService.beginSession(player)
 	fire(player, session, &quot;start&quot;)
 	return true, &quot;Bonne nuit.&quot;
 end
@@ -5239,6 +6347,9 @@ function SurvivalService.stop(player: Player, reason: string): Session?
 		PlayerDataService.markDirty(player)
 	end
 
+	-- §8 — avant `fire`, pour que l'état poussé au client porte déjà le
+	-- résultat du défi et l'éventuel contrat tiré.
+	EndgameService.endSession(player, reason, session.ZoneId)
 	fire(player, session, reason)
 	return session
 end
@@ -5255,7 +6366,11 @@ local function tick(dt: number)
 		ShelterService.touch(player)
 
 		local elapsed = os.clock() - session.StartedAt
-		if elapsed &lt; GameConfig.Survival.GraceSeconds then
+		-- §8, défi « TOUT OU RIEN » : pas de délai de grâce. Les gains partent
+		-- à la première seconde, et la mort prend tout (LifeService).
+		local grace = EndgameService.hasRule(player, &quot;all_in&quot;)
+			and 0 or GameConfig.Survival.GraceSeconds
+		if elapsed &lt; grace then
 			continue
 		end
 
@@ -5277,6 +6392,13 @@ local function tick(dt: number)
 			scheduleAssault(session)
 			for _, fn in ipairs(assaultHandlers) do
 				task.spawn(fn, session)
+			end
+			-- §8, défi « SOMMEIL LÉGER » : le premier assaut met fin à la
+			-- session. Le joueur garde ce qu'il a gagné — `stop` ne retire
+			-- rien — mais la session n'est pas « complète » pour autant.
+			if EndgameService.hasRule(player, &quot;light_sleep&quot;) then
+				SurvivalService.stop(player, &quot;challenge&quot;)
+				continue
 			end
 		end
 
@@ -5316,7 +6438,7 @@ function SurvivalService.onCharacterAdded(player: Player, character: Model)
 end
 
 return SurvivalService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX32"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX34"><Properties><string name="Name">WorldService</string><ProtectedString name="Source">--!strict
 -- Construit les sept zones au démarrage et retient, pour chacune, ses points
 -- de ronde, ses points d'apparition et son point d'arrivée.
 --
@@ -5326,6 +6448,8 @@ return SurvivalService
 local CollectionService = game:GetService(&quot;CollectionService&quot;)
 local Players = game:GetService(&quot;Players&quot;)
 
+local EndgameConfig = require(script.Parent.Parent.Shared.EndgameConfig)
+local EndgameService = require(script.Parent.EndgameService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local MonsterConfig = require(script.Parent.Parent.Shared.MonsterConfig)
 local MonsterService = require(script.Parent.MonsterService)
@@ -5425,6 +6549,61 @@ function WorldService.spawnMiniBoss(zoneId: string): (Model?, string)
 	return model, copy.Name
 end
 
+-- §8 — les documents de la collection. Un par zone, posé sur un point de
+-- ronde : donc dans un endroit où le monstre passe, et pas dans un coin sûr.
+--
+-- Même procédé que les objectifs du §7 (une Part taguée, une invite de
+-- proximité), avec une différence qui compte : un document ne disparaît pas
+-- quand on le ramasse. Il est noté dans le profil du lecteur et reste là pour
+-- les autres — le faire disparaître le rendrait introuvable pour tout le
+-- serveur dès qu'un seul joueur passe devant.
+function WorldService.placeDocuments()
+	local placed = 0
+	for _, document in ipairs(EndgameConfig.Documents) do
+		local layout = layouts[document.Zone]
+		if layout and #layout.Patrol &gt; 0 then
+			local point = layout.Patrol[(placed % #layout.Patrol) + 1]
+			local part = Instance.new(&quot;Part&quot;)
+			part.Name = &quot;Document_&quot; .. document.Id
+			part.Size = Vector3.new(2.2, 3, 0.2)
+			part.Anchored = true
+			part.CanCollide = false
+			part.Color = Color3.fromRGB(226, 216, 189)
+			part.Material = Enum.Material.SmoothPlastic
+			part.CFrame = CFrame.new(point + Vector3.new(0, 3.2, 0))
+			part:SetAttribute(&quot;Document&quot;, document.Id)
+			CollectionService:AddTag(part, &quot;Document&quot;)
+
+			local prompt = Instance.new(&quot;ProximityPrompt&quot;)
+			prompt.ActionText = &quot;Lire&quot;
+			prompt.ObjectText = document.Name
+			prompt.HoldDuration = 0.4
+			prompt.MaxActivationDistance = 9
+			prompt.RequiresLineOfSight = false
+			prompt.Parent = part
+
+			local folder = ZoneBuilder.folder(document.Zone)
+			part.Parent = folder
+			placed += 1
+		end
+	end
+	return placed
+end
+
+-- Branche les invites des documents. Appelé une fois, après `placeDocuments`.
+function WorldService.bindDocuments(onRead: (Player, string) -&gt; ())
+	for _, part in ipairs(CollectionService:GetTagged(&quot;Document&quot;)) do
+		local prompt = part:FindFirstChildOfClass(&quot;ProximityPrompt&quot;)
+		local id = part:GetAttribute(&quot;Document&quot;)
+		if prompt and type(id) == &quot;string&quot; and not part:GetAttribute(&quot;Bound&quot;) then
+			part:SetAttribute(&quot;Bound&quot;, true)
+			prompt.Triggered:Connect(function(player)
+				onRead(player, id)
+			end)
+		end
+	end
+end
+
 function WorldService.startPopulating()
 	task.spawn(function()
 		while true do
@@ -5438,7 +6617,17 @@ function WorldService.startPopulating()
 					-- relèvement du plafond pendant un événement d'invasion.
 					if MonsterService.countInZone(zone.Id) &lt; MonsterService.capFor(def, zone.Id) then
 						local point = layout.Spawns[math.random(1, #layout.Spawns)]
-						MonsterService.spawn(def, zone.Id, point, layout.Patrol)
+						-- §8 — après le carnaval, une apparition sur cinq est
+						-- une variante. `rollVariant` renvoie nil la plupart
+						-- du temps, et toujours nil avant la victoire : le
+						-- monstre normal naît alors, exactement comme avant.
+						local variant = EndgameService.rollVariant(zone.Id)
+						if variant then
+							MonsterService.spawn(EndgameService.applyVariant(def, variant),
+								zone.Id, point, layout.Patrol, variant.Id)
+						else
+							MonsterService.spawn(def, zone.Id, point, layout.Patrol)
+						end
 					end
 				end
 			end
@@ -5448,7 +6637,7 @@ function WorldService.startPopulating()
 end
 
 return WorldService
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX33"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX35"><Properties><string name="Name">ZoneBuilder</string><ProtectedString name="Source">--!strict
 -- Primitives de construction, partagées par les sept zones.
 --
 -- Chaque zone occupe une dalle de 1600 studs sur l'axe X : la rue en 0, les
@@ -5779,7 +6968,7 @@ function ZoneBuilder.reset()
 end
 
 return ZoneBuilder
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX34"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX36"><Properties><string name="Name">ZoneLayouts</string><ProtectedString name="Source">--!strict
 -- Les sept cartes. Une fonction par zone, toutes bâties avec les primitives de
 -- ZoneBuilder, toutes renvoyant la même chose : points de ronde, points
 -- d'apparition des monstres, et le point d'arrivée quand on entre dans la zone.
@@ -6311,7 +7500,7 @@ Layouts.ById = {
 }
 
 return Layouts
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX35"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX37"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--!strict
 -- §3 — accès aux zones. Une zone ne se débloque jamais sans que ses conditions
 -- soient remplies (CDC §15), et la vérification est faite ici, côté serveur,
 -- à chaque entrée — pas seulement au moment du déblocage.
@@ -6421,7 +7610,7 @@ function ZoneService.overview(player: Player)
 end
 
 return ZoneService
-</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX45"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX43"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX44"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX42"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX41"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX40"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX47"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX45"><Properties><string name="Name">Monsters</string></Properties></Item><Item class="Folder" referent="RBX46"><Properties><string name="Name">Props</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX44"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX43"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX42"><Properties><string name="Name">Client</string><ProtectedString name="Source">--!strict
 -- Point d'entrée client. Il ne décide de rien : il affiche ce que le serveur
 -- envoie et transmet les demandes du joueur.
 
@@ -6467,11 +7656,20 @@ Panels.build(screen, {
 	eventClaim = function()
 		Net.get(&quot;RequestEventClaim&quot;):FireServer()
 	end,
+	challenge = function(id)
+		-- La chaîne vide retire le défi armé ; le serveur revérifie de toute
+		-- façon que l'identifiant existe.
+		Net.get(&quot;RequestChallenge&quot;):FireServer(id)
+	end,
+	contract = function()
+		Net.get(&quot;RequestContract&quot;):FireServer()
+	end,
 })
 
 local state: any = nil
 local lastReport: any = nil
 local boards: any = nil
+local endgame: any = nil
 
 Net.get(&quot;StateChanged&quot;).OnClientEvent:Connect(function(payload)
 	state = payload
@@ -6499,6 +7697,16 @@ Net.get(&quot;LeaderboardData&quot;).OnClientEvent:Connect(function(view)
 	boards = view
 	if Panels.currentKind() == &quot;leaderboard&quot; then
 		Panels.openLeaderboard(boards)
+	end
+end)
+
+Net.get(&quot;EndgameData&quot;).OnClientEvent:Connect(function(view)
+	endgame = view
+	-- On redessine seulement si l'écran est ouvert : le serveur pousse cette
+	-- vue à chaque changement (variante croisée, contrat avancé), et redessiner
+	-- un panneau fermé ne fait que du travail pour rien.
+	if Panels.currentKind() == &quot;endgame&quot; then
+		Panels.openEndgame(endgame)
 	end
 end)
 
@@ -6701,6 +7909,11 @@ local function openLeaderboard()
 	Net.get(&quot;RequestLeaderboard&quot;):FireServer()
 end
 
+local function openEndgame()
+	Panels.openEndgame(endgame)
+	Net.get(&quot;RequestEndgame&quot;):FireServer()
+end
+
 local function menuEntries()
 	return {
 		{ Name = &quot;Événement&quot;, Desc = &quot;L'événement du serveur et sa récompense.&quot;,
@@ -6711,6 +7924,8 @@ local function menuEntries()
 			end },
 		{ Name = &quot;Classements&quot;, Desc = &quot;Les trois classements de la saison.&quot;,
 			Open = openLeaderboard },
+		{ Name = &quot;Après le carnaval&quot;, Desc = &quot;Variantes, défis, contrats, collections.&quot;,
+			Open = openEndgame },
 		{ Name = &quot;Paramètres&quot;, Desc = &quot;Flashs, bandeaux, invites, sons d'interface.&quot;,
 			Open = function()
 				if state then
@@ -6753,6 +7968,10 @@ local function onAction(name: string, inputState: Enum.UserInputState)
 		-- coup) et on demande la suite : un écran qui s'ouvre vide pendant un
 		-- aller-retour réseau donne l'impression d'un bouton cassé.
 		openLeaderboard()
+	elseif name == &quot;Endgame&quot; then
+		-- Même raison que les classements : on ouvre avec ce qu'on a et on
+		-- demande la suite.
+		openEndgame()
 	elseif name == &quot;Settings&quot; then
 		if state then
 			Panels.openSettings(state, GameConfig.Ui.Settings)
@@ -6775,11 +7994,12 @@ ContextActionService:BindAction(&quot;Zones&quot;, onAction, true, Enum.KeyCode.
 ContextActionService:BindAction(&quot;Attack&quot;, onAction, true, Enum.KeyCode.F,
 	Enum.UserInputType.MouseButton1)
 ContextActionService:BindAction(&quot;Skins&quot;, onAction, true, Enum.KeyCode.C)
--- `false` en troisième argument : PAS de bouton tactile pour ces trois-là.
+-- `false` en troisième argument : PAS de bouton tactile pour ces quatre-là.
 -- C'est « Menu » qui les porte sur téléphone, et lui seul en fabrique un.
 ContextActionService:BindAction(&quot;Event&quot;, onAction, false, Enum.KeyCode.V)
 ContextActionService:BindAction(&quot;Leaderboard&quot;, onAction, false, Enum.KeyCode.L)
 ContextActionService:BindAction(&quot;Settings&quot;, onAction, false, Enum.KeyCode.P)
+ContextActionService:BindAction(&quot;Endgame&quot;, onAction, false, Enum.KeyCode.K)
 ContextActionService:BindAction(&quot;Menu&quot;, onAction, true, Enum.KeyCode.G)
 ContextActionService:BindAction(&quot;Close&quot;, onAction, false, Enum.KeyCode.Escape)
 
@@ -6791,7 +8011,7 @@ ContextActionService:SetTitle(&quot;Skins&quot;, &quot;SKINS&quot;)
 ContextActionService:SetTitle(&quot;Menu&quot;, &quot;MENU&quot;)
 
 Hud.toast(&quot;Trouve un refuge dans une ruelle. E pour le réserver, E pour dormir.&quot;, &quot;info&quot;)
-</ProtectedString></Properties><Item class="ModuleScript" referent="RBX38"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX40"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--!strict
 -- §9 — l'interface. Tout ce que le cahier des charges demande d'afficher :
 -- argent sécurisé et non sécurisé, zone, santé, objectifs, état du refuge,
 -- alertes, temps de survie, inventaire, carte, écran de mort, paramètres.
@@ -7120,9 +8340,9 @@ function Hud.setHealth(current: number, max: number)
 end
 
 return Hud
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX39"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX41"><Properties><string name="Name">Panels</string><ProtectedString name="Source">--!strict
 -- Boutique, défenses, missions, carte, skins, événement, classements,
--- paramètres et écran de mort (§9).
+-- après-boss, paramètres et écran de mort (§9).
 -- Un seul panneau est ouvert à la fois ; il se ferme avec Échap.
 
 local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
@@ -7148,6 +8368,8 @@ local onPlace: ((string) -&gt; ())? = nil
 local onCosmetic: ((string, string) -&gt; ())? = nil
 local onSetting: ((string, boolean) -&gt; ())? = nil
 local onEventClaim: (() -&gt; ())? = nil
+local onChallenge: ((string?) -&gt; ())? = nil
+local onContract: (() -&gt; ())? = nil
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new(&quot;UICorner&quot;)
@@ -7165,13 +8387,16 @@ end
 
 function Panels.build(screen: ScreenGui, callbacks: {
 	buy: (string) -&gt; (), place: (string) -&gt; (), cosmetic: (string, string) -&gt; (),
-	setting: (string, boolean) -&gt; (), eventClaim: () -&gt; () })
+	setting: (string, boolean) -&gt; (), eventClaim: () -&gt; (),
+	challenge: (string?) -&gt; (), contract: () -&gt; () })
 	gui = screen
 	onBuy = callbacks.buy
 	onPlace = callbacks.place
 	onCosmetic = callbacks.cosmetic
 	onSetting = callbacks.setting
 	onEventClaim = callbacks.eventClaim
+	onChallenge = callbacks.challenge
+	onContract = callbacks.contract
 
 	overlay = Instance.new(&quot;Frame&quot;)
 	overlay.Name = &quot;Overlay&quot;
@@ -7562,6 +8787,165 @@ function Panels.openLeaderboard(view)
 				UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
 		end
 	end
+	overlay.Visible = true
+end
+
+-- ── après-boss (§8) ───────────────────────────────────────────────────────
+--
+-- Un seul écran pour les quatre mécaniques, parce qu'elles ne veulent rien
+-- dire séparées : on arme un défi POUR gagner plus face à une variante, et le
+-- contrat en cours dit ce qu'on cherche. Les éclater en quatre onglets
+-- obligerait à faire des allers-retours pour comprendre sa propre partie.
+function Panels.openEndgame(view)
+	current = &quot;endgame&quot;
+	titleLabel.Text = &quot;Après le carnaval&quot;
+	clear()
+
+	if not view then
+		local frame = row(54)
+		text(frame, &quot;Chargement…&quot;, 13, DIM,
+			UDim2.new(0, 12, 0, 16), UDim2.new(1, -24, 0, 30))
+		overlay.Visible = true
+		return
+	end
+
+	if not view.Unlocked then
+		-- On dit ce qu'il y a derrière la porte sans rien en montrer : une
+		-- porte dont on ignore le contenu ne donne envie de rien.
+		local frame = row(96)
+		text(frame, &quot;Verrouillé&quot;, 14, DANGER, UDim2.new(0, 12, 0, 10),
+			UDim2.new(1, -24, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, &quot;Bats LE CLOWN au carnaval. Après ça : des variantes de &quot;
+			.. &quot;monstres, des défis de survie à règles particulières, des &quot;
+			.. &quot;contrats rares, et deux collections à remplir.&quot;, 11.5, DIM,
+			UDim2.new(0, 12, 0, 34), UDim2.new(1, -24, 0, 54))
+		overlay.Visible = true
+		return
+	end
+
+	-- Le contrat d'abord : c'est ce qui périme.
+	local head = row(30)
+	text(head, &quot;CONTRAT RARE&quot;, 11, DIM, UDim2.new(0, 12, 0, 6),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+
+	if view.Contract then
+		local c = view.Contract
+		local done = c.Progress &gt;= c.Target
+		local frame = row(done and 78 or 72)
+		text(frame, c.Name, 13.5, done and CASH or INK, UDim2.new(0, 12, 0, 9),
+			UDim2.new(1, -140, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, c.Text, 11.5, DIM, UDim2.new(0, 12, 0, 30),
+			UDim2.new(1, -140, 0, 32))
+		local left = math.max(0, c.Until - os.time())
+		text(frame, (&quot;%d/%d  ·  %s  ·  %d min&quot;):format(c.Progress, c.Target,
+			Format.money(c.Cash), math.floor(left / 60)), 11, done and CASH or DIM,
+			UDim2.new(0, 12, 0, 56), UDim2.new(1, -140, 0, 18))
+		local claim = button(frame, done and &quot;RÉCLAMER&quot; or &quot;EN COURS&quot;, done)
+		if done and onContract then
+			claim.Activated:Connect(function()
+				(onContract :: () -&gt; ())()
+			end)
+		end
+	else
+		local frame = row(44)
+		text(frame, &quot;Aucun contrat. Ils se proposent rarement, &quot;
+			.. &quot;à la fin d'une session.&quot;, 11.5, DIM,
+			UDim2.new(0, 12, 0, 12), UDim2.new(1, -24, 0, 22))
+	end
+
+	-- Les défis.
+	local chead = row(34)
+	text(chead, &quot;DÉFIS DE SURVIE&quot;, 11, DIM, UDim2.new(0, 12, 0, 9),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+	if view.Running then
+		text(chead, &quot;en cours&quot;, 11, DANGER, UDim2.new(1, -128, 0, 9),
+			UDim2.new(0, 116, 0, 18)).TextXAlignment = Enum.TextXAlignment.Right
+	end
+
+	for _, challenge in ipairs(view.Challenges) do
+		local isArmed = view.Armed == challenge.Id
+		local frame = row(62)
+		if isArmed then
+			frame.BackgroundColor3 = Color3.fromRGB(34, 40, 34)
+		end
+		text(frame, challenge.Name, 13, isArmed and CASH or INK,
+			UDim2.new(0, 12, 0, 9), UDim2.new(1, -140, 0, 20)).Font = Enum.Font.GothamBold
+		text(frame, challenge.Text, 11.5, DIM, UDim2.new(0, 12, 0, 29),
+			UDim2.new(1, -140, 0, 28))
+		text(frame, (&quot;×%.2f&quot;):format(challenge.Reward), 11.5, CASH,
+			UDim2.new(1, -196, 0, 21), UDim2.new(0, 56, 0, 18))
+			.TextXAlignment = Enum.TextXAlignment.Right
+
+		-- Pendant une session, on ne peut ni armer ni désarmer : la règle est
+		-- déjà en train de s'appliquer. Le bouton le dit au lieu de refuser.
+		local label = view.Running and &quot;VERROUILLÉ&quot;
+			or (isArmed and &quot;RETIRER&quot; or &quot;ARMER&quot;)
+		local pick = button(frame, label, not view.Running)
+		if not view.Running and onChallenge then
+			pick.Activated:Connect(function()
+				(onChallenge :: (string?) -&gt; ())(isArmed and &quot;&quot; or challenge.Id)
+			end)
+		end
+	end
+
+	-- Les collections.
+	local sets = view.Collections
+	local shead = row(34)
+	text(shead, &quot;COLLECTIONS&quot;, 11, DIM, UDim2.new(0, 12, 0, 9),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+	text(shead, (&quot;monstres %d/%d  ·  formes %d/%d  ·  documents %d/%d&quot;):format(
+		sets.monsters.Have, sets.monsters.Total,
+		sets.variants.Have, sets.variants.Total,
+		sets.documents.Have, sets.documents.Total), 11, INK,
+		UDim2.new(1, -300, 0, 9), UDim2.new(0, 288, 0, 18))
+		.TextXAlignment = Enum.TextXAlignment.Right
+
+	for _, variant in ipairs(view.Variants) do
+		local frame = row(variant.Seen and 54 or 32)
+		text(frame, variant.Seen and variant.Name or &quot;— pas encore croisée —&quot;,
+			12.5, variant.Seen and INK or DIM, UDim2.new(0, 12, 0, 8),
+			UDim2.new(1, -140, 0, 18))
+		if variant.Seen then
+			text(frame, variant.Tell, 11, DIM, UDim2.new(0, 12, 0, 27),
+				UDim2.new(1, -140, 0, 22))
+			text(frame, (&quot;prime ×%.1f&quot;):format(variant.Bounty), 11, CASH,
+				UDim2.new(1, -124, 0, 8), UDim2.new(0, 112, 0, 18))
+				.TextXAlignment = Enum.TextXAlignment.Right
+		end
+	end
+
+	for _, document in ipairs(view.Documents) do
+		local frame = row(document.Found and 58 or 30)
+		text(frame, document.Found and document.Name or &quot;document introuvable&quot;,
+			12, document.Found and INK or DIM, UDim2.new(0, 12, 0, 7),
+			UDim2.new(1, -140, 0, 18))
+		text(frame, document.Zone, 10.5, DIM, UDim2.new(1, -124, 0, 7),
+			UDim2.new(0, 112, 0, 16)).TextXAlignment = Enum.TextXAlignment.Right
+		-- Le serveur n'envoie pas le texte d'un document non trouvé : il n'y a
+		-- donc rien à cacher ici, et rien à révéler par mégarde.
+		if document.Found and document.Text then
+			text(frame, document.Text, 11, DIM, UDim2.new(0, 12, 0, 27),
+				UDim2.new(1, -24, 0, 26))
+		end
+	end
+
+	-- Les titres.
+	local thead = row(30)
+	text(thead, &quot;TITRES&quot;, 11, DIM, UDim2.new(0, 12, 0, 6),
+		UDim2.new(1, -24, 0, 18)).Font = Enum.Font.GothamBold
+	for _, title in ipairs(view.Titles) do
+		local frame = row(44)
+		text(frame, title.Name, 12.5, title.Held and CASH or DIM,
+			UDim2.new(0, 12, 0, 7), UDim2.new(1, -140, 0, 18)).Font = Enum.Font.GothamBold
+		text(frame, title.Text, 11, DIM, UDim2.new(0, 12, 0, 25),
+			UDim2.new(1, -24, 0, 16))
+	end
+
+	local tail = row(30)
+	text(tail, (&quot;%d contrat(s) tenu(s)  ·  %d défi(s) tenu(s)&quot;):format(
+		view.ContractsDone, view.ChallengesDone), 11, DIM,
+		UDim2.new(0, 12, 0, 6), UDim2.new(1, -24, 0, 18))
+
 	overlay.Visible = true
 end
 

@@ -15,6 +15,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local EconomyService = require(script.Parent.EconomyService)
+local EndgameService = require(script.Parent.EndgameService)
 local GameConfig = require(script.Parent.Parent.Shared.GameConfig)
 local PlayerDataService = require(script.Parent.PlayerDataService)
 local AwakeningService = require(script.Parent.AwakeningService)
@@ -97,6 +98,10 @@ function SurvivalService.start(player: Player): (boolean, string)
 	ShelterService.setOccupied(player, true)
 	profile.CurrentZone = zone.Id
 	PlayerDataService.markDirty(player)
+	-- §8 — le défi armé devient la règle de CETTE session. Appelé après
+	-- l'enregistrement de la session : avant, `beginSession` parlerait d'une
+	-- session qui pourrait encore échouer à démarrer.
+	EndgameService.beginSession(player)
 	fire(player, session, "start")
 	return true, "Bonne nuit."
 end
@@ -119,6 +124,9 @@ function SurvivalService.stop(player: Player, reason: string): Session?
 		PlayerDataService.markDirty(player)
 	end
 
+	-- §8 — avant `fire`, pour que l'état poussé au client porte déjà le
+	-- résultat du défi et l'éventuel contrat tiré.
+	EndgameService.endSession(player, reason, session.ZoneId)
 	fire(player, session, reason)
 	return session
 end
@@ -135,7 +143,11 @@ local function tick(dt: number)
 		ShelterService.touch(player)
 
 		local elapsed = os.clock() - session.StartedAt
-		if elapsed < GameConfig.Survival.GraceSeconds then
+		-- §8, défi « TOUT OU RIEN » : pas de délai de grâce. Les gains partent
+		-- à la première seconde, et la mort prend tout (LifeService).
+		local grace = EndgameService.hasRule(player, "all_in")
+			and 0 or GameConfig.Survival.GraceSeconds
+		if elapsed < grace then
 			continue
 		end
 
@@ -157,6 +169,13 @@ local function tick(dt: number)
 			scheduleAssault(session)
 			for _, fn in ipairs(assaultHandlers) do
 				task.spawn(fn, session)
+			end
+			-- §8, défi « SOMMEIL LÉGER » : le premier assaut met fin à la
+			-- session. Le joueur garde ce qu'il a gagné — `stop` ne retire
+			-- rien — mais la session n'est pas « complète » pour autant.
+			if EndgameService.hasRule(player, "light_sleep") then
+				SurvivalService.stop(player, "challenge")
+				continue
 			end
 		end
 

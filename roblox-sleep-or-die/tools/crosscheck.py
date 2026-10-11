@@ -43,7 +43,9 @@ for f, text in sources.items():
             errors.append(f"{f.name} : require d'un module introuvable → {target.strip()}")
 
 # ── 2. les fonctions appelées existent ───────────────────────────────────
-DEF = re.compile(r'function\s+(\w+)\.(\w+)\s*\(')
+# `<[^>]*>` : une fonction générique de Luau — `function C.draw<T>(...)`.
+# Sans ça le contrôleur ne voit pas sa déclaration et croit l'appel mort.
+DEF = re.compile(r'function\s+(\w+)\.(\w+)\s*(?:<[^>]*>)?\s*\(')
 defined = {}
 for f, text in sources.items():
     name = f.stem.replace(".server", "").replace(".client", "")

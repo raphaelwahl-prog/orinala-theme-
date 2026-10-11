@@ -44,11 +44,20 @@ Panels.build(screen, {
 	eventClaim = function()
 		Net.get("RequestEventClaim"):FireServer()
 	end,
+	challenge = function(id)
+		-- La chaîne vide retire le défi armé ; le serveur revérifie de toute
+		-- façon que l'identifiant existe.
+		Net.get("RequestChallenge"):FireServer(id)
+	end,
+	contract = function()
+		Net.get("RequestContract"):FireServer()
+	end,
 })
 
 local state: any = nil
 local lastReport: any = nil
 local boards: any = nil
+local endgame: any = nil
 
 Net.get("StateChanged").OnClientEvent:Connect(function(payload)
 	state = payload
@@ -76,6 +85,16 @@ Net.get("LeaderboardData").OnClientEvent:Connect(function(view)
 	boards = view
 	if Panels.currentKind() == "leaderboard" then
 		Panels.openLeaderboard(boards)
+	end
+end)
+
+Net.get("EndgameData").OnClientEvent:Connect(function(view)
+	endgame = view
+	-- On redessine seulement si l'écran est ouvert : le serveur pousse cette
+	-- vue à chaque changement (variante croisée, contrat avancé), et redessiner
+	-- un panneau fermé ne fait que du travail pour rien.
+	if Panels.currentKind() == "endgame" then
+		Panels.openEndgame(endgame)
 	end
 end)
 
@@ -278,6 +297,11 @@ local function openLeaderboard()
 	Net.get("RequestLeaderboard"):FireServer()
 end
 
+local function openEndgame()
+	Panels.openEndgame(endgame)
+	Net.get("RequestEndgame"):FireServer()
+end
+
 local function menuEntries()
 	return {
 		{ Name = "Événement", Desc = "L'événement du serveur et sa récompense.",
@@ -288,6 +312,8 @@ local function menuEntries()
 			end },
 		{ Name = "Classements", Desc = "Les trois classements de la saison.",
 			Open = openLeaderboard },
+		{ Name = "Après le carnaval", Desc = "Variantes, défis, contrats, collections.",
+			Open = openEndgame },
 		{ Name = "Paramètres", Desc = "Flashs, bandeaux, invites, sons d'interface.",
 			Open = function()
 				if state then
@@ -330,6 +356,10 @@ local function onAction(name: string, inputState: Enum.UserInputState)
 		-- coup) et on demande la suite : un écran qui s'ouvre vide pendant un
 		-- aller-retour réseau donne l'impression d'un bouton cassé.
 		openLeaderboard()
+	elseif name == "Endgame" then
+		-- Même raison que les classements : on ouvre avec ce qu'on a et on
+		-- demande la suite.
+		openEndgame()
 	elseif name == "Settings" then
 		if state then
 			Panels.openSettings(state, GameConfig.Ui.Settings)
@@ -352,11 +382,12 @@ ContextActionService:BindAction("Zones", onAction, true, Enum.KeyCode.N)
 ContextActionService:BindAction("Attack", onAction, true, Enum.KeyCode.F,
 	Enum.UserInputType.MouseButton1)
 ContextActionService:BindAction("Skins", onAction, true, Enum.KeyCode.C)
--- `false` en troisième argument : PAS de bouton tactile pour ces trois-là.
+-- `false` en troisième argument : PAS de bouton tactile pour ces quatre-là.
 -- C'est « Menu » qui les porte sur téléphone, et lui seul en fabrique un.
 ContextActionService:BindAction("Event", onAction, false, Enum.KeyCode.V)
 ContextActionService:BindAction("Leaderboard", onAction, false, Enum.KeyCode.L)
 ContextActionService:BindAction("Settings", onAction, false, Enum.KeyCode.P)
+ContextActionService:BindAction("Endgame", onAction, false, Enum.KeyCode.K)
 ContextActionService:BindAction("Menu", onAction, true, Enum.KeyCode.G)
 ContextActionService:BindAction("Close", onAction, false, Enum.KeyCode.Escape)
 

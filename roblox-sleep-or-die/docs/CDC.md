@@ -16,10 +16,10 @@ dans le code, elle est marquée « pas fait », même si la configuration existe
 | 5 | Monstres et IA | **fait** | `MonsterService`, `BossService` | Les 8 états et **les 7 mécaniques** : `sound`, `gaze`, `relentless`, `disable` (le couvent éteint tes défenses), `fake_alerts` (l'hôpital émet de fausses alertes), `boss_phases` (3 phases qui rejouent les mécaniques apprises). |
 | 6 | Économie et équipements | **fait** | `EconomyService`, `ItemConfig`, `ShopService` | — |
 | 7 | Missions et PNJ | **fait** | `MissionService`, `ObjectiveService` | 16 missions, 6 PNJ, et **les 11 types d'objectifs branchés**. Les quatre ramassables sont des objets du monde qui réapparaissent ; `escape_chase`, `survive_extreme` et `find_secret` se déduisent du jeu, pas d'un bouton. |
-| 8 | Progression à long terme | **fait** | `BossService`, `CosmeticService`, `LeaderboardService` | Sept skins, dont quatre qui ne s'achètent pas (dix nuits survécues, la maison des poupées débloquée, le carnaval battu, le mini-boss d'événement abattu). Le boss accorde un trophée et un titre. **Trois classements saisonniers** (argent déposé, nuits survécues, boss battus), remis à zéro chaque mois civil, par OrderedDataStore — avec repli sur les joueurs présents quand le stockage classé est inaccessible, et l'écran le dit. Restent les variantes de monstres et les contrats rares. |
+| 8 | Progression à long terme | **fait** | `EndgameConfig`, `EndgameService`, `BossService`, `CosmeticService`, `LeaderboardService` | Les huit points du CDC y sont, tous derrière `Achievements.carnival_cleared` : **5 variantes de monstres** (le monstre de la zone avec d'autres chiffres, et L'AVEUGLE qui remplace carrément la mécanique apprise), **4 défis de survie à règles particulières** (chacun appliqué à un seul endroit du code), **5 contrats rares** (un seul à la fois, tirage qui échoue 3 fois sur 4, délai en temps réel), **3 classements saisonniers**, **2 collections** (7 monstres, 5 formes, 7 documents posés dans le monde), **3 titres** qui couronnent les collections, 7 skins dont 4 qui ne s'achètent pas, et les événements limités du §13. |
 | 8 bis | Éveil partagé | **fait** | `AwakeningService` | Jauge commune à tout le serveur, quatre stades, effet sur la vitesse et la vue de **tous** les monstres, contrepartie en gains, décroissance quand personne ne dort profond. Repris du prototype DEAD TIRED. |
 | 8 ter | Entraide | **fait** | `LifeService` | Le coup fatal met à terre plutôt que de tuer quand un autre joueur est là : 30 s de saignement, 4 s de maintien pour relever. Seul sur le serveur, le coup tue. |
-| 9 | Interface | **fait** | `Hud.luau`, `Panels.luau` | Neuf panneaux : boutique, défenses, missions, carte, skins, **événement** (V), **classements** (L), **paramètres** (P), écran de mort. Les quatre réglages agissent réellement : flashs d'écran, bandeaux d'alerte, invites contextuelles, sons d'interface. Ils vivent dans le profil, donc ils suivent le compte. |
+| 9 | Interface | **fait** | `Hud.luau`, `Panels.luau` | Dix panneaux : boutique, défenses, missions, carte, skins, **événement** (V), **classements** (L), **après le carnaval** (K), **paramètres** (P), écran de mort. Les quatre réglages agissent réellement : flashs d'écran, bandeaux d'alerte, invites contextuelles, sons d'interface. Ils vivent dans le profil, donc ils suivent le compte. |
 | 9 bis | Rendu | **partiel** | `MonsterRig`, `AtmosphereService` | Squelettes R6 animés par Motor6D, une silhouette par monstre, têtes `MeshType.Head`, cylindres, sphères et coins, visage classique sur Le Menteur, Atmosphere + Bloom + étalonnage par zone + profondeur de champ, ombres réelles, particules. **Manquent : les MeshPart et les animations importées — les deux demandent de téléverser.** |
 | 9 ter | Son | **fait, à vérifier chez toi** | `SoundService` | Pas, repérage, attaques, assauts sur le refuge, alarme, mise à terre, relevage, encaissement, achats, déblocages, et une nappe continue qui monte avec l'éveil. Tout vient de la bibliothèque locale `rbxasset://sounds/`. Le service **teste chaque chemin au démarrage** et écrit dans la sortie ce qui a chargé : si c'est silencieux, tu sais pourquoi en une ligne. |
 | 10 | Architecture technique | **fait** | arborescence `src/` | Les noms de services sont exactement ceux du CDC. |
@@ -54,18 +54,18 @@ voient pas :
 
 | Outil | Ce qu'il prouve | Dernier passage |
 |---|---|---|
-| compilateur Luau (`luau-web`) | la syntaxe de chaque fichier | 37 fichiers, 0 échec |
-| `tools/crosscheck.py` | chaque appel entre modules existe, chaque remote est déclaré, aucun module n'est mort | 542 liens |
+| compilateur Luau (`luau-web`) | la syntaxe de chaque fichier | 39 fichiers, 0 échec |
+| `tools/crosscheck.py` | chaque appel entre modules existe, chaque remote est déclaré, aucun module n'est mort | 638 liens |
 | `tools/checkzones.py` | les sept cartes se tiennent et ne débordent pas | 68 contrôles |
-| `tools/logictests.py` | **le code fait ce qu'il prétend faire** | 48 contrôles |
+| `tools/logictests.py` | **le code fait ce qu'il prétend faire** | 140 contrôles, 19 mutations sur 19 détectées |
 
 La quatrième est la plus utile et la plus récente. Les trois premières vérifient
 la forme ; aucune ne dit si un événement change réellement quelque chose.
 `logictests.py` assemble un faux Roblox (`game:GetService`, `Instance`, `task`,
 `Vector3`, DataStore…) autour du **vrai code source pris sur le disque**, puis
 l'exécute. Il a été validé par mutation : on casse volontairement chacune des
-six règles qu'il surveille, et on vérifie qu'il le voit. Un test qui passe quoi
-qu'on fasse ne vaut rien.
+dix-neuf règles qu'il surveille, et on vérifie qu'il le voit. Un test qui passe
+quoi qu'on fasse ne vaut rien.
 
 Ce qu'il a trouvé, et que la relecture n'avait pas vu :
 
@@ -76,7 +76,26 @@ Ce qu'il a trouvé, et que la relecture n'avait pas vu :
 * `model.Name` porte l'**identifiant** du monstre, pas son nom de scène :
   l'annonce de victoire aurait affiché « prowler est tombé ».
 
-## Deux écarts assumés par rapport au document
+Et au §8, trois mutations ont survécu au premier jet du test — dont une qui
+désignait un vrai défaut de conception :
+
+* le contrat « croise trois variantes » se remplissait en croisant **trois fois
+  la même**. D'où le champ `Distinct` et le jeton d'identité passé à
+  `EndgameService.note` : un contrat qui compte du distinct refuse les doublons,
+  et refuse aussi d'avancer sans jeton — mieux vaut un contrat qui n'avance pas
+  qu'un contrat qui se remplit de doublons ;
+* « une session coupée par SOMMEIL LÉGER n'est pas une session complète » était
+  écrit en commentaire, expliqué sur six lignes, et **testé nulle part** ;
+* « un contrat payé libère la place » passait pour la mauvaise raison : la
+  seconde réclamation échouait sur « pas encore rempli », pas sur l'absence de
+  contrat. Un contrat jamais effacé aurait passé le test.
+
+Une mutation, elle, est *équivalente* : effacer l'ardoise dans
+`offerContract` est redondant puisque les trois chemins qui libèrent la place
+l'effacent déjà. On teste donc la garantie que la fonction donne pour
+elle-même, en lui plantant un état sale à la main.
+
+## Trois écarts assumés par rapport au document
 
 **1. Un plafond souple par session.** Le CDC donne 100 000 $/s au carnaval et
 15 M$ pour débloquer l'hôpital : sans plafond, on gagne de quoi débloquer
@@ -86,7 +105,17 @@ l'hôpital en 150 secondes et toute l'économie précédente ne sert plus à rie
 carnaval, et une session au carnaval vaut 6 fois une session à l'hôpital —
 au lieu de 30 fois.
 
-**2. L'argent est un nombre à virgule flottante, jamais un entier.** Un
+**2. Le §8 est une couche de récompense, et ses multiplicateurs se cumulent.**
+Un défi de survie (jusqu'à ×2,1) et la prime d'une variante vivante dans la
+zone (jusqu'à ×2,2) se multiplient : **×4,62 au maximum**, par-dessus l'éveil
+et l'événement en cours. C'est volontaire et c'est borné par le risque — il
+faut avoir un défi en cours *et* une variante en vie là où on dort, c'est-à-dire
+avoir accepté de dormir sans défenses à côté de quelque chose qui frappe plus
+fort. Et tout ça n'existe qu'après le boss final, donc après les 5 h 33 de
+progression mesurées par `tools/simulate.py` : ça ne raccourcit pas le chemin,
+ça donne une raison d'y revenir.
+
+**3. L'argent est un nombre à virgule flottante, jamais un entier.** Un
 `IntValue` Roblox sature à 2 147 483 647. À 100 000 $/s, c'est atteint en
 **5 h 57**. Au-delà, le compteur se bloque ou repart en négatif. Tout l'argent
 passe donc par des `number` et s'affiche via `Format.money` (12,4 k $,
