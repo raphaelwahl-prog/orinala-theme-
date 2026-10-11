@@ -54,6 +54,28 @@ async function main() {
   await page.click("#b-play");
   await page.waitForTimeout(1400);
 
+  // Le parvis d'abord : c'est la première chose qu'un joueur voit.
+  await page.evaluate(() => {
+    if (G.zone !== "hub") travel("hub");
+    closeSheet(); G.running = true;
+    // Au centre de la place, face aux portails.
+    const c = { x: 39 * 5, z: 32 * 5 };
+    G.px = c.x; G.pz = c.z + 10;
+    G.yaw = 0; G.pitch = -0.22;
+    G.shoutUntil = 0; G.toasts = []; drawToasts();
+  });
+  await page.waitForTimeout(1300);
+  await page.evaluate(() => {
+    G.running = false;
+    document.getElementById("shout").hidden = true;
+    document.getElementById("tint").style.opacity = "0";
+    document.getElementById("vig").classList.remove("hot");
+    renderer.render(scene, camera);
+  });
+  await page.screenshot({ path: path.join(OUT, "00b-parvis.png") });
+  console.log("00b-parvis.png");
+  await page.evaluate(() => { G.running = true; });
+
   const zones = await page.evaluate(() => ZONES.map(z => ({ id: z.id, order: z.order })));
   for (const z of zones) {
     // Chaque zone : on y voyage, on pose la caméra devant un refuge, et on

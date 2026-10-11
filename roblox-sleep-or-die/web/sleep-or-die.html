@@ -222,6 +222,27 @@ const ZONES = [
 const ZONE_BY_ID = {};
 for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
+// LE PARVIS — le point d'arrivée, hors de la ville.
+//
+// On n'y dort pas, on n'y gagne rien, aucun monstre n'y entre. Il sert à deux
+// choses : expliquer les règles sans panneau qui bloque (des bornes qu'on lit
+// en passant), et donner un endroit d'où partir. Dans le jeu Roblox, les sept
+// zones sont sept dalles de 1600 studs côte à côte ; le parvis est la dalle
+// zéro.
+const HUB = {
+  id: "hub", order: 0, name: "Le parvis", rate: 0, cap: Infinity, max: 0,
+  loss: 0, unlock: 0, monster: null,
+  blurb: "Le dernier endroit sûr. Au-delà des portails, on ne dort plus tranquille.",
+  mech: "Rien ne t'attaque ici. Rien ne te paie non plus.",
+};
+ZONE_BY_ID.hub = HUB;
+
+// Une couleur par portail : c'est elle qui dit où il mène, avant même de lire.
+const PORTAL_COLOR = {
+  street: 0xffc45c, sewers: 0xd8ff6a, dollhouse: 0xff9ad0, slasher: 0xff5648,
+  convent: 0xbe82ff, hospital: 0x9affd0, carnival: 0xffe14a, hub: 0x78e196,
+};
+
 // MonsterConfig.List. `rule` est la mécanique du CDC §5 ; c'est elle qui
 // change le comportement, pas les dégâts.
 const MONSTERS = {
@@ -328,7 +349,7 @@ const G = {
   stam: 1, sprint: false, winded: false, nextStep: 0, shake: 0,
   sleeping: null, earnedHere: 0, sessionLeft: 0, graceLeft: 0,
   nextAssault: 0, incoming: 0, defHits: {},
-  nextSwing: 0, bossPhase: 0, bossHits: 0,
+  nextSwing: 0, bossPhase: 0, bossHits: 0, portalLock: 0, signSeen: {},
   beasts: [], toasts: [], shoutUntil: 0, shoutText: "",
 };
 
@@ -356,6 +377,9 @@ const MW = 78, MH = 62;
 let grid = [];
 const shelters = [], patrol = [];
 let vault = null, shop = null, spawn = null;
+// Les portails (un par zone au parvis, un retour dans chaque zone) et les
+// bornes d'explication.
+const portals = [], signs = [];
 
 function carve(x0, y0, w, h) {
   for (let y = y0; y < y0 + h; y++)
@@ -372,6 +396,38 @@ const ctr = (r) => ({ x: (r.x + r.w / 2) * TILE, z: (r.y + r.h / 2) * TILE });
 // Chaque zone a sa forme. C'est ce qui fait qu'on sait où on est avant même de
 // lire le nom en haut de l'écran.
 const LAYOUTS = {
+  // Le parvis : une grande place, sept portails alignés au fond, trois bornes
+  // à lire en chemin, le coffre et la boutique sur les côtés.
+  hub: () => {
+    // ⚠️ Compact, et c'est tout le sujet. La première version faisait
+    // 210 × 100 studs : le joueur apparaissait au milieu d'une esplanade vide,
+    // les portails étaient à 95 studs — au-delà du brouillard — et on ne
+    // voyait RIEN. Un sas doit tenir dans un regard.
+    const plaza = { x: 26, y: 20, w: 27, h: 16 };
+    carve(plaza.x, plaza.y, plaza.w, plaza.h);
+    const c = ctr(plaza);
+    // Les sept portails en ligne au fond, à 42 studs du point d'arrivée :
+    // assez loin pour marcher, assez près pour les voir tous d'un coup.
+    const row = (plaza.y + 2) * TILE;
+    for (let i = 0; i < ZONES.length; i++) {
+      const x = (plaza.x + 2.5 + i * 3.7) * TILE;
+      portals.push({ x, z: row, to: ZONES[i].id, w: 7, d: 3.5 });
+    }
+    // Les trois bornes en travers du chemin : on les croise forcément en
+    // allant vers les portails.
+    const mid = (plaza.y + plaza.h - 5) * TILE;
+    signs.push({ x: c.x - 9 * TILE, z: mid,
+      title: "DORMIR, C'EST GAGNER",
+      text: "Allonge-toi dans un refuge et l'argent monte tout seul. Plus la zone est dangereuse, plus elle paie." });
+    signs.push({ x: c.x, z: mid + 2.5 * TILE,
+      title: "CE QUE TU PORTES SE PERD",
+      text: "L'argent gagné en dormant reste sur toi. Un monstre t'attrape, tu en perds la moitié ou plus. Le coffre, c'est définitif." });
+    signs.push({ x: c.x + 9 * TILE, z: mid,
+      title: "LA MAISON SE RÉVEILLE",
+      text: "Dormir dans les zones profondes remplit une jauge commune. Elle monte, les monstres accélèrent — et les gains montent aussi." });
+    return plaza;
+  },
+
   // La rue : une avenue, des ruelles perpendiculaires, une place au milieu.
   street: () => {
     const plaza = { x: 30, y: 26, w: 18, h: 11 };
@@ -505,10 +561,14 @@ const LAYOUTS = {
 function buildZone(zoneId) {
   grid = Array.from({ length: MH }, () => new Array(MW).fill(0));
   shelters.length = 0; patrol.length = 0;
+  portals.length = 0; signs.length = 0;
 
   const centre = (LAYOUTS[zoneId] || LAYOUTS.street)();
   const cc = ctr(centre);
-  spawn = { x: cc.x, z: cc.z + 6 };
+  spawn = { x: cc.x, z: cc.z + 4 };
+  // Chaque zone a son portail de retour, à côté du point d'arrivée. Sans lui,
+  // on serait coincé dans une zone sans savoir comment rentrer.
+  if (zoneId !== "hub") portals.push({ x: cc.x, z: cc.z + 11, to: "hub", w: 7, d: 4 });
   vault = { x: (centre.x + 2) * TILE, z: cc.z };
   shop  = { x: (centre.x + centre.w - 2) * TILE, z: cc.z };
 
@@ -805,6 +865,9 @@ const PALETTE = {
   convent:   { wall: "#38344a", floor: "#302c3c", alt: "#282434", ceil: "#171427", fog: 0x14101c, joint: 0.38 },
   hospital:  { wall: "#2e3a40", floor: "#36424a", alt: "#2c363c", ceil: "#141c20", fog: 0x0e1418, joint: 0.3 },
   carnival:  { wall: "#44243a", floor: "#3c2230", alt: "#331c28", ceil: "#1d0f18", fog: 0x1c0c14, joint: 0.22 },
+  // Le parvis est plus clair et plus froid que tout le reste : on doit sentir
+  // qu'on en sort pour entrer dans quelque chose de pire.
+  hub:       { wall: "#3a4050", floor: "#454c5c", alt: "#3b4150", ceil: "#1c2029", fog: 0x161b24, joint: 0.3 },
 };
 const pal = () => PALETTE[G.zone] || PALETTE.street;
 
@@ -971,6 +1034,47 @@ function buildFurniture(H) {
   seed = 1337;
   decorateHub(H);
   for (const s of shelters) decorateShelter(s, H);
+  for (const pt of portals) buildPortal(pt, H);
+  for (const sg of signs) buildSign(sg);
+}
+
+// Un portail : deux montants, un linteau, et une nappe lumineuse au milieu.
+// La couleur dit où il mène — on l'apprend en deux voyages, et ensuite on n'a
+// plus besoin de lire.
+function buildPortal(pt, H) {
+  const col = PORTAL_COLOR[pt.to] || 0xffffff;
+  const frame = new THREE.MeshLambertMaterial({ color: 0x2a2e38 });
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: col, transparent: true, opacity: 0.42, side: THREE.DoubleSide,
+  });
+  const h = 9.5, w = pt.w;
+  world.add(box(1.1, h, 1.6, frame, pt.x - w / 2, h / 2, pt.z));
+  world.add(box(1.1, h, 1.6, frame, pt.x + w / 2, h / 2, pt.z));
+  world.add(box(w + 1.6, 1.3, 1.9, frame, pt.x, h + 0.4, pt.z));
+  // La nappe : un plan fin, additif, qui ondule un peu dans la boucle.
+  const sheetMesh = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.4, h - 0.8), glowMat);
+  sheetMesh.position.set(pt.x, h / 2, pt.z);
+  world.add(sheetMesh);
+  pt.sheet = sheetMesh;
+  world.add(glowAt(col, 20, pt.x, h / 2, pt.z));
+  // Un tapis au sol : on voit le portail d'en haut, de loin.
+  world.add(box(w + 2, 0.12, 5, new THREE.MeshBasicMaterial({ color: col }),
+    pt.x, 0.06, pt.z + 1.8));
+}
+
+// Une borne : un panneau incliné sur un pied. Le texte s'affiche quand on
+// s'approche — pas de texte 3D, et c'est tant mieux : illisible de loin.
+function buildSign(sg) {
+  world.add(tube(0.4, 4, MAT.metal, sg.x, 2, sg.z));
+  // Sombre et modeste. En clair et en 6,4 × 4 studs, le panneau prenait toute
+  // la vue sous la torche : un grand rectangle blanc devant le personnage.
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.8, 0.35),
+    new THREE.MeshLambertMaterial({ color: 0x252a34 }));
+  panel.position.set(sg.x, 4.9, sg.z);
+  panel.rotation.x = -0.3;
+  panel.castShadow = true; panel.receiveShadow = true;
+  world.add(panel);
+  world.add(glowAt(0x7fa8ff, 5.5, sg.x, 4.9, sg.z - 0.5));
 }
 
 // Le hall : le coffre et la boutique. Le seul endroit où on ne dort pas.
@@ -1320,9 +1424,9 @@ function syncHud() {
 
   const zn = $("z-nm");
   zn.textContent = z.name.toUpperCase();
-  $("z-rt").textContent = money(z.rate) + "/s";
+  $("z-rt").textContent = z.rate > 0 ? money(z.rate) + "/s" : "zone sûre";
   const pv = $("z-pv");
-  pv.hidden = zoneUnlocked(z);
+  pv.hidden = z.id === "hub" || zoneUnlocked(z);
   if (!pv.hidden) pv.textContent = "APERÇU — gains non comptés";
 
   const st = STAGES[G.stage];
@@ -1368,15 +1472,16 @@ function title() {
     <p><strong>Tu es payé pour dormir.</strong> Plus la zone est dangereuse, plus
     elle paie. L'argent gagné en dormant reste <em>sur toi</em> : si un monstre
     t'attrape, tu en perds la moitié ou plus. Dépose-le au coffre.</p>
-    <p style="color:var(--dim);font-size:12.5px">Sept zones, sept monstres, sept
-    mécaniques différentes. Les chiffres sont ceux du jeu Roblox du dépôt —
-    rien n'a été adouci pour la démo.</p>
+    <p style="color:var(--dim);font-size:12.5px">Tu arrives sur <strong>le parvis</strong> :
+    trois bornes qui expliquent les règles, et sept portails vers sept zones,
+    chacune avec son monstre et sa mécanique. Les chiffres sont ceux du jeu
+    Roblox du dépôt — rien n'a été adouci pour la démo.</p>
     <div class="keys">
       <b>ZQSD / WASD</b><span>se déplacer (toutes dispositions)</span>
       <b>souris</b><span>regarder — deux monstres y réagissent</span>
       <b>E</b><span>dormir · déposer · boutique</span>
       <b>F / clic</b><span>frapper — ça étourdit, ça ne tue pas</span>
-      <b>N</b><span>voyager entre les zones</span>
+      <b>traverser un portail</b><span>changer de zone (ou <b>N</b> pour la liste)</span>
       <b>Maj</b><span>courir — et se faire entendre</span>
       <b>Espace</b><span>se réveiller</span>
       <b>Échap</b><span>pause</span>
@@ -1536,14 +1641,35 @@ function travel(zoneId) {
   G.bossPhase = 0; G.bossHits = 0;
   scene.fog.color.setHex(pal().fog);
   renderer.setClearColor(pal().fog);
+  hemi.intensity = zoneId === "hub" ? 0.5 : 0.18;
   if (z.order > G.deepest) { G.deepest = z.order; save(); }
   closeSheet();
   G.running = true;
+  // ⚠️ Sans ce verrou, on arrive dans la zone À CÔTÉ du portail de retour, il
+  // se déclenche dans la même seconde, et on fait l'aller-retour en boucle.
+  G.portalLock = G.time + 1.5;
+  if (zoneId === "hub") {
+    toast("Le parvis. Lis les bornes, puis prends un portail.", "info");
+    return;                       // aucun monstre ici, c'est tout l'intérêt
+  }
   toast(G.preview
     ? `${z.name} — aperçu. Les gains ne comptent pas ici.`
     : `${z.name}. ${money(z.rate)}/s.`, G.preview ? "warn" : "info");
   // Le monstre de la zone est déjà là. On n'entre pas dans une zone vide.
   spawnBeast(MONSTERS[z.monster], null, true);
+}
+
+// Le joueur est-il dans un portail ? (Rectangle, pas rayon : on traverse un
+// portail de face, on ne tourne pas autour.)
+function portalUnder() {
+  for (const pt of portals)
+    if (Math.abs(G.px - pt.x) < pt.w / 2 && Math.abs(G.pz - pt.z) < pt.d) return pt;
+  return null;
+}
+function nearSign() {
+  for (const sg of signs)
+    if (Math.hypot(G.px - sg.x, G.pz - sg.z) < 9) return sg;
+  return null;
 }
 
 // ─── sommeil : une session, pas une nuit ───────────────────────────────────
@@ -2049,7 +2175,11 @@ function movePlayer(dt) {
 
 // ─── boucle ────────────────────────────────────────────────────────────────
 function start() {
-  G.zone = "street"; G.preview = false;
+  // On arrive au parvis. Entrer directement dans la rue, c'était lâcher le
+  // joueur dans le noir sans lui avoir dit une seule règle.
+  G.zone = "hub"; G.preview = false;
+  G.signSeen = {}; G.portalLock = 0;
+  hemi.intensity = 0.5;
   buildZone(G.zone);
   buildWorldMeshes();
   scene.fog.color.setHex(pal().fog);
@@ -2058,15 +2188,33 @@ function start() {
   G.unbanked = 0; G.sleeping = null; G.awaken = 0; G.stage = 0; G.toasts = [];
   G.placed = {}; G.defHits = {}; G.bossPhase = 0; G.bossHits = 0;
   clearBeasts();
-  spawnBeast(MONSTERS[zone().monster], null, true);
   $("hud").hidden = false;
   G.running = true;
-  toast("Trouve un refuge dans une ruelle. E pour dormir.", "info");
+  toast("Le parvis. Trois bornes à lire, sept portails au fond.", "info");
 }
 
 function promptLine() {
   if (G.sleeping || G.dead > 0) return false;
   const p = $("prompt");
+  // Le portail le plus proche : on annonce où il mène AVANT d'y entrer.
+  let near = null, nd = 16;
+  for (const pt of portals) {
+    const d = Math.hypot(G.px - pt.x, G.pz - pt.z);
+    if (d < nd) { nd = d; near = pt; }
+  }
+  if (near) {
+    const z = ZONE_BY_ID[near.to];
+    if (near.to === "hub") {
+      p.innerHTML = `↩ <b>traverse</b> pour retourner au parvis`;
+    } else {
+      const open = zoneUnlocked(z);
+      p.innerHTML = `<b>traverse</b> → ${z.name} · ${money(z.rate)}/s`
+        + (open ? "" : ` · <span style="color:var(--danger)">aperçu, ${money(z.unlock)} déposés pour la débloquer</span>`);
+    }
+    return true;
+  }
+  const sg = nearSign();
+  if (sg) { p.innerHTML = `<b>${sg.title}</b> — ${sg.text}`; return true; }
   if (Math.hypot(G.px - vault.x, G.pz - vault.z) < 12) {
     p.innerHTML = `<b>E</b> déposer ${money(G.unbanked)} au coffre`; return true;
   }
@@ -2152,6 +2300,23 @@ function frame(now) {
       if (up && st >= 2) G.shake = Math.max(G.shake, 0.5);
     }
 
+    // Les portails. On les traverse, on ne les « active » pas : c'est plus
+    // direct que d'appuyer sur une touche, et ça se comprend sans explication.
+    if (!G.sleeping && G.dead <= 0 && G.time >= G.portalLock) {
+      const pt = portalUnder();
+      if (pt) { sfx.door(); travel(pt.to); }
+    }
+    // La nappe des portails ondule : un portail immobile ressemble à un mur.
+    for (const pt of portals)
+      if (pt.sheet) pt.sheet.material.opacity = 0.32 + 0.16 * Math.sin(G.time * 2.2 + pt.x);
+
+    // Les bornes se lisent en passant, une seule fois chacune.
+    const sg = nearSign();
+    if (sg && !G.signSeen[sg.title]) {
+      G.signSeen[sg.title] = true;
+      toast(`${sg.title} — ${sg.text}`, "info");
+    }
+
     for (const b of G.beasts.slice()) updateBeast(b, dt);
 
     const before = G.toasts.length;
@@ -2172,7 +2337,10 @@ function frame(now) {
 
     // Ambiance : le brouillard se resserre quand l'éveil monte. C'est ce qui
     // fait sentir le stade sans lire la jauge.
-    const fog = STAGES[G.stage].fog;
+    // Au parvis on voit loin : c'est une zone sûre, et il faut apercevoir les
+    // sept portails depuis le point d'arrivée. Ailleurs, le brouillard fait
+    // son travail d'horreur.
+    const fog = STAGES[G.stage].fog * (G.zone === "hub" ? 2.4 : 1);
     scene.fog.far += (fog - scene.fog.far) * Math.min(1, dt * 2);
     if (SFX.filter) {
       SFX.filter.frequency.value += (170 + G.stage * 95 - SFX.filter.frequency.value) * Math.min(1, dt);

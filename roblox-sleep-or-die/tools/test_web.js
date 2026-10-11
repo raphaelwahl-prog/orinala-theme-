@@ -134,6 +134,11 @@ async function main() {
     closeSheet();
     G.running = true;
     G.dead = 0;
+    // Et on neutralise les portails : la case la plus dégagée du parvis est
+    // dans l'allée des portails, le joueur en traversait un en avançant et se
+    // retrouvait 130 studs plus loin, dans une autre zone. Le test passait par
+    // chance (le saut était vaguement dans la bonne direction).
+    G.portalLock = G.time + 1e6;
   });
   for (const [name, map] of Object.entries(KEY)) {
     for (const [dir, [key, code]] of Object.entries(map)) {
@@ -179,6 +184,9 @@ async function main() {
       const moved = Math.hypot(dx, dz);
       const want = { fwd: [0, -1], back: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
       const dot = (dx * want[0] + dz * want[1]) / (moved || 1);
+      ok(moved < 30,
+        `${name} · ${dir} : le joueur marche, il ne se téléporte pas `
+        + `(${moved.toFixed(1)} studs)`);
       ok(moved > 0.5 && dot > 0.7,
         `${name} · ${dir} (key="${key}", code="${code}") déplace dans le bon sens`
         + `  (|d|=${moved.toFixed(1)}, alignement=${dot.toFixed(2)}`
@@ -186,6 +194,68 @@ async function main() {
         + `)`);
     }
   }
+
+  await page.evaluate(() => { G.portalLock = 0; });
+
+  console.log("");
+  console.log("— le parvis et les portails —");
+  const hub = await page.evaluate(() => {
+    if (G.zone !== "hub") travel("hub");
+    return {
+      zone: G.zone, portals: portals.length, signs: signs.length,
+      shelters: shelters.length, beasts: G.beasts.length,
+      rate: zone().rate, spawnFree: !solid(spawn.x, spawn.z),
+      dests: portals.map(p => p.to).join(","),
+      spawnInPortal: portals.some(pt =>
+        Math.abs(spawn.x - pt.x) < pt.w / 2 && Math.abs(spawn.z - pt.z) < pt.d),
+    };
+  });
+  eq(hub.zone, "hub", "on peut rejoindre le parvis");
+  eq(hub.portals, 7, "sept portails, un par zone");
+  eq(hub.dests, "street,sewers,dollhouse,slasher,convent,hospital,carnival",
+    "ils mènent aux sept zones, dans l'ordre");
+  eq(hub.signs, 3, "trois bornes d'explication");
+  eq(hub.shelters, 0, "aucun refuge au parvis : on n'y dort pas");
+  eq(hub.beasts, 0, "et aucun monstre");
+  eq(hub.rate, 0, "on n'y gagne rien non plus");
+  eq(hub.spawnFree, true, "le point d'arrivée n'est pas dans un mur");
+  eq(hub.spawnInPortal, false,
+    "et il n'est pas DANS un portail (sinon on repart aussitôt arrivé)");
+
+  // Traverser un portail doit changer de zone — et le portail de retour doit
+  // ramener au parvis sans boucler.
+  const trip = await page.evaluate(async () => {
+    travel("hub");
+    const target = portals.find(p => p.to === "sewers");
+    G.px = target.x; G.pz = target.z;
+    G.portalLock = 0;
+    // On exécute le pas de boucle qui détecte les portails.
+    const before = G.zone;
+    if (!G.sleeping && G.dead <= 0 && G.time >= G.portalLock) {
+      const pt = portalUnder();
+      if (pt) travel(pt.to);
+    }
+    const arrived = G.zone;
+    const back = portals.filter(p => p.to === "hub").length;
+    // Juste après l'arrivée, le verrou doit empêcher un second saut.
+    const locked = G.time < G.portalLock;
+    return { before, arrived, back, locked };
+  });
+  eq(trip.before, "hub", "on part du parvis");
+  eq(trip.arrived, "sewers", "traverser le portail des égouts y emmène");
+  eq(trip.back, 1, "la zone a un portail de retour, et un seul");
+  eq(trip.locked, true, "un verrou empêche de repartir dans la seconde");
+
+  const loop = await page.evaluate(() => {
+    // On avance le temps du jeu au-delà du verrou et on se pose sur le retour.
+    G.portalLock = G.time - 1;
+    const back = portals.find(p => p.to === "hub");
+    G.px = back.x; G.pz = back.z;
+    const pt = portalUnder();
+    if (pt) travel(pt.to);
+    return G.zone;
+  });
+  eq(loop, "hub", "et le portail de retour ramène au parvis");
 
   console.log("");
   console.log("— un panneau ouvert ne doit pas donner l'impression d'un clavier cassé —");

@@ -25,6 +25,25 @@ Les zones non débloquées restent **visitables en aperçu** — l'intérêt de 
 version est qu'on voie les sept monstres sans jouer cinq heures — mais les gains
 n'y sont pas crédités, sinon la progression ne voudrait plus rien dire.
 
+## Le parvis
+
+On n'arrive plus directement dans la rue. On arrive sur **le parvis** : une
+place sûre, hors de la ville. Aucun monstre n'y entre, on n'y dort pas, on n'y
+gagne rien. Elle existe pour deux raisons.
+
+**Expliquer sans bloquer.** Trois bornes en travers du chemin, qu'on lit en
+passant — dormir paie, ce qu'on porte se perd, la maison se réveille. Pas de
+panneau qui met la partie en pause et qu'il faut fermer.
+
+**Donner un point de départ.** Sept portails alignés au fond, un par zone, du
+plus proche au plus lointain. Chacun a la couleur de sa zone et un tapis au
+sol : on le reconnaît avant de lire. On les **traverse**, on ne les active pas.
+Chaque zone a son portail de retour à côté du point d'arrivée.
+
+Un verrou d'une seconde et demie suit chaque voyage : sans lui, on arrive à
+côté du portail de retour, il se déclenche dans la foulée, et on fait
+l'aller-retour en boucle.
+
 ## Commandes
 
 | Touche | Action |
@@ -33,7 +52,8 @@ n'y sont pas crédités, sinon la progression ne voudrait plus rien dire.
 | souris | regarder (deux monstres réagissent au regard) |
 | `E` | dormir · déposer au coffre · boutique |
 | `F` ou clic | frapper — ça étourdit, ça ne tue pas |
-| `N` | voyager entre les zones |
+| traverser un portail | changer de zone |
+| `N` | la liste des zones (raccourci) |
 | `Maj` | courir — et se faire entendre |
 | `Espace` | se réveiller |
 | `Échap` | pause |
