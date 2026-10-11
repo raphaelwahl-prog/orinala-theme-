@@ -1,0 +1,507 @@
+{{ 'ai-os-dashboard.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'ai-os-dashboard.js' | asset_url }}" defer="defer"></script>
+
+{% liquid
+  assign s = section.settings
+
+  assign accent = s.accent_color
+  assign accent_2 = s.accent_2_color
+  assign text_color = s.text_color
+  assign bg = s.background_color
+
+  comment
+    Progress arc geometry: r = 140 -> circumference ~= 880.
+  endcomment
+  assign arc_len = 880
+  assign arc_done = arc_len | times: s.core_percent | divided_by: 100
+  assign arc_offset = arc_len | minus: arc_done
+
+  assign metric_blocks = section.blocks | where: 'type', 'metric'
+  assign module_blocks = section.blocks | where: 'type', 'module'
+  assign log_blocks = section.blocks | where: 'type', 'log'
+
+  assign has_left = false
+  if metric_blocks.size > 0 or s.show_radar
+    assign has_left = true
+  endif
+
+  assign has_console = false
+  if s.show_console and log_blocks.size > 0
+    assign has_console = true
+  endif
+
+  assign has_right = false
+  if module_blocks.size > 0 or has_console
+    assign has_right = true
+  endif
+
+  assign column_count = 1
+  if has_left
+    assign column_count = column_count | plus: 1
+  endif
+  if has_right
+    assign column_count = column_count | plus: 1
+  endif
+%}
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    {% if s.enable_spacing %}
+      padding-top: {{ s.section_spacing_mobile }}px;
+      padding-bottom: {{ s.section_spacing_mobile }}px;
+    {% endif %}
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      {% if s.enable_spacing %}
+        padding-top: {{ s.section_spacing_desktop }}px;
+        padding-bottom: {{ s.section_spacing_desktop }}px;
+      {% endif %}
+    }
+  }
+
+  #ai-os-{{ section.id }} {
+    --aios-bg: {{ bg }};
+    --aios-text: {{ text_color }};
+    --aios-muted: {{ text_color | color_modify: 'alpha', 0.6 }};
+    --aios-accent: {{ accent }};
+    --aios-accent-2: {{ accent_2 }};
+    --aios-accent-dim: {{ accent | color_modify: 'alpha', 0.22 }};
+    --aios-accent-faint: {{ accent | color_modify: 'alpha', 0.07 }};
+    --aios-line: {{ text_color | color_modify: 'alpha', 0.12 }};
+    --aios-line-strong: {{ text_color | color_modify: 'alpha', 0.26 }};
+    --aios-grid: {{ accent | color_modify: 'alpha', 0.1 }};
+    --aios-panel: {{ s.panel_color | color_modify: 'alpha', 0.55 }};
+    --aios-panel-solid: {{ s.panel_color }};
+    --aios-radius: {{ s.corner_radius }}px;
+  }
+
+  #ai-os-{{ section.id }} .ai-os__inner {
+    max-width: {{ s.max_container_width }}px;
+  }
+
+  #ai-os-{{ section.id }} .ai-os__arc {
+    --aios-arc-len: {{ arc_len }};
+    --aios-arc-offset: {{ arc_offset }};
+  }
+{%- endstyle -%}
+
+<div
+  id="ai-os-{{ section.id }}"
+  class="ai-os section-{{ section.id }}-padding"
+  data-ai-os
+  data-aios-boot-enabled="{{ s.enable_boot }}"
+  data-aios-parallax="{{ s.enable_parallax }}"
+  data-aios-typing-speed="{{ s.typing_speed }}"
+  data-aios-console-lines="{{ s.console_visible_lines }}"
+  {{ section.shopify_attributes }}
+>
+  <div class="ai-os__backdrop" aria-hidden="true">
+    <div class="ai-os__grid-lines"></div>
+    <div class="ai-os__glow"></div>
+    {% if s.show_scanlines %}<div class="ai-os__scanlines"></div>{% endif %}
+    {% if s.show_sweep %}<div class="ai-os__sweep"></div>{% endif %}
+  </div>
+
+  <div class="ai-os__inner">
+    {% if s.eyebrow != blank or s.heading != blank or s.subheading != blank %}
+      <div class="ai-os__intro">
+        {% if s.eyebrow != blank %}
+          <p class="ai-os__eyebrow">{{ s.eyebrow | escape }}</p>
+        {% endif %}
+
+        {% if s.heading != blank or s.heading_accent != blank %}
+          <h2 class="ai-os__heading">
+            {{ s.heading | escape }}
+            {% if s.heading_accent != blank %}<em>{{ s.heading_accent | escape }}</em>{% endif %}
+          </h2>
+        {% endif %}
+
+        {% if s.subheading != blank %}
+          <div class="ai-os__subheading">{{ s.subheading }}</div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="ai-os__frame" data-aios-frame>
+      <span class="ai-os__corner ai-os__corner--tl"></span>
+      <span class="ai-os__corner ai-os__corner--tr"></span>
+      <span class="ai-os__corner ai-os__corner--bl"></span>
+      <span class="ai-os__corner ai-os__corner--br"></span>
+
+      {% if s.enable_boot %}
+        <div class="ai-os__boot" data-aios-boot aria-hidden="true">
+          <span data-aios-boot-label>{{ s.boot_label | escape }}</span>
+          <div class="ai-os__boot-track">
+            <div class="ai-os__boot-fill" data-aios-boot-fill></div>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="ai-os__topbar">
+        <div class="ai-os__brand">
+          <span class="ai-os__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          {{ s.system_name | escape }}
+        </div>
+
+        <div class="ai-os__pills">
+          {% if s.status_primary != blank %}
+            <span class="ai-os__pill"><i aria-hidden="true"></i>{{ s.status_primary | escape }}</span>
+          {% endif %}
+          {% if s.status_secondary != blank %}
+            <span class="ai-os__pill">{{ s.status_secondary | escape }}</span>
+          {% endif %}
+          {% if s.show_clock %}
+            <span class="ai-os__pill ai-os__clock" data-aios-clock>--:--:--</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="ai-os__layout ai-os__layout--cols-{{ column_count }}">
+        {% comment %} ---------------- left column: telemetry + radar ---------------- {% endcomment %}
+        {% if has_left %}
+        <div class="ai-os__col">
+          {% if metric_blocks.size > 0 %}
+            <div class="ai-os__panel">
+              <div class="ai-os__panel-title">
+                <span>{{ s.metrics_title | escape }}</span>
+                <span>{{ metric_blocks.size }} / {{ metric_blocks.size }}</span>
+              </div>
+
+              {% for block in metric_blocks %}
+                <div class="ai-os__metric" style="--aios-fill: {{ block.settings.fill }}%;" {{ block.shopify_attributes }}>
+                  <div class="ai-os__metric-head">
+                    <span class="ai-os__metric-label">{{ block.settings.label | escape }}</span>
+                    <span class="ai-os__metric-value">
+                      <span
+                        data-aios-count="{{ block.settings.value }}"
+                        data-aios-decimals="{{ block.settings.decimals }}"
+                      >{{ block.settings.value }}</span>
+                      {%- if block.settings.unit != blank -%}
+                        <small>{{ block.settings.unit | escape }}</small>
+                      {%- endif -%}
+                    </span>
+                  </div>
+                  <div class="ai-os__track"><div class="ai-os__bar"></div></div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if s.show_radar %}
+            <div class="ai-os__panel">
+              <div class="ai-os__panel-title">
+                <span>{{ s.radar_title | escape }}</span>
+                <span>{{ s.radar_status | escape }}</span>
+              </div>
+              <div class="ai-os__radar" aria-hidden="true">
+                <div class="ai-os__radar-sweep"></div>
+                <span class="ai-os__blip" style="top: 26%; left: 62%;"></span>
+                <span class="ai-os__blip" style="top: 68%; left: 34%; animation-delay: -1.2s;"></span>
+                <span class="ai-os__blip" style="top: 47%; left: 78%; animation-delay: -2.4s;"></span>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% comment %} ---------------------- centre: arc reactor ---------------------- {% endcomment %}
+        <div class="ai-os__panel ai-os__core">
+          <div class="ai-os__reactor">
+            <svg viewBox="0 0 400 400" fill="none" role="img" aria-label="{{ s.core_label | escape }}">
+              <defs>
+                <linearGradient id="aios-grad-{{ section.id }}" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="{{ accent_2 }}" />
+                  <stop offset="100%" stop-color="{{ accent }}" />
+                </linearGradient>
+                <radialGradient id="aios-core-{{ section.id }}">
+                  <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                  <stop offset="34%" stop-color="{{ accent }}" stop-opacity="0.8" />
+                  <stop offset="100%" stop-color="{{ accent }}" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+
+              <g class="ai-os__ring ai-os__ring--slow">
+                <circle cx="200" cy="200" r="188" stroke="{{ accent | color_modify: 'alpha', 0.35 }}" stroke-width="1" stroke-dasharray="2 12" />
+              </g>
+
+              <g class="ai-os__ring ai-os__ring--rev">
+                {% for i in (1..60) %}
+                  {%- assign rot = forloop.index0 | times: 6 -%}
+                  {%- assign major = forloop.index0 | modulo: 5 -%}
+                  <line
+                    x1="200" y1="24"
+                    x2="200" y2="{% if major == 0 %}42{% else %}33{% endif %}"
+                    stroke="{% if major == 0 %}{{ accent }}{% else %}{{ text_color | color_modify: 'alpha', 0.28 }}{% endif %}"
+                    stroke-width="{% if major == 0 %}2{% else %}1{% endif %}"
+                    transform="rotate({{ rot }} 200 200)"
+                  />
+                {% endfor %}
+              </g>
+
+              <g class="ai-os__ring ai-os__ring--fast">
+                <circle cx="200" cy="200" r="160" stroke="{{ accent | color_modify: 'alpha', 0.3 }}" stroke-width="7" stroke-dasharray="64 30" />
+              </g>
+
+              <circle cx="200" cy="200" r="140" stroke="{{ text_color | color_modify: 'alpha', 0.14 }}" stroke-width="4" />
+              <circle
+                class="ai-os__arc"
+                cx="200" cy="200" r="140"
+                stroke="url(#aios-grad-{{ section.id }})"
+                stroke-width="4"
+                stroke-linecap="round"
+                transform="rotate(-90 200 200)"
+              />
+
+              <polygon
+                points="286,200 243,274.5 157,274.5 114,200 157,125.5 243,125.5"
+                stroke="{{ accent | color_modify: 'alpha', 0.4 }}"
+                stroke-width="1"
+              />
+
+              <g class="ai-os__reactor-core">
+                <circle cx="200" cy="200" r="78" fill="url(#aios-core-{{ section.id }})" />
+                <circle cx="200" cy="200" r="56" stroke="{{ accent | color_modify: 'alpha', 0.55 }}" stroke-width="1" />
+              </g>
+            </svg>
+
+            <div class="ai-os__readout">
+              <div class="ai-os__readout-value">
+                <span data-aios-count="{{ s.core_value }}" data-aios-decimals="{{ s.core_decimals }}">{{ s.core_value }}</span>
+                {%- if s.core_unit != blank -%}<small>{{ s.core_unit | escape }}</small>{%- endif -%}
+              </div>
+              {% if s.core_label != blank %}
+                <div class="ai-os__readout-label">{{ s.core_label | escape }}</div>
+              {% endif %}
+              {% if s.core_sublabel != blank %}
+                <div class="ai-os__readout-sub">{{ s.core_sublabel | escape }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if s.show_waveform %}
+            <div class="ai-os__wave" aria-hidden="true">
+              {% for i in (1..s.waveform_bars) %}<i></i>{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        {% comment %} ---------------- right column: modules + console ---------------- {% endcomment %}
+        {% if has_right %}
+        <div class="ai-os__col">
+          {% if module_blocks.size > 0 %}
+            <div class="ai-os__panel">
+              <div class="ai-os__panel-title">
+                <span>{{ s.modules_title | escape }}</span>
+                <span>{{ s.modules_status | escape }}</span>
+              </div>
+
+              {% for block in module_blocks %}
+                <div class="ai-os__module" data-state="{{ block.settings.state }}" {{ block.shopify_attributes }}>
+                  <span class="ai-os__module-name">
+                    <i class="ai-os__led" aria-hidden="true"></i>
+                    {{ block.settings.name | escape }}
+                  </span>
+                  <span class="ai-os__module-state">{{ block.settings.state_label | escape }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if has_console %}
+            <div class="ai-os__panel">
+              <div class="ai-os__panel-title">
+                <span>{{ s.console_title | escape }}</span>
+                <span>live</span>
+              </div>
+              <div class="ai-os__console" data-aios-console role="log" aria-live="off">
+                {%- for block in log_blocks limit: s.console_visible_lines -%}
+                  <div class="ai-os__log" {{ block.shopify_attributes }}>
+                    <span class="ai-os__log-time">{{ 'now' | date: '%H:%M:%S' }}</span>
+                    <span class="ai-os__log-text">{{ block.settings.text | escape }}</span>
+                  </div>
+                {%- endfor -%}
+              </div>
+              {%- capture log_json -%}
+                [
+                {%- for block in log_blocks -%}
+                  {{ block.settings.text | json }}{%- unless forloop.last -%},{%- endunless -%}
+                {%- endfor -%}
+                ]
+              {%- endcapture -%}
+              <script type="application/json" data-aios-logs>{{ log_json }}</script>
+            </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      {% if s.show_ticker and s.ticker_text != blank %}
+        <div class="ai-os__ticker">
+          <span class="ai-os__ticker-tag">{{ s.ticker_tag | escape }}</span>
+          <div class="ai-os__ticker-viewport">
+            <div class="ai-os__ticker-track" aria-hidden="true">
+              <span>{{ s.ticker_text | escape }}</span>
+              <span>{{ s.ticker_text | escape }}</span>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if s.button_label != blank or s.button_2_label != blank %}
+      <div class="ai-os__actions">
+        {% if s.button_label != blank %}
+          <a href="{{ s.button_link | default: '#' }}" class="ai-os__btn">{{ s.button_label | escape }}</a>
+        {% endif %}
+        {% if s.button_2_label != blank %}
+          <a href="{{ s.button_2_link | default: '#' }}" class="ai-os__btn ai-os__btn--ghost">{{ s.button_2_label | escape }}</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "AI OS Dashboard",
+  "tag": "section",
+  "class": "section-ai-os-dashboard",
+  "settings": [
+    { "type": "header", "content": "Header" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "System online" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Meet your" },
+    { "type": "text", "id": "heading_accent", "label": "Heading — accent word", "default": "AI operating system" },
+    { "type": "richtext", "id": "subheading", "label": "Subheading", "default": "<p>Real-time telemetry, autonomous modules and a live command console — everything your store needs, in one interface.</p>" },
+
+    { "type": "header", "content": "System bar" },
+    { "type": "text", "id": "system_name", "label": "System name", "default": "ORINALA // CORE" },
+    { "type": "text", "id": "status_primary", "label": "Status pill (with indicator)", "default": "All systems nominal" },
+    { "type": "text", "id": "status_secondary", "label": "Status pill (secondary)", "default": "v4.2.0" },
+    { "type": "checkbox", "id": "show_clock", "label": "Show live clock", "default": true },
+
+    { "type": "header", "content": "Core reactor" },
+    { "type": "number", "id": "core_value", "label": "Core value", "default": 99 },
+    { "type": "range", "id": "core_decimals", "min": 0, "max": 2, "step": 1, "label": "Decimals", "default": 1 },
+    { "type": "text", "id": "core_unit", "label": "Unit", "default": "%" },
+    { "type": "text", "id": "core_label", "label": "Core label", "default": "Core efficiency" },
+    { "type": "text", "id": "core_sublabel", "label": "Core sublabel", "default": "Neural mesh synced" },
+    { "type": "range", "id": "core_percent", "min": 0, "max": 100, "step": 1, "unit": "%", "label": "Progress arc fill", "default": 82 },
+    { "type": "checkbox", "id": "show_waveform", "label": "Show audio waveform", "default": true },
+    { "type": "range", "id": "waveform_bars", "min": 12, "max": 48, "step": 2, "label": "Waveform bars", "default": 28 },
+
+    { "type": "header", "content": "Panels" },
+    { "type": "text", "id": "metrics_title", "label": "Telemetry panel title", "default": "Telemetry" },
+    { "type": "text", "id": "modules_title", "label": "Modules panel title", "default": "Modules" },
+    { "type": "text", "id": "modules_status", "label": "Modules panel status", "default": "auto" },
+    { "type": "checkbox", "id": "show_radar", "label": "Show radar", "default": true },
+    { "type": "text", "id": "radar_title", "label": "Radar title", "default": "Signal scan" },
+    { "type": "text", "id": "radar_status", "label": "Radar status", "default": "3 contacts" },
+
+    { "type": "header", "content": "Console" },
+    { "type": "checkbox", "id": "show_console", "label": "Show live console", "default": true },
+    { "type": "text", "id": "console_title", "label": "Console title", "default": "Command log" },
+    { "type": "range", "id": "console_visible_lines", "min": 3, "max": 10, "step": 1, "label": "Visible lines", "default": 6 },
+    { "type": "range", "id": "typing_speed", "min": 8, "max": 60, "step": 2, "unit": "ms", "label": "Typing speed", "default": 26 },
+
+    { "type": "header", "content": "Ticker" },
+    { "type": "checkbox", "id": "show_ticker", "label": "Show ticker", "default": true },
+    { "type": "text", "id": "ticker_tag", "label": "Ticker tag", "default": "Live" },
+    { "type": "text", "id": "ticker_text", "label": "Ticker text", "default": "Uptime 99.98% — Latency 12ms — 4 812 requests handled today — Autonomous mode engaged — Next sync in 00:42" },
+
+    { "type": "header", "content": "Buttons" },
+    { "type": "text", "id": "button_label", "label": "Primary button label", "default": "Launch the system" },
+    { "type": "url", "id": "button_link", "label": "Primary button link" },
+    { "type": "text", "id": "button_2_label", "label": "Secondary button label", "default": "Watch the demo" },
+    { "type": "url", "id": "button_2_link", "label": "Secondary button link" },
+
+    { "type": "header", "content": "Animation" },
+    { "type": "checkbox", "id": "enable_boot", "label": "Boot sequence on scroll", "default": true },
+    { "type": "text", "id": "boot_label", "label": "Boot label", "default": "Initialising core" },
+    { "type": "checkbox", "id": "enable_parallax", "label": "Cursor parallax (desktop)", "default": true },
+    { "type": "checkbox", "id": "show_scanlines", "label": "Show scanlines", "default": true },
+    { "type": "checkbox", "id": "show_sweep", "label": "Show scan sweep", "default": true },
+    { "type": "paragraph", "content": "All animation is disabled automatically for visitors who prefer reduced motion." },
+
+    { "type": "header", "content": "Colors" },
+    { "type": "color", "id": "background_color", "label": "Background", "default": "#04070d" },
+    { "type": "color", "id": "panel_color", "label": "Panel", "default": "#080d16" },
+    { "type": "color", "id": "accent_color", "label": "Accent", "default": "#3fe0ff" },
+    { "type": "color", "id": "accent_2_color", "label": "Accent 2", "default": "#ffb547" },
+    { "type": "color", "id": "text_color", "label": "Text", "default": "#e8f4ff" },
+
+    { "type": "header", "content": "Layout" },
+    { "type": "range", "id": "max_container_width", "min": 800, "max": 1600, "step": 20, "unit": "px", "label": "Max container width", "default": 1240 },
+    { "type": "range", "id": "corner_radius", "min": 0, "max": 32, "step": 2, "unit": "px", "label": "Corner radius", "default": 14 },
+
+    { "type": "header", "content": "Spacing" },
+    { "type": "checkbox", "id": "enable_spacing", "label": "Enable custom spacing", "default": true },
+    { "type": "range", "id": "section_spacing_mobile", "min": 0, "max": 120, "step": 4, "unit": "px", "label": "Mobile spacing", "default": 56 },
+    { "type": "range", "id": "section_spacing_desktop", "min": 0, "max": 200, "step": 4, "unit": "px", "label": "Desktop spacing", "default": 96 }
+  ],
+  "blocks": [
+    {
+      "type": "metric",
+      "name": "Telemetry metric",
+      "limit": 6,
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Processing load" },
+        { "type": "number", "id": "value", "label": "Value", "default": 74 },
+        { "type": "range", "id": "decimals", "min": 0, "max": 2, "step": 1, "label": "Decimals", "default": 0 },
+        { "type": "text", "id": "unit", "label": "Unit", "default": "%" },
+        { "type": "range", "id": "fill", "min": 0, "max": 100, "step": 1, "unit": "%", "label": "Bar fill", "default": 74 }
+      ]
+    },
+    {
+      "type": "module",
+      "name": "Module",
+      "limit": 8,
+      "settings": [
+        { "type": "text", "id": "name", "label": "Module name", "default": "Vision engine" },
+        {
+          "type": "select",
+          "id": "state",
+          "label": "State",
+          "options": [
+            { "value": "online", "label": "Online" },
+            { "value": "standby", "label": "Standby" },
+            { "value": "offline", "label": "Offline" }
+          ],
+          "default": "online"
+        },
+        { "type": "text", "id": "state_label", "label": "State label", "default": "Active" }
+      ]
+    },
+    {
+      "type": "log",
+      "name": "Console line",
+      "limit": 10,
+      "settings": [
+        { "type": "text", "id": "text", "label": "Line", "default": "Neural mesh synchronised." }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "AI OS Dashboard",
+      "blocks": [
+        { "type": "metric", "settings": { "label": "Processing load", "value": 74, "decimals": 0, "unit": "%", "fill": 74 } },
+        { "type": "metric", "settings": { "label": "Memory bandwidth", "value": 12.4, "decimals": 1, "unit": "TB/s", "fill": 62 } },
+        { "type": "metric", "settings": { "label": "Response latency", "value": 12, "decimals": 0, "unit": "ms", "fill": 24 } },
+        { "type": "metric", "settings": { "label": "Uptime", "value": 99.98, "decimals": 2, "unit": "%", "fill": 99 } },
+        { "type": "module", "settings": { "name": "Vision engine", "state": "online", "state_label": "Active" } },
+        { "type": "module", "settings": { "name": "Voice interface", "state": "online", "state_label": "Listening" } },
+        { "type": "module", "settings": { "name": "Predictive model", "state": "online", "state_label": "Training" } },
+        { "type": "module", "settings": { "name": "Defence grid", "state": "standby", "state_label": "Standby" } },
+        { "type": "module", "settings": { "name": "Legacy bridge", "state": "offline", "state_label": "Offline" } },
+        { "type": "log", "settings": { "text": "Boot sequence complete. All subsystems responding." } },
+        { "type": "log", "settings": { "text": "Neural mesh synchronised across 12 nodes." } },
+        { "type": "log", "settings": { "text": "Scanning perimeter... 3 contacts identified." } },
+        { "type": "log", "settings": { "text": "Predictive model updated — accuracy 98.4%." } },
+        { "type": "log", "settings": { "text": "Awaiting your command, sir." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

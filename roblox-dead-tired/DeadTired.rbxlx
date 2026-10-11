@@ -1,0 +1,6049 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="Workspace" referent="RBX35"><Properties><string name="Name">Workspace</string><bool name="FilteringEnabled">true</bool></Properties></Item><Item class="Lighting" referent="RBX36"><Properties><string name="Name">Lighting</string><float name="Brightness">2</float><float name="ClockTime">7.2</float><token name="Technology">2</token><float name="FogEnd">420</float></Properties></Item><Item class="ReplicatedStorage" referent="RBX8"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX7"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX1"><Properties><string name="Name">CosmeticCatalog</string><ProtectedString name="Source">--!strict
+--[[
+	CosmeticCatalog — skins et effets achetables avec l'argent du jeu.
+
+	Règle absolue : **rien ici ne donne le moindre avantage.** Pas de vitesse,
+	pas de réduction de risque, pas de gain. Que du visuel.
+
+	Pourquoi c'est une règle et pas une préférence : le jour où un skin rend
+	meilleur, les joueurs qui ne l'ont pas arrêtent de jouer, et ceux qui l'ont
+	s'ennuient. Les cosmétiques doivent se vendre parce qu'ils donnent un STATUT,
+	pas parce qu'ils donnent de la puissance.
+
+	Et c'est justement pour ça que les meilleurs skins ne s'achètent pas avec de
+	l'argent seulement : ils demandent une PREUVE. « Survivre une nuit dans Le
+	Nid » n'est pas un prix, c'est un trophée — et un trophée que les autres
+	voient sur toi, c'est le meilleur moteur de rétention qui existe.
+
+	Emplacements (un équipé à la fois par emplacement) :
+	  Skin · Trail · Aura · Title · BedSkin
+]]
+
+export type Requirement = {
+	TotalBanked: number?,
+	DeepestTier: number?,
+	NightsSurvived: number?,
+}
+
+export type Cosmetic = {
+	Id: string,
+	Name: string,
+	Desc: string,
+	Slot: string,
+	Price: number,
+	Order: number,
+	Requires: Requirement?,
+	-- données visuelles, lues par CosmeticService
+	Color: Color3?,
+	Color2: Color3?,
+	Material: Enum.Material?,
+	Transparency: number?,
+	LightRange: number?,
+	Text: string?,
+}
+
+local CosmeticCatalog = {}
+
+CosmeticCatalog.Slots = { &quot;Skin&quot;, &quot;Trail&quot;, &quot;Aura&quot;, &quot;Title&quot;, &quot;BedSkin&quot; }
+
+CosmeticCatalog.Items = {
+	-- ── SKINS (couleur + matière du personnage) ─────────────────────────────
+	{
+		Id = &quot;skin_default&quot;,
+		Name = &quot;Pyjama rayé&quot;,
+		Desc = &quot;Celui avec lequel tu as commencé. Gratuit, et personne n'est impressionné.&quot;,
+		Slot = &quot;Skin&quot;,
+		Price = 0,
+		Color = Color3.fromRGB(190, 190, 200),
+		Material = Enum.Material.Fabric,
+		Order = 1,
+	},
+	{
+		Id = &quot;skin_insomniac&quot;,
+		Name = &quot;L'Insomniaque&quot;,
+		Desc = &quot;Cernes, peau grise, regard vide. Tu ne dors plus, tu travailles.&quot;,
+		Slot = &quot;Skin&quot;,
+		Price = 1500,
+		Color = Color3.fromRGB(126, 126, 134),
+		Material = Enum.Material.Sand,
+		Order = 2,
+	},
+	{
+		Id = &quot;skin_gold&quot;,
+		Name = &quot;Doré sur tranche&quot;,
+		Desc = &quot;Pour prévenir tout le monde que tu as de l'argent. Mauvaise idée, bon skin.&quot;,
+		Slot = &quot;Skin&quot;,
+		Price = 12000,
+		Color = Color3.fromRGB(226, 182, 70),
+		Material = Enum.Material.Metal,
+		Requires = { TotalBanked = 20000 },
+		Order = 3,
+	},
+	{
+		Id = &quot;skin_survivor&quot;,
+		Name = &quot;Le Revenant&quot;,
+		Desc = &quot;Tu as dormi dans Le Nid et tu es revenu. Ce skin ne s'achète pas sans ça.&quot;,
+		Slot = &quot;Skin&quot;,
+		Price = 25000,
+		Color = Color3.fromRGB(58, 20, 24),
+		Material = Enum.Material.Slate,
+		Requires = { DeepestTier = 5, NightsSurvived = 15 },
+		Order = 4,
+	},
+	{
+		Id = &quot;skin_glass&quot;,
+		Name = &quot;Verre dépoli&quot;,
+		Desc = &quot;À moitié transparent. Tu n'es pas plus discret, tu es juste beau.&quot;,
+		Slot = &quot;Skin&quot;,
+		Price = 40000,
+		Color = Color3.fromRGB(190, 225, 235),
+		Material = Enum.Material.Glass,
+		Transparency = 0.45,
+		Requires = { TotalBanked = 75000 },
+		Order = 5,
+	},
+
+	-- ── TRAÎNÉES ────────────────────────────────────────────────────────────
+	{
+		Id = &quot;trail_cash&quot;,
+		Name = &quot;Traînée de billets&quot;,
+		Desc = &quot;Tu sèmes des billets en courant. Purement décoratif, aucune perte.&quot;,
+		Slot = &quot;Trail&quot;,
+		Price = 3500,
+		Color = Color3.fromRGB(120, 225, 150),
+		Color2 = Color3.fromRGB(40, 110, 60),
+		Order = 10,
+	},
+	{
+		Id = &quot;trail_blood&quot;,
+		Name = &quot;Traînée rouge&quot;,
+		Desc = &quot;On ne sait pas d'où elle vient. Toi non plus.&quot;,
+		Slot = &quot;Trail&quot;,
+		Price = 8000,
+		Color = Color3.fromRGB(190, 30, 34),
+		Color2 = Color3.fromRGB(60, 6, 8),
+		Requires = { NightsSurvived = 10 },
+		Order = 11,
+	},
+	{
+		Id = &quot;trail_void&quot;,
+		Name = &quot;Traînée du Nid&quot;,
+		Desc = &quot;Une fumée violette qui te suit depuis que tu es descendu là-bas.&quot;,
+		Slot = &quot;Trail&quot;,
+		Price = 30000,
+		Color = Color3.fromRGB(168, 70, 180),
+		Color2 = Color3.fromRGB(28, 10, 34),
+		Requires = { DeepestTier = 5 },
+		Order = 12,
+	},
+
+	-- ── AURAS (lumière autour de toi — visible par tous, y compris… eux) ────
+	{
+		Id = &quot;aura_candle&quot;,
+		Name = &quot;Lueur de bougie&quot;,
+		Desc = &quot;Une lumière chaude et faible autour de toi.&quot;,
+		Slot = &quot;Aura&quot;,
+		Price = 2000,
+		Color = Color3.fromRGB(255, 196, 120),
+		LightRange = 14,
+		Order = 20,
+	},
+	{
+		Id = &quot;aura_eyes&quot;,
+		Name = &quot;Œil pour œil&quot;,
+		Desc = &quot;La même lumière rouge que la leur. Les autres joueurs détestent ça.&quot;,
+		Slot = &quot;Aura&quot;,
+		Price = 15000,
+		Color = Color3.fromRGB(255, 42, 36),
+		LightRange = 18,
+		Requires = { DeepestTier = 4 },
+		Order = 21,
+	},
+
+	-- ── TITRES (texte au-dessus de la tête) ─────────────────────────────────
+	{
+		Id = &quot;title_rookie&quot;,
+		Name = &quot;Titre : Nouveau&quot;,
+		Desc = &quot;Tout le monde commence là.&quot;,
+		Slot = &quot;Title&quot;,
+		Price = 0,
+		Text = &quot;Nouveau&quot;,
+		Color = Color3.fromRGB(150, 150, 160),
+		Order = 30,
+	},
+	{
+		Id = &quot;title_sleeper&quot;,
+		Name = &quot;Titre : Dormeur professionnel&quot;,
+		Desc = &quot;Dix nuits survécues.&quot;,
+		Slot = &quot;Title&quot;,
+		Price = 1000,
+		Text = &quot;Dormeur professionnel&quot;,
+		Color = Color3.fromRGB(120, 225, 150),
+		Requires = { NightsSurvived = 10 },
+		Order = 31,
+	},
+	{
+		Id = &quot;title_bait&quot;,
+		Name = &quot;Titre : Appât&quot;,
+		Desc = &quot;Pour ceux qui réveillent la maison et laissent les autres mourir.&quot;,
+		Slot = &quot;Title&quot;,
+		Price = 6000,
+		Text = &quot;Appât&quot;,
+		Color = Color3.fromRGB(255, 160, 60),
+		Requires = { DeepestTier = 4 },
+		Order = 32,
+	},
+	{
+		Id = &quot;title_nest&quot;,
+		Name = &quot;Titre : A dormi dans Le Nid&quot;,
+		Desc = &quot;Le seul titre que personne ne peut acheter sans l'avoir fait.&quot;,
+		Slot = &quot;Title&quot;,
+		Price = 20000,
+		Text = &quot;A dormi dans Le Nid&quot;,
+		Color = Color3.fromRGB(190, 130, 255),
+		Requires = { DeepestTier = 5 },
+		Order = 33,
+	},
+
+	-- ── LITERIE (visible pendant que tu dors) ───────────────────────────────
+	{
+		Id = &quot;bed_default&quot;,
+		Name = &quot;Matelas d'origine&quot;,
+		Desc = &quot;Taché. Fonctionnel.&quot;,
+		Slot = &quot;BedSkin&quot;,
+		Price = 0,
+		Color = Color3.fromRGB(150, 150, 150),
+		Material = Enum.Material.Fabric,
+		Order = 40,
+	},
+	{
+		Id = &quot;bed_silk&quot;,
+		Name = &quot;Draps de soie&quot;,
+		Desc = &quot;Dormir dans une chambre froide, mais avec classe.&quot;,
+		Slot = &quot;BedSkin&quot;,
+		Price = 9000,
+		Color = Color3.fromRGB(226, 220, 240),
+		Material = Enum.Material.Fabric,
+		Requires = { TotalBanked = 15000 },
+		Order = 41,
+	},
+	{
+		Id = &quot;bed_coffin&quot;,
+		Name = &quot;Cercueil capitonné&quot;,
+		Desc = &quot;Autant être prêt.&quot;,
+		Slot = &quot;BedSkin&quot;,
+		Price = 35000,
+		Color = Color3.fromRGB(44, 26, 30),
+		Material = Enum.Material.WoodPlanks,
+		Requires = { NightsSurvived = 25 },
+		Order = 42,
+	},
+} :: { Cosmetic }
+
+CosmeticCatalog.ById = {} :: { [string]: Cosmetic }
+for _, item in ipairs(CosmeticCatalog.Items) do
+	CosmeticCatalog.ById[item.Id] = item
+end
+
+--[[ Ce qui est équipé par défaut, pour qu'un nouveau joueur ait déjà une tête. ]]
+CosmeticCatalog.Defaults = {
+	Skin = &quot;skin_default&quot;,
+	Title = &quot;title_rookie&quot;,
+	BedSkin = &quot;bed_default&quot;,
+}
+
+--[[ Le joueur remplit-il les conditions ? Retourne (ok, raison). ]]
+function CosmeticCatalog.meetsRequirement(item: Cosmetic, stats): (boolean, string?)
+	local requires = item.Requires
+	if not requires then
+		return true, nil
+	end
+	if requires.TotalBanked and stats.TotalBanked &lt; requires.TotalBanked then
+		return false, (&quot;Il te faut %d $ déposés au total.&quot;):format(requires.TotalBanked)
+	end
+	if requires.DeepestTier and stats.DeepestTier &lt; requires.DeepestTier then
+		return false, (&quot;Il faut avoir dormi au palier %d.&quot;):format(requires.DeepestTier)
+	end
+	if requires.NightsSurvived and stats.NightsSurvived &lt; requires.NightsSurvived then
+		return false, (&quot;Il faut avoir survécu à %d nuits.&quot;):format(requires.NightsSurvived)
+	end
+	return true, nil
+end
+
+return CosmeticCatalog
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX2"><Properties><string name="Name">EntityCatalog</string><ProtectedString name="Source">--!strict
+--[[
+	EntityCatalog — les créatures.
+
+	Le principe : **ce n'est pas le même monstre selon l'endroit où tu dors.**
+	Chaque palier de planque a sa créature, avec son comportement, sa
+	silhouette et sa contre-mesure. Le joueur n'apprend donc pas « le monstre »,
+	il apprend cinq monstres, et c'est ça qui fait durer le jeu.
+
+	Et par-dessus ça, un niveau d'ÉVEIL partagé par le serveur : plus les
+	joueurs dorment profond, plus les créatures montent en stade (plus rapides,
+	plus grandes, elles voient plus loin). Dormir dans Le Nid ne met donc pas
+	seulement TA vie en jeu : ça réveille la maison pour tout le monde.
+
+	Comportements implémentés par ThreatService :
+	  LosesTrack  — perd ta trace si tu casses la ligne de vue assez longtemps
+	  Blind       — ne te suit que si tu BOUGES. S'arrêter net la rend aveugle.
+	  Teleports   — se rapproche par sauts quand personne ne la regarde
+	  Relentless  — ne lâche jamais, ignore la ligne de vue
+]]
+
+export type EntityDef = {
+	Id: string,
+	Name: string,
+	Tagline: string,
+	Counter: string,
+	Tier: number,
+	BaseSpeed: number,
+	CatchRadius: number,
+	SightRange: number,
+	HuntTimeout: number,
+	Height: number,
+	BodyColor: Color3,
+	EyeColor: Color3,
+	EyeCount: number,
+	ArmLength: number,
+	-- comportements
+	LosesTrack: number?,
+	Blind: number?,
+	Teleports: number?,
+	Relentless: boolean?,
+	-- ambiance
+	FlickerRange: number,
+	CarriesLantern: boolean?,
+	-- sons : colle des IDs Roblox ici, &quot;&quot; = silencieux (voir docs/SOUND.md)
+	StepSoundId: string,
+	VoiceSoundId: string,
+}
+
+local EntityCatalog = {}
+
+EntityCatalog.Entities = {
+	-- Palier 1 : personne ne vient. Le dortoir est vraiment sûr.
+
+	[2] = {
+		Id = &quot;watchman&quot;,
+		Name = &quot;LE VEILLEUR&quot;,
+		Tagline = &quot;Il fait sa ronde. Il n'est pas pressé.&quot;,
+		Counter = &quot;Casse sa ligne de vue trois secondes et il te perd.&quot;,
+		Tier = 2,
+		BaseSpeed = 11,
+		CatchRadius = 5.5,
+		SightRange = 42,
+		HuntTimeout = 24,
+		Height = 7.5,
+		BodyColor = Color3.fromRGB(38, 36, 34),
+		EyeColor = Color3.fromRGB(255, 196, 92),
+		EyeCount = 1,
+		ArmLength = 3.2,
+		LosesTrack = 3,
+		FlickerRange = 24,
+		CarriesLantern = true,
+		StepSoundId = &quot;&quot;,
+		VoiceSoundId = &quot;&quot;,
+	},
+
+	[3] = {
+		Id = &quot;crawler&quot;,
+		Name = &quot;LA RAMPANTE&quot;,
+		Tagline = &quot;Elle n'a pas d'yeux. Elle n'en a pas besoin.&quot;,
+		Counter = &quot;Elle ne suit que le mouvement. Arrête-toi net et deviens invisible.&quot;,
+		Tier = 3,
+		BaseSpeed = 18,
+		CatchRadius = 5,
+		SightRange = 30,
+		HuntTimeout = 30,
+		Height = 3.6,
+		BodyColor = Color3.fromRGB(196, 186, 170),
+		EyeColor = Color3.fromRGB(255, 255, 255),
+		EyeCount = 0,
+		ArmLength = 4.6,
+		Blind = 1.1,
+		FlickerRange = 18,
+		StepSoundId = &quot;&quot;,
+		VoiceSoundId = &quot;&quot;,
+	},
+
+	[4] = {
+		Id = &quot;mimic&quot;,
+		Name = &quot;LE MIME&quot;,
+		Tagline = &quot;Il y avait un lit de plus que la veille.&quot;,
+		Counter = &quot;Garde-le dans ton champ de vision : regardé, il ne peut pas sauter.&quot;,
+		Tier = 4,
+		BaseSpeed = 13,
+		CatchRadius = 6,
+		SightRange = 38,
+		HuntTimeout = 34,
+		Height = 6.2,
+		BodyColor = Color3.fromRGB(74, 48, 52),
+		EyeColor = Color3.fromRGB(120, 255, 180),
+		EyeCount = 2,
+		ArmLength = 3.8,
+		Teleports = 6,
+		FlickerRange = 22,
+		StepSoundId = &quot;&quot;,
+		VoiceSoundId = &quot;&quot;,
+	},
+
+	[5] = {
+		Id = &quot;starved&quot;,
+		Name = &quot;L'AFFAMÉ&quot;,
+		Tagline = &quot;Tu dors dans sa chambre.&quot;,
+		Counter = &quot;Aucune. Cours, et compte tes secondes.&quot;,
+		Tier = 5,
+		BaseSpeed = 15,
+		CatchRadius = 6.5,
+		SightRange = 70,
+		HuntTimeout = 999,
+		Height = 11,
+		BodyColor = Color3.fromRGB(22, 18, 20),
+		EyeColor = Color3.fromRGB(255, 42, 36),
+		EyeCount = 6,
+		ArmLength = 6.5,
+		Relentless = true,
+		FlickerRange = 34,
+		StepSoundId = &quot;&quot;,
+		VoiceSoundId = &quot;&quot;,
+	},
+} :: { [number]: EntityDef }
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- ÉVEIL — l'évolution partagée
+-- ─────────────────────────────────────────────────────────────────────────────
+--[[
+	Le compteur monte quand quelqu'un dort profond : chaque tirage de risque
+	ajoute (palier − 1) points. Dormir dans Le Nid remplit donc la jauge quatre
+	fois plus vite que le couloir de service.
+
+	Il redescend à zéro à l'aube. C'est une pression qui monte DANS la nuit.
+]]
+EntityCatalog.Awakening = {
+	-- Points nécessaires pour entrer dans chaque stade.
+	Thresholds = { 0, 14, 34, 64 },
+	Stages = {
+		[1] = {
+			Name = &quot;CALME&quot;,
+			SpeedMultiplier = 1.0,
+			SightMultiplier = 1.0,
+			CatchBonus = 0,
+			ScaleMultiplier = 1.0,
+			FogEnd = 110,
+			FogColor = Color3.fromRGB(10, 10, 16),
+		},
+		[2] = {
+			Name = &quot;AGITÉ&quot;,
+			SpeedMultiplier = 1.08,
+			SightMultiplier = 1.25,
+			CatchBonus = 0.5,
+			ScaleMultiplier = 1.06,
+			FogEnd = 90,
+			FogColor = Color3.fromRGB(14, 8, 10),
+		},
+		[3] = {
+			Name = &quot;ÉVEILLÉ&quot;,
+			SpeedMultiplier = 1.16,
+			SightMultiplier = 1.6,
+			CatchBonus = 1,
+			ScaleMultiplier = 1.14,
+			FogEnd = 68,
+			FogColor = Color3.fromRGB(22, 6, 8),
+		},
+		[4] = {
+			Name = &quot;AFFAMÉ&quot;,
+			SpeedMultiplier = 1.24,
+			SightMultiplier = 2.0,
+			CatchBonus = 1.5,
+			ScaleMultiplier = 1.24,
+			FogEnd = 52,
+			FogColor = Color3.fromRGB(34, 4, 6),
+			-- À ce stade, L'AFFAMÉ sort même si personne ne dort au palier 5.
+			ReleasesApex = true,
+		},
+	},
+}
+
+EntityCatalog.MaxStage = 4
+
+--[[ Points gagnés par tirage de risque pour un palier donné. ]]
+function EntityCatalog.awakeningGain(tier: number): number
+	return math.max(0, tier - 1)
+end
+
+--[[ Stade (1 à 4) correspondant à un total de points. ]]
+function EntityCatalog.stageFor(points: number): number
+	local stage = 1
+	for index, threshold in ipairs(EntityCatalog.Awakening.Thresholds) do
+		if points &gt;= threshold then
+			stage = index
+		end
+	end
+	return math.min(stage, EntityCatalog.MaxStage)
+end
+
+function EntityCatalog.stageData(stage: number)
+	return EntityCatalog.Awakening.Stages[math.clamp(stage, 1, EntityCatalog.MaxStage)]
+end
+
+--[[ La créature attachée à un palier. nil pour le palier 1. ]]
+function EntityCatalog.forTier(tier: number): EntityDef?
+	return EntityCatalog.Entities[tier]
+end
+
+--[[ Stats effectives d'une créature à un stade d'éveil donné. ]]
+function EntityCatalog.resolve(def: EntityDef, stage: number)
+	local scaling = EntityCatalog.stageData(stage)
+	return {
+		Speed = def.BaseSpeed * scaling.SpeedMultiplier,
+		SightRange = def.SightRange * scaling.SightMultiplier,
+		CatchRadius = def.CatchRadius + scaling.CatchBonus,
+		Scale = scaling.ScaleMultiplier,
+		HuntTimeout = def.HuntTimeout,
+	}
+end
+
+return EntityCatalog
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX3"><Properties><string name="Name">GameConfig</string><ProtectedString name="Source">--!strict
+--[[
+	DEAD TIRED — Configuration centrale.
+
+	TOUS les nombres qui se règlent sont dans ce fichier. Si tu veux changer
+	l'équilibrage du jeu, tu ne touches qu'ici : aucun autre script ne contient
+	de valeur en dur.
+
+	Le coeur du jeu : plus la planque est dangereuse, plus elle paie, mais
+	plus souvent le monstre te trouve. Voir docs/DESIGN.md pour le calcul
+	d'espérance de gain qui justifie ces chiffres.
+]]
+
+local GameConfig = {}
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- CYCLE DE JEU
+-- ─────────────────────────────────────────────────────────────────────────────
+GameConfig.Round = {
+	-- Durée d'une nuit, en secondes.
+	NightDuration = 180,
+	-- Pause entre deux nuits (dépôt automatique, achats, respawn).
+	DawnDuration = 25,
+	-- Intervalle entre deux tirages de risque pour un joueur endormi.
+	RiskTickInterval = 6,
+	-- Délai entre l'alerte (&quot;un bruit dans le couloir&quot;) et l'arrivée du monstre.
+	-- C'est la fenêtre de fuite : c'est ce qui rend le jeu skill et pas loterie.
+	WarningLead = 4.5,
+}
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- ÉCONOMIE
+-- ─────────────────────────────────────────────────────────────────────────────
+GameConfig.Economy = {
+	StartingCash = 0,
+	-- Part de l'argent NON déposé perdue quand on est attrapé. 1.0 = tout.
+	UnbankedLossOnCatch = 1.0,
+	-- Part de l'argent non déposé conservée si on est réanimé par un coéquipier.
+	-- (On applique la perte au moment de la capture ; ceci rend une partie.)
+	UnbankedRecoveredOnRevive = 0.5,
+	-- L'argent déposé au coffre ne se perd jamais.
+	BankFeePercent = 0,
+}
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- LES PLANQUES — le coeur du jeu
+--
+-- Note sur les couleurs : elles sont visibles sur les lits dans une pièce
+-- sombre, donc elles doivent être distinguables les unes des autres, y compris
+-- par un joueur daltonien (8 % des garçons). La première version allait du vert
+-- au rouge comme un feu tricolore : le Dortoir et le Couloir étaient
+-- indiscernables (ΔE 11,7 en vision normale, seuil 15 ; 7,2 en protanopie).
+-- La palette actuelle abandonne le dégradé vert→rouge au profit de cinq
+-- teintes écartées sur le cercle chromatique (cyan, vert, ambre, rouge,
+-- violet), toutes dans la bande de luminosité lisible sur fond noir. Si tu les
+-- changes, garde cette contrainte : l'ordre du risque est déjà porté par
+-- l'étiquette au-dessus du lit et par l'éloignement de la salle, pas par la
+-- couleur.
+-- Rate         = $ par seconde de sommeil
+-- DetectChance = probabilité, à CHAQUE tick de risque, que le monstre te repère
+-- UnlockTotal  = total déposé (cumulé, persistant) nécessaire pour y dormir
+-- ─────────────────────────────────────────────────────────────────────────────
+GameConfig.Tiers = {
+	[1] = {
+		Name = &quot;Dortoir&quot;,
+		RiskLabel = &quot;Aucun risque&quot;,
+		Rate = 1,
+		DetectChance = 0.00,
+		UnlockTotal = 0,
+		Color = Color3.fromRGB(0, 141, 184),
+	},
+	[2] = {
+		Name = &quot;Couloir de service&quot;,
+		RiskLabel = &quot;Faible&quot;,
+		Rate = 3,
+		DetectChance = 0.015,
+		UnlockTotal = 0,
+		Color = Color3.fromRGB(34, 165, 106),
+	},
+	[3] = {
+		Name = &quot;Cave&quot;,
+		RiskLabel = &quot;Élevé&quot;,
+		Rate = 8,
+		DetectChance = 0.045,
+		UnlockTotal = 2500,
+		Color = Color3.fromRGB(173, 135, 0),
+	},
+	[4] = {
+		Name = &quot;Chambre froide&quot;,
+		RiskLabel = &quot;Très élevé&quot;,
+		Rate = 18,
+		DetectChance = 0.10,
+		UnlockTotal = 12000,
+		Color = Color3.fromRGB(196, 57, 34),
+	},
+	[5] = {
+		Name = &quot;Le Nid&quot;,
+		RiskLabel = &quot;Suicidaire&quot;,
+		Rate = 45,
+		DetectChance = 0.22,
+		UnlockTotal = 40000,
+		Color = Color3.fromRGB(159, 61, 174),
+	},
+}
+
+GameConfig.MaxTier = 5
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- ÊTRE À TERRE / RÉANIMATION (le levier coop)
+-- ─────────────────────────────────────────────────────────────────────────────
+GameConfig.Downed = {
+	-- Temps avant la mort définitive si personne ne vient.
+	BleedoutSeconds = 45,
+	-- Temps de maintien de la touche pour relever quelqu'un.
+	ReviveHoldSeconds = 6,
+	-- Distance maximale pour pouvoir relever.
+	ReviveRange = 9,
+}
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- LE MONSTRE
+-- ─────────────────────────────────────────────────────────────────────────────
+GameConfig.Threat = {
+	-- Vitesse de déplacement en chasse (studs/s). Un joueur court à 16 par défaut.
+	HuntSpeed = 13.5,
+	-- Vitesse en patrouille, quand il n'a repéré personne.
+	PatrolSpeed = 7,
+	-- Distance à laquelle il attrape.
+	CatchRadius = 5.5,
+	-- Temps au bout duquel il abandonne une chasse et repart en patrouille.
+	HuntTimeout = 26,
+	-- Il voit aussi les joueurs réveillés qui passent trop près pendant une chasse.
+	OpportunisticSightRange = 22,
+}
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- PROGRESSION — paliers d'ouverture, basés sur le total déposé à vie
+-- ─────────────────────────────────────────────────────────────────────────────
+GameConfig.Progression = {
+	Milestones = {
+		{ Total = 2500, Message = &quot;Cave débloquée.&quot; },
+		{ Total = 12000, Message = &quot;Chambre froide débloquée.&quot; },
+		{ Total = 40000, Message = &quot;Le Nid est ouvert. Bonne chance.&quot; },
+	},
+}
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- DIVERS
+-- ─────────────────────────────────────────────────────────────────────────────
+-- ─────────────────────────────────────────────────────────────────────────────
+-- CARTE
+-- ─────────────────────────────────────────────────────────────────────────────
+GameConfig.Map = {
+	-- true  : le serveur génère une carte jouable au démarrage (5 salles, coffre,
+	--         boutique, monstre, points de patrouille). Parfait pour tester tout
+	--         de suite sans rien modéliser.
+	-- false : tu utilises ta propre carte. Il faut alors taguer tes parts
+	--         toi-même (SleepSpot + attribut Tier, BankTerminal, ShopTerminal,
+	--         PatrolPoint, Monster). Voir docs/SETUP.md.
+	UseGeneratedMap = true,
+	-- Supprime le Baseplate par défaut de Studio pour éviter deux sols superposés.
+	RemoveBaseplate = true,
+}
+
+GameConfig.Misc = {
+	-- Vitesse de marche normale / avec les baskets du magasin.
+	BaseWalkSpeed = 16,
+	-- Intervalle d'autosauvegarde (secondes).
+	AutosaveInterval = 120,
+	-- Version du format de sauvegarde. À incrémenter si tu changes la structure
+	-- des données : les anciennes sauvegardes seront alors réinitialisées.
+	-- v2 : ajout des cosmétiques.
+	DataVersion = 2,
+}
+
+return GameConfig
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX4"><Properties><string name="Name">Monetization</string><ProtectedString name="Source">--!strict
+--[[
+	Monétisation Robux.
+
+	⚠️  LIS-MOI : les IDs ci-dessous sont des ZÉROS = désactivés.
+	Tant qu'un ID vaut 0, le jeu fonctionne normalement, l'objet n'apparaît
+	simplement pas dans la boutique Robux. Rien ne plante.
+
+	Pour activer :
+	  1. Dans Roblox Studio, publie ton jeu.
+	  2. Site Roblox → Créations → ton jeu → Monétisation.
+	     - &quot;Passes&quot; pour les Game Passes (achat unique, permanent).
+	     - &quot;Developer Products&quot; pour les achats répétables (packs d'argent).
+	  3. Copie l'ID de chaque création et colle-le ici.
+
+	Règle Roblox à respecter : on ne vend JAMAIS un avantage qui casse le jeu
+	pour les autres. Un x2 d'argent et des vies en plus, c'est accepté et c'est
+	ce que font tous les jeux du genre. Ne vends pas d'immunité au monstre :
+	ça tue le jeu et ça fait fuir les joueurs.
+]]
+
+local Monetization = {}
+
+-- ── GAME PASSES (achat unique, effet permanent) ──────────────────────────────
+Monetization.Passes = {
+	DoubleCash = {
+		Id = 0, -- ← colle ici l'ID du Game Pass
+		Name = &quot;Double Argent&quot;,
+		Desc = &quot;Tous tes gains de sommeil sont multipliés par 2, pour toujours.&quot;,
+		Effect = &quot;CashMultiplier&quot;,
+		Value = 2,
+	},
+	ExtraLife = {
+		Id = 0,
+		Name = &quot;Seconde chance&quot;,
+		Desc = &quot;Une réanimation automatique gratuite par nuit.&quot;,
+		Effect = &quot;FreeRevivePerNight&quot;,
+		Value = 1,
+	},
+	VipRoom = {
+		Id = 0,
+		Name = &quot;Chambre VIP&quot;,
+		Desc = &quot;Accès à une planque de palier 3 totalement sûre.&quot;,
+		Effect = &quot;VipRoom&quot;,
+		Value = 1,
+	},
+}
+
+-- ── DEVELOPER PRODUCTS (achetables en boucle) ────────────────────────────────
+Monetization.Products = {
+	[0] = nil, -- placeholder, ignoré
+}
+
+-- Liste déclarative : le serveur lit celle-ci et construit la table par ID.
+Monetization.ProductList = {
+	{
+		Id = 0, -- ← colle ici l'ID du Developer Product
+		Name = &quot;Petite liasse&quot;,
+		Desc = &quot;+2 500 $ tout de suite.&quot;,
+		Effect = &quot;GrantCash&quot;,
+		Value = 2500,
+	},
+	{
+		Id = 0,
+		Name = &quot;Grosse liasse&quot;,
+		Desc = &quot;+12 000 $ tout de suite.&quot;,
+		Effect = &quot;GrantCash&quot;,
+		Value = 12000,
+	},
+	{
+		Id = 0,
+		Name = &quot;Relevage immédiat&quot;,
+		Desc = &quot;Te remet debout instantanément quand tu es à terre.&quot;,
+		Effect = &quot;InstantRevive&quot;,
+		Value = 1,
+	},
+}
+
+--[[ Les entrées actives seulement (ID non nul). ]]
+function Monetization.activePasses()
+	local out = {}
+	for key, pass in pairs(Monetization.Passes) do
+		if pass.Id and pass.Id &gt; 0 then
+			out[key] = pass
+		end
+	end
+	return out
+end
+
+function Monetization.activeProducts()
+	local out = {}
+	for _, product in ipairs(Monetization.ProductList) do
+		if product.Id and product.Id &gt; 0 then
+			out[product.Id] = product
+		end
+	end
+	return out
+end
+
+return Monetization
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX5"><Properties><string name="Name">Net</string><ProtectedString name="Source">--!strict
+--[[
+	Création et accès aux Remotes.
+
+	Le serveur appelle Net.build() une fois au démarrage : ça crée le dossier
+	ReplicatedStorage/Net avec tous les RemoteEvent / RemoteFunction.
+	Le client appelle Net.get(&quot;NomDuRemote&quot;) et attend si besoin.
+
+	Avoir la liste au même endroit évite les fautes de frappe silencieuses :
+	si tu demandes un remote qui n'existe pas dans la liste, ça lève une erreur
+	immédiate au lieu de bloquer indéfiniment.
+]]
+
+local ReplicatedStorage = game:GetService(&quot;ReplicatedStorage&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+
+local Net = {}
+
+-- Serveur → client
+Net.Events = {
+	&quot;StateUpdate&quot;, -- état complet du joueur (argent, inventaire, sommeil…)
+	&quot;RoundUpdate&quot;, -- phase + temps restant
+	&quot;Notify&quot;, -- message à l'écran
+	&quot;DangerAlert&quot;, -- réveil d'alerte : le monstre arrive
+	&quot;SleepChanged&quot;, -- entré / sorti de sommeil (le client bloque les contrôles)
+	&quot;ShopResult&quot;, -- retour d'un achat
+	&quot;AwakeningUpdate&quot;, -- niveau d'éveil de la maison + créature active
+	&quot;EntityReveal&quot;, -- première rencontre avec une créature : on affiche sa fiche
+	&quot;CosmeticResult&quot;, -- retour d'un achat ou d'un équipement de skin
+}
+
+-- Client → serveur
+-- Note : il n'y a pas de &quot;RequestSleep&quot;. S'endormir passe par le ProximityPrompt
+-- de la planque, dont l'événement Triggered est écouté côté SERVEUR : le client
+-- n'a donc aucun moyen de prétendre dormir dans une planque où il n'est pas.
+Net.Requests = {
+	&quot;RequestWake&quot;,
+	&quot;RequestBank&quot;,
+	&quot;RequestBuy&quot;, -- { itemId: string }
+	&quot;RequestRevive&quot;, -- { target: Player }
+	&quot;RequestCosmetic&quot;, -- { action: &quot;buy&quot; | &quot;equip&quot;, id: string }
+}
+
+-- RemoteFunction (client demande, serveur répond)
+Net.Functions = {
+	&quot;GetCatalog&quot;,
+}
+
+local FOLDER_NAME = &quot;Net&quot;
+
+local function ensureFolder(): Folder
+	local existing = ReplicatedStorage:FindFirstChild(FOLDER_NAME)
+	if existing and existing:IsA(&quot;Folder&quot;) then
+		return existing
+	end
+	local folder = Instance.new(&quot;Folder&quot;)
+	folder.Name = FOLDER_NAME
+	folder.Parent = ReplicatedStorage
+	return folder
+end
+
+--[[ Serveur uniquement : crée tous les remotes. Idempotent. ]]
+function Net.build(): Folder
+	assert(RunService:IsServer(), &quot;Net.build() ne doit être appelé que côté serveur&quot;)
+	local folder = ensureFolder()
+
+	local function make(className: string, name: string)
+		if folder:FindFirstChild(name) then
+			return
+		end
+		local remote = Instance.new(className)
+		remote.Name = name
+		remote.Parent = folder
+	end
+
+	for _, name in ipairs(Net.Events) do
+		make(&quot;RemoteEvent&quot;, name)
+	end
+	for _, name in ipairs(Net.Requests) do
+		make(&quot;RemoteEvent&quot;, name)
+	end
+	for _, name in ipairs(Net.Functions) do
+		make(&quot;RemoteFunction&quot;, name)
+	end
+
+	return folder
+end
+
+local function isKnown(name: string): boolean
+	for _, list in ipairs({ Net.Events, Net.Requests, Net.Functions }) do
+		for _, candidate in ipairs(list) do
+			if candidate == name then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+--[[ Récupère un remote par son nom. Attend qu'il existe (client au démarrage). ]]
+function Net.get(name: string): Instance
+	if not isKnown(name) then
+		error((&quot;Remote inconnu : %q — ajoute-le dans Net.luau&quot;):format(name), 2)
+	end
+	local folder = ReplicatedStorage:WaitForChild(FOLDER_NAME, 20)
+	if not folder then
+		error(&quot;Le dossier Net n'a jamais été créé — le serveur a-t-il démarré ?&quot;, 2)
+	end
+	local remote = folder:WaitForChild(name, 20)
+	if not remote then
+		error((&quot;Remote %q absent du dossier Net&quot;):format(name), 2)
+	end
+	return remote
+end
+
+return Net
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX6"><Properties><string name="Name">ShopCatalog</string><ProtectedString name="Source">--!strict
+--[[
+	Catalogue de la boutique en argent du jeu (pas en Robux).
+
+	Chaque objet a un `Kind` :
+	  &quot;Passive&quot;  → effet permanent une fois acheté (s'achète une seule fois)
+	  &quot;Upgrade&quot;  → plusieurs niveaux, le prix monte
+	  &quot;Consumable&quot; → stock, consommé à l'usage
+
+	Les effets sont lus par EconomyService / SleepService. Si tu ajoutes un objet
+	avec un nouvel `Effect`, pense à l'implémenter là-bas (sinon il ne fera rien).
+]]
+
+export type ShopItem = {
+	Id: string,
+	Name: string,
+	Desc: string,
+	Kind: &quot;Passive&quot; | &quot;Upgrade&quot; | &quot;Consumable&quot;,
+	Price: number,
+	-- Upgrade seulement
+	MaxLevel: number?,
+	PriceGrowth: number?,
+	-- Consumable seulement
+	MaxStock: number?,
+	-- Pour trier l'affichage
+	Order: number,
+	-- Identifiant d'effet lu par le serveur
+	Effect: string,
+	-- Valeur de l'effet (par niveau pour les Upgrade)
+	Value: number,
+	-- Palier de total déposé requis pour voir l'objet
+	RequiresTotal: number?,
+}
+
+local ShopCatalog = {}
+
+ShopCatalog.Items = {
+	-- ── Réduire le risque ───────────────────────────────────────────────────
+	{
+		Id = &quot;earplugs&quot;,
+		Name = &quot;Bouchons d'oreille&quot;,
+		Desc = &quot;Tu respires moins fort. −15 % de chance d'être repéré par niveau.&quot;,
+		Kind = &quot;Upgrade&quot;,
+		Price = 400,
+		PriceGrowth = 2.1,
+		MaxLevel = 4,
+		Effect = &quot;DetectMultiplier&quot;,
+		Value = 0.15,
+		Order = 10,
+	},
+	{
+		Id = &quot;alarm&quot;,
+		Name = &quot;Réveil à vibration&quot;,
+		Desc = &quot;Tu te réveilles plus tôt quand il approche. +1,2 s de fenêtre de fuite par niveau.&quot;,
+		Kind = &quot;Upgrade&quot;,
+		Price = 650,
+		PriceGrowth = 2.3,
+		MaxLevel = 3,
+		Effect = &quot;WarningBonus&quot;,
+		Value = 1.2,
+		Order = 20,
+	},
+
+	-- ── Gagner plus ─────────────────────────────────────────────────────────
+	{
+		Id = &quot;blanket&quot;,
+		Name = &quot;Couverture lestée&quot;,
+		Desc = &quot;Sommeil plus profond, donc mieux payé. +12 % de gains par niveau.&quot;,
+		Kind = &quot;Upgrade&quot;,
+		Price = 900,
+		PriceGrowth = 2.4,
+		MaxLevel = 5,
+		Effect = &quot;EarnMultiplier&quot;,
+		Value = 0.12,
+		Order = 30,
+	},
+	{
+		Id = &quot;ledger&quot;,
+		Name = &quot;Carnet du veilleur&quot;,
+		Desc = &quot;Le coffre arrondit en ta faveur. +8 % sur chaque dépôt par niveau.&quot;,
+		Kind = &quot;Upgrade&quot;,
+		Price = 2200,
+		PriceGrowth = 2.6,
+		MaxLevel = 3,
+		Effect = &quot;BankBonus&quot;,
+		Value = 0.08,
+		RequiresTotal = 2500,
+		Order = 40,
+	},
+
+	-- ── Survivre ────────────────────────────────────────────────────────────
+	{
+		Id = &quot;shoes&quot;,
+		Name = &quot;Baskets de contrebande&quot;,
+		Desc = &quot;+2 de vitesse de course par niveau. Pour atteindre le coffre à temps.&quot;,
+		Kind = &quot;Upgrade&quot;,
+		Price = 750,
+		PriceGrowth = 2.2,
+		MaxLevel = 4,
+		Effect = &quot;WalkSpeedBonus&quot;,
+		Value = 2,
+		Order = 50,
+	},
+	{
+		Id = &quot;medkit&quot;,
+		Name = &quot;Trousse de secours&quot;,
+		Desc = &quot;Te relève tout seul une fois, sans coéquipier. Consommée à l'usage.&quot;,
+		Kind = &quot;Consumable&quot;,
+		Price = 1200,
+		MaxStock = 3,
+		Effect = &quot;SelfRevive&quot;,
+		Value = 1,
+		Order = 60,
+	},
+	{
+		Id = &quot;lantern&quot;,
+		Name = &quot;Lanterne à huile&quot;,
+		Desc = &quot;Tu vois plus loin dans le noir. Confort, pas de gain d'argent.&quot;,
+		Kind = &quot;Passive&quot;,
+		Price = 500,
+		Effect = &quot;Lantern&quot;,
+		Value = 1,
+		Order = 70,
+	},
+}
+
+-- Index par Id, construit au chargement.
+ShopCatalog.ById = {} :: { [string]: ShopItem }
+for _, item in ipairs(ShopCatalog.Items) do
+	ShopCatalog.ById[item.Id] = item
+end
+
+--[[ Prix du prochain niveau d'une amélioration.
+	 level = niveau actuel possédé (0 = rien). ]]
+function ShopCatalog.getPrice(item: ShopItem, level: number): number
+	if item.Kind == &quot;Upgrade&quot; then
+		local growth = item.PriceGrowth or 2
+		return math.floor(item.Price * (growth ^ level))
+	end
+	return item.Price
+end
+
+--[[ L'objet est-il encore achetable à ce niveau / ce stock ? ]]
+function ShopCatalog.canBuyMore(item: ShopItem, owned: number): boolean
+	if item.Kind == &quot;Upgrade&quot; then
+		return owned &lt; (item.MaxLevel or 1)
+	elseif item.Kind == &quot;Consumable&quot; then
+		return owned &lt; (item.MaxStock or 1)
+	end
+	return owned &lt; 1
+end
+
+return ShopCatalog
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX25"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Script" referent="RBX24"><Properties><string name="Name">Server</string><ProtectedString name="Source">--[[
+	DEAD TIRED — point d'entrée serveur.
+
+	Ce script ne contient aucune règle de jeu : il ne fait que créer les
+	services, les présenter les uns aux autres, et les démarrer dans le bon
+	ordre. Toute la logique est dans les modules à côté.
+
+	Ordre important :
+	  1. Net.build()   — les remotes doivent exister avant que le client démarre.
+	  2. init(registry) sur tous les services — ils se gardent une référence
+	     mutuelle, mais ne touchent encore à rien.
+	  3. MapBuilder    — la carte doit exister avant ZoneService, qui la lit.
+	  4. start()       — à partir de là, les boucles tournent.
+]]
+
+local Players = game:GetService(&quot;Players&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Net = require(Shared.Net)
+local GameConfig = require(Shared.GameConfig)
+
+-- 1. Remotes
+Net.build()
+
+-- 2. Services
+local services = {
+	Data = require(script.DataService),
+	Notify = require(script.NotifyService),
+	Economy = require(script.EconomyService),
+	Progression = require(script.ProgressionService),
+	Zone = require(script.ZoneService),
+	Sleep = require(script.SleepService),
+	Life = require(script.LifeService),
+	Threat = require(script.ThreatService),
+	Round = require(script.RoundService),
+	Shop = require(script.ShopService),
+	Monetization = require(script.MonetizationService),
+	Awakening = require(script.AwakeningService),
+	Cosmetic = require(script.CosmeticService),
+}
+local MapBuilder = require(script.MapBuilder)
+
+services.Data.init()
+for name, service in pairs(services) do
+	if name ~= &quot;Data&quot; and type(service.init) == &quot;function&quot; then
+		service.init(services)
+	end
+end
+
+-- 3. Carte
+MapBuilder.build()
+
+-- 4. Boucles
+for _, service in pairs(services) do
+	if type(service.start) == &quot;function&quot; then
+		service.start()
+	end
+end
+
+-- ─── joueurs ────────────────────────────────────────────────────────────────
+
+local function onCharacterAdded(player: Player, character: Model)
+	character:WaitForChild(&quot;Humanoid&quot;, 5)
+	services.Zone.releaseAllFor(player)
+	services.Economy.applyWalkSpeed(player)
+	-- Les skins se réappliquent à chaque réapparition, sinon on repart nu
+	-- après chaque mort.
+	services.Cosmetic.apply(player)
+	services.Economy.push(player)
+end
+
+local function onPlayerAdded(player: Player)
+	-- Le chargement est bloquant : on le fait dans sa propre tâche pour ne pas
+	-- retarder l'arrivée des autres joueurs.
+	local profile = services.Data.load(player)
+	if not profile then
+		return
+	end
+
+	services.Economy.onPlayerAdded(player)
+	services.Progression.onPlayerAdded(player)
+	services.Monetization.onPlayerAdded(player)
+
+	player.CharacterAdded:Connect(function(character)
+		onCharacterAdded(player, character)
+	end)
+	if player.Character then
+		onCharacterAdded(player, player.Character)
+	end
+
+	services.Economy.push(player)
+	services.Round.pushTo(player)
+	services.Awakening.pushTo(player)
+	services.Progression.check(player)
+
+	if not services.Data.isAvailable() then
+		services.Notify.send(player,
+			&quot;Sauvegarde désactivée (API Services off) — ta progression ne sera pas gardée.&quot;, &quot;info&quot;)
+	end
+end
+
+local function onPlayerRemoving(player: Player)
+	services.Threat.onPlayerRemoving(player)
+	services.Sleep.onPlayerRemoving(player)
+	services.Life.onPlayerRemoving(player)
+	services.Progression.onPlayerRemoving(player)
+	services.Monetization.onPlayerRemoving(player)
+	services.Economy.onPlayerRemoving(player)
+	services.Data.release(player)
+end
+
+Players.PlayerAdded:Connect(function(player)
+	task.spawn(onPlayerAdded, player)
+end)
+Players.PlayerRemoving:Connect(onPlayerRemoving)
+
+-- Joueurs déjà présents (rechargement d'un script en Studio).
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(onPlayerAdded, player)
+end
+
+-- ─── demandes du client ─────────────────────────────────────────────────────
+
+;(Net.get(&quot;RequestWake&quot;) :: RemoteEvent).OnServerEvent:Connect(function(player)
+	services.Sleep.requestWake(player)
+end)
+
+;(Net.get(&quot;RequestBank&quot;) :: RemoteEvent).OnServerEvent:Connect(function(player)
+	services.Economy.requestBank(player)
+end)
+
+;(Net.get(&quot;RequestRevive&quot;) :: RemoteEvent).OnServerEvent:Connect(function(player, target)
+	-- On revalide tout côté serveur : le client peut mentir sur la cible.
+	if typeof(target) ~= &quot;Instance&quot; or not target:IsA(&quot;Player&quot;) then
+		return
+	end
+	if not services.Life.isDown(target) then
+		return
+	end
+	local a = player.Character and player.Character.PrimaryPart
+	local b = target.Character and target.Character.PrimaryPart
+	if not (a and b) then
+		return
+	end
+	if (a.Position - b.Position).Magnitude &gt; GameConfig.Downed.ReviveRange + 2 then
+		return
+	end
+	services.Life.revive(target, player)
+end)
+
+print(&quot;[DEAD TIRED] serveur prêt.&quot;)
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX9"><Properties><string name="Name">AwakeningService</string><ProtectedString name="Source">--[[
+	AwakeningService — l'évolution des créatures.
+
+	C'est la réponse à « le monstre évolue selon là où tu te caches ».
+
+	Un compteur partagé par tout le serveur monte à chaque tirage de risque
+	d'un dormeur, de (palier − 1) points. Dormir dans Le Nid remplit donc la
+	jauge quatre fois plus vite que le couloir de service.
+
+	Quatre stades : CALME → AGITÉ → ÉVEILLÉ → AFFAMÉ. À chaque stade les
+	créatures sont plus rapides, plus grandes, voient plus loin, et le
+	brouillard se referme. Au dernier stade, L'AFFAMÉ sort de sa chambre même
+	si plus personne ne dort au palier 5.
+
+	Conséquence de design voulue : la cupidité d'un seul joueur met toute la
+	partie en danger. En multi, ça crée des engueulades — et les engueulades,
+	c'est de la rétention.
+]]
+
+local Lighting = game:GetService(&quot;Lighting&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local EntityCatalog = require(Shared.EntityCatalog)
+local Net = require(Shared.Net)
+
+local AwakeningService = {}
+
+local services
+local points = 0
+local stage = 1
+local apexReleased = false
+
+function AwakeningService.init(registry)
+	services = registry
+end
+
+function AwakeningService.getPoints(): number
+	return points
+end
+
+function AwakeningService.getStage(): number
+	return stage
+end
+
+function AwakeningService.getStageData()
+	return EntityCatalog.stageData(stage)
+end
+
+--[[ Points restants avant le prochain stade. nil si on est au maximum. ]]
+local function pointsToNextStage(): number?
+	local nextThreshold = EntityCatalog.Awakening.Thresholds[stage + 1]
+	if not nextThreshold then
+		return nil
+	end
+	return nextThreshold - points
+end
+
+local function broadcast()
+	local data = AwakeningService.getStageData()
+	;(Net.get(&quot;AwakeningUpdate&quot;) :: RemoteEvent):FireAllClients({
+		Stage = stage,
+		MaxStage = EntityCatalog.MaxStage,
+		StageName = data.Name,
+		Points = points,
+		ToNext = pointsToNextStage(),
+	})
+end
+
+function AwakeningService.pushTo(player: Player)
+	local data = AwakeningService.getStageData()
+	;(Net.get(&quot;AwakeningUpdate&quot;) :: RemoteEvent):FireClient(player, {
+		Stage = stage,
+		MaxStage = EntityCatalog.MaxStage,
+		StageName = data.Name,
+		Points = points,
+		ToNext = pointsToNextStage(),
+	})
+end
+
+local function applyStage(previousStage: number)
+	local data = AwakeningService.getStageData()
+
+	-- Le brouillard se referme : le joueur SENT le stade monter sans lire l'UI.
+	Lighting.FogEnd = data.FogEnd
+	Lighting.FogColor = data.FogColor
+
+	-- Les créatures déjà sur la carte grandissent et accélèrent.
+	services.Threat.rescale(stage)
+
+	if stage &gt; previousStage then
+		services.Notify.broadcast(
+			(&quot;La maison se réveille — %s.&quot;):format(data.Name),
+			stage &gt;= 3 and &quot;danger&quot; or &quot;info&quot;
+		)
+	end
+
+	if data.ReleasesApex and not apexReleased then
+		apexReleased = true
+		services.Notify.broadcast(&quot;Quelque chose est sorti du Nid. Ce n'est plus votre maison.&quot;, &quot;danger&quot;)
+		services.Threat.releaseApex()
+	end
+
+	broadcast()
+end
+
+--[[ Appelé par SleepService à chaque tirage de risque. ]]
+function AwakeningService.feed(tier: number)
+	local gain = EntityCatalog.awakeningGain(tier)
+	if gain &lt;= 0 then
+		return
+	end
+	points += gain
+
+	local newStage = EntityCatalog.stageFor(points)
+	if newStage ~= stage then
+		local previous = stage
+		stage = newStage
+		applyStage(previous)
+	else
+		broadcast()
+	end
+end
+
+--[[ Remise à zéro à l'aube. ]]
+function AwakeningService.reset()
+	local previous = stage
+	points = 0
+	stage = 1
+	apexReleased = false
+	if previous ~= 1 then
+		applyStage(previous)
+	else
+		broadcast()
+	end
+end
+
+function AwakeningService.start()
+	broadcast()
+end
+
+return AwakeningService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX10"><Properties><string name="Name">CosmeticService</string><ProtectedString name="Source">--[[
+	CosmeticService — achat, équipement et application des skins.
+
+	Les cosmétiques sont appliqués CÔTÉ SERVEUR, sur le personnage lui-même.
+	C'est important : un skin que seul son propriétaire voit ne sert à rien.
+	Tout l'intérêt est que les autres joueurs le voient — c'est du statut, et
+	le statut n'existe que s'il est public.
+
+	Comme pour la boutique d'équipement, le client n'envoie qu'un identifiant.
+	Prix, conditions et possession sont vérifiés ici.
+]]
+
+local Players = game:GetService(&quot;Players&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local CosmeticCatalog = require(Shared.CosmeticCatalog)
+local Net = require(Shared.Net)
+
+local CosmeticService = {}
+
+local services
+
+function CosmeticService.init(registry)
+	services = registry
+end
+
+-- ─── accès au profil ────────────────────────────────────────────────────────
+
+local function store(player: Player)
+	local profile = services.Data.get(player)
+	if not profile then
+		return nil
+	end
+	profile.Cosmetics = profile.Cosmetics or { Owned = {}, Equipped = {} }
+	profile.Cosmetics.Owned = profile.Cosmetics.Owned or {}
+	profile.Cosmetics.Equipped = profile.Cosmetics.Equipped or {}
+
+	-- Les gratuits sont possédés d'office, et équipés si rien ne l'est.
+	for slot, id in pairs(CosmeticCatalog.Defaults) do
+		profile.Cosmetics.Owned[id] = true
+		if not profile.Cosmetics.Equipped[slot] then
+			profile.Cosmetics.Equipped[slot] = id
+		end
+	end
+	return profile.Cosmetics
+end
+
+local function statsOf(player: Player)
+	local profile = services.Data.get(player)
+	return {
+		TotalBanked = profile and profile.TotalBanked or 0,
+		DeepestTier = profile and profile.DeepestTier or 1,
+		NightsSurvived = profile and profile.NightsSurvived or 0,
+	}
+end
+
+function CosmeticService.getEquipped(player: Player, slot: string): string?
+	local data = store(player)
+	return data and data.Equipped[slot] or nil
+end
+
+function CosmeticService.equippedItem(player: Player, slot: string)
+	local id = CosmeticService.getEquipped(player, slot)
+	return id and CosmeticCatalog.ById[id] or nil
+end
+
+-- ─── application visuelle ───────────────────────────────────────────────────
+
+local function clearEffects(character: Model)
+	for _, name in ipairs({ &quot;CosmeticAura&quot;, &quot;CosmeticTitle&quot; }) do
+		local existing = character:FindFirstChild(name, true)
+		if existing then
+			existing:Destroy()
+		end
+	end
+	local root = character:FindFirstChild(&quot;HumanoidRootPart&quot;)
+	if root then
+		for _, child in ipairs(root:GetChildren()) do
+			if child:IsA(&quot;Trail&quot;) or child:IsA(&quot;Attachment&quot;) and child.Name:match(&quot;^Cosmetic&quot;) then
+				child:Destroy()
+			end
+		end
+	end
+end
+
+local function applySkin(character: Model, item)
+	if not item then
+		return
+	end
+	for _, descendant in ipairs(character:GetDescendants()) do
+		if descendant:IsA(&quot;BasePart&quot;) and descendant.Name ~= &quot;HumanoidRootPart&quot; then
+			descendant.Color = item.Color or descendant.Color
+			if item.Material then
+				descendant.Material = item.Material
+			end
+			-- La tête garde son visage : on ne la rend pas transparente.
+			if item.Transparency and descendant.Name ~= &quot;Head&quot; then
+				descendant.Transparency = item.Transparency
+			end
+		end
+	end
+end
+
+local function applyTrail(character: Model, item)
+	if not item then
+		return
+	end
+	local root = character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	if not root then
+		return
+	end
+
+	local top = Instance.new(&quot;Attachment&quot;)
+	top.Name = &quot;CosmeticTrailTop&quot;
+	top.Position = Vector3.new(0, 1.2, 0)
+	top.Parent = root
+
+	local bottom = Instance.new(&quot;Attachment&quot;)
+	bottom.Name = &quot;CosmeticTrailBottom&quot;
+	bottom.Position = Vector3.new(0, -1.2, 0)
+	bottom.Parent = root
+
+	local trail = Instance.new(&quot;Trail&quot;)
+	trail.Name = &quot;CosmeticTrail&quot;
+	trail.Attachment0 = top
+	trail.Attachment1 = bottom
+	trail.Lifetime = 0.55
+	trail.MinLength = 0.1
+	trail.LightEmission = 0.4
+	trail.Color = ColorSequence.new(item.Color or Color3.new(1, 1, 1), item.Color2 or item.Color or Color3.new(1, 1, 1))
+	trail.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	trail.Parent = root
+end
+
+local function applyAura(character: Model, item)
+	if not item then
+		return
+	end
+	local root = character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	if not root then
+		return
+	end
+	local light = Instance.new(&quot;PointLight&quot;)
+	light.Name = &quot;CosmeticAura&quot;
+	light.Color = item.Color or Color3.new(1, 1, 1)
+	light.Range = item.LightRange or 14
+	light.Brightness = 1.4
+	light.Parent = root
+end
+
+local function applyTitle(character: Model, item)
+	if not item or not item.Text then
+		return
+	end
+	local head = character:FindFirstChild(&quot;Head&quot;) :: BasePart?
+	if not head then
+		return
+	end
+	local gui = Instance.new(&quot;BillboardGui&quot;)
+	gui.Name = &quot;CosmeticTitle&quot;
+	gui.Size = UDim2.fromScale(10, 1.4)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 2.4, 0)
+	gui.MaxDistance = 90
+	gui.Parent = head
+
+	local label = Instance.new(&quot;TextLabel&quot;)
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextColor3 = item.Color or Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 0.4
+	label.Text = item.Text
+	label.Parent = gui
+end
+
+--[[ Applique tout ce qui est équipé. Appelé à chaque apparition de personnage. ]]
+function CosmeticService.apply(player: Player)
+	local character = player.Character
+	if not character then
+		return
+	end
+	clearEffects(character)
+	applySkin(character, CosmeticService.equippedItem(player, &quot;Skin&quot;))
+	applyTrail(character, CosmeticService.equippedItem(player, &quot;Trail&quot;))
+	applyAura(character, CosmeticService.equippedItem(player, &quot;Aura&quot;))
+	applyTitle(character, CosmeticService.equippedItem(player, &quot;Title&quot;))
+end
+
+--[[ La literie s'applique à la planque pendant qu'on dort. ]]
+function CosmeticService.dressSpot(player: Player, spot: BasePart)
+	local item = CosmeticService.equippedItem(player, &quot;BedSkin&quot;)
+	if not item then
+		return
+	end
+	spot:SetAttribute(&quot;OriginalColor&quot;, spot:GetAttribute(&quot;OriginalColor&quot;) or spot.Color)
+	spot.Color = item.Color or spot.Color
+	if item.Material then
+		spot.Material = item.Material
+	end
+end
+
+function CosmeticService.undressSpot(spot: BasePart)
+	local original = spot:GetAttribute(&quot;OriginalColor&quot;)
+	if typeof(original) == &quot;Color3&quot; then
+		spot.Color = original
+	end
+	spot.Material = Enum.Material.Fabric
+end
+
+-- ─── catalogue envoyé au client ─────────────────────────────────────────────
+
+local function buildCatalogFor(player: Player)
+	local data = store(player)
+	if not data then
+		return { Items = {}, Equipped = {} }
+	end
+	local stats = statsOf(player)
+	local entries = {}
+
+	for _, item in ipairs(CosmeticCatalog.Items) do
+		local ok, reason = CosmeticCatalog.meetsRequirement(item, stats)
+		table.insert(entries, {
+			Id = item.Id,
+			Name = item.Name,
+			Desc = item.Desc,
+			Slot = item.Slot,
+			Price = item.Price,
+			Order = item.Order,
+			Owned = data.Owned[item.Id] == true,
+			Equipped = data.Equipped[item.Slot] == item.Id,
+			Locked = not ok,
+			LockReason = reason,
+			Color = item.Color,
+		})
+	end
+
+	table.sort(entries, function(a, b)
+		return a.Order &lt; b.Order
+	end)
+
+	return { Items = entries, Equipped = data.Equipped, Slots = CosmeticCatalog.Slots }
+end
+
+function CosmeticService.openFor(player: Player)
+	;(Net.get(&quot;CosmeticResult&quot;) :: RemoteEvent):FireClient(player, {
+		Action = &quot;Open&quot;,
+		Catalog = buildCatalogFor(player),
+	})
+end
+
+-- ─── achat / équipement ─────────────────────────────────────────────────────
+
+function CosmeticService.buy(player: Player, id: string): (boolean, string)
+	local item = CosmeticCatalog.ById[id]
+	if not item then
+		return false, &quot;Skin inconnu.&quot;
+	end
+	local data = store(player)
+	if not data then
+		return false, &quot;Profil pas encore chargé.&quot;
+	end
+	if data.Owned[id] then
+		return false, &quot;Tu l'as déjà.&quot;
+	end
+
+	local ok, reason = CosmeticCatalog.meetsRequirement(item, statsOf(player))
+	if not ok then
+		return false, reason or &quot;Conditions non remplies.&quot;
+	end
+
+	if item.Price &gt; 0 and not services.Economy.spend(player, item.Price) then
+		local profile = services.Data.get(player)
+		return false, (&quot;Il te manque %d $.&quot;):format(item.Price - (profile and profile.Cash or 0))
+	end
+
+	data.Owned[id] = true
+	data.Equipped[item.Slot] = id
+	CosmeticService.apply(player)
+	services.Economy.push(player)
+	services.Data.save(player)
+	return true, (&quot;%s débloqué et équipé.&quot;):format(item.Name)
+end
+
+function CosmeticService.equip(player: Player, id: string): (boolean, string)
+	local item = CosmeticCatalog.ById[id]
+	if not item then
+		return false, &quot;Skin inconnu.&quot;
+	end
+	local data = store(player)
+	if not data or not data.Owned[id] then
+		return false, &quot;Tu ne possèdes pas ce skin.&quot;
+	end
+	data.Equipped[item.Slot] = id
+	CosmeticService.apply(player)
+	services.Economy.push(player)
+	services.Data.save(player)
+	return true, (&quot;%s équipé.&quot;):format(item.Name)
+end
+
+function CosmeticService.start()
+	;(Net.get(&quot;RequestCosmetic&quot;) :: RemoteEvent).OnServerEvent:Connect(function(player, payload)
+		if type(payload) ~= &quot;table&quot; then
+			return
+		end
+		local action, id = payload.action, payload.id
+		if type(action) ~= &quot;string&quot; or type(id) ~= &quot;string&quot; then
+			return
+		end
+
+		-- &quot;open&quot; : le client demande juste le catalogue (touche N).
+		if action == &quot;open&quot; then
+			CosmeticService.openFor(player)
+			return
+		end
+
+		local ok, message
+		if action == &quot;buy&quot; then
+			ok, message = CosmeticService.buy(player, id)
+		elseif action == &quot;equip&quot; then
+			ok, message = CosmeticService.equip(player, id)
+		else
+			return
+		end
+
+		;(Net.get(&quot;CosmeticResult&quot;) :: RemoteEvent):FireClient(player, {
+			Action = action,
+			Success = ok,
+			Message = message,
+			Catalog = buildCatalogFor(player),
+		})
+		services.Notify.send(player, message, ok and &quot;unlock&quot; or &quot;info&quot;)
+	end)
+end
+
+return CosmeticService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX11"><Properties><string name="Name">DataService</string><ProtectedString name="Source">--[[
+	DataService — sauvegarde persistante.
+
+	Ce qui est persistant : l'argent déposé (Cash), le total déposé à vie
+	(TotalBanked, qui débloque les planques) et l'inventaire de la boutique.
+
+	Ce qui NE l'est PAS : l'argent non déposé de la nuit en cours. C'est voulu :
+	si le serveur plante pendant que tu dors dans Le Nid, tu ne dois pas pouvoir
+	garder la cagnotte sans l'avoir ramenée au coffre.
+
+	⚠️  En Studio, les DataStores ne marchent que si tu as coché
+	Game Settings → Security → &quot;Enable Studio Access to API Services&quot;.
+	Sinon le service bascule en mémoire : tu joues normalement, mais rien
+	n'est gardé entre deux sessions. Un avertissement est affiché dans la console.
+]]
+
+local DataStoreService = game:GetService(&quot;DataStoreService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+
+local DataService = {}
+
+local STORE_NAME = &quot;DeadTired_Profiles_v1&quot;
+local MAX_RETRIES = 4
+
+local store: DataStore? = nil
+local storeAvailable = false
+local profiles: { [Player]: any } = {}
+local loading: { [Player]: boolean } = {}
+
+local function defaultProfile()
+	return {
+		Version = GameConfig.Misc.DataVersion,
+		Cash = GameConfig.Economy.StartingCash,
+		TotalBanked = 0,
+		-- Items = { [itemId] = niveau ou stock }
+		Items = {},
+		-- Cosmetics = { Owned = { [id] = true }, Equipped = { [slot] = id } }
+		Cosmetics = { Owned = {}, Equipped = {} },
+		NightsSurvived = 0,
+		DeepestTier = 1,
+	}
+end
+
+--[[ Réessaie une opération DataStore avec un back-off simple. ]]
+local function retry(label: string, fn)
+	local delayTime = 0.6
+	for attempt = 1, MAX_RETRIES do
+		local ok, result = pcall(fn)
+		if ok then
+			return true, result
+		end
+		warn((&quot;[DataService] %s a échoué (essai %d/%d) : %s&quot;):format(label, attempt, MAX_RETRIES, tostring(result)))
+		if attempt &lt; MAX_RETRIES then
+			task.wait(delayTime)
+			delayTime *= 2
+		end
+	end
+	return false, nil
+end
+
+local function keyFor(player: Player): string
+	return &quot;u_&quot; .. tostring(player.UserId)
+end
+
+function DataService.init()
+	local ok, result = pcall(function()
+		return DataStoreService:GetDataStore(STORE_NAME)
+	end)
+	if ok and result then
+		store = result
+		storeAvailable = true
+	else
+		storeAvailable = false
+		warn(&quot;[DataService] DataStore indisponible — les parties ne seront pas sauvegardées. &quot;
+			.. &quot;En Studio : Game Settings → Security → Enable Studio Access to API Services.&quot;)
+	end
+end
+
+--[[ Charge (ou crée) le profil d'un joueur. Bloquant. ]]
+function DataService.load(player: Player)
+	if profiles[player] then
+		return profiles[player]
+	end
+	loading[player] = true
+
+	local profile = defaultProfile()
+
+	if storeAvailable and store then
+		local ok, saved = retry(&quot;chargement &quot; .. player.Name, function()
+			return (store :: DataStore):GetAsync(keyFor(player))
+		end)
+		if ok and type(saved) == &quot;table&quot; then
+			if saved.Version == GameConfig.Misc.DataVersion then
+				profile = saved
+				profile.Items = profile.Items or {}
+			else
+				warn((&quot;[DataService] sauvegarde de %s en version %s, réinitialisée (version attendue %d)&quot;)
+					:format(player.Name, tostring(saved.Version), GameConfig.Misc.DataVersion))
+			end
+		end
+	end
+
+	-- Le joueur est peut-être parti pendant le chargement.
+	if not player.Parent then
+		loading[player] = nil
+		return nil
+	end
+
+	profiles[player] = profile
+	loading[player] = nil
+	return profile
+end
+
+--[[ Récupère le profil en mémoire. nil si pas encore chargé. ]]
+function DataService.get(player: Player)
+	return profiles[player]
+end
+
+--[[ Écrit le profil. UpdateAsync pour ne pas écraser une écriture concurrente. ]]
+function DataService.save(player: Player)
+	local profile = profiles[player]
+	if not profile then
+		return false
+	end
+	if not (storeAvailable and store) then
+		return false
+	end
+
+	local ok = retry(&quot;sauvegarde &quot; .. player.Name, function()
+		(store :: DataStore):UpdateAsync(keyFor(player), function(old)
+			-- On ne garde que la valeur la plus avantageuse pour le joueur sur
+			-- TotalBanked : ça évite qu'un serveur en retard efface sa progression.
+			if type(old) == &quot;table&quot; and old.Version == profile.Version then
+				profile.TotalBanked = math.max(profile.TotalBanked, old.TotalBanked or 0)
+			end
+			return profile
+		end)
+	end)
+	return ok
+end
+
+function DataService.release(player: Player)
+	DataService.save(player)
+	profiles[player] = nil
+end
+
+function DataService.isAvailable(): boolean
+	return storeAvailable
+end
+
+function DataService.start()
+	-- Autosauvegarde.
+	task.spawn(function()
+		while true do
+			task.wait(GameConfig.Misc.AutosaveInterval)
+			for player in pairs(profiles) do
+				DataService.save(player)
+			end
+		end
+	end)
+
+	-- Dernière chance avant fermeture du serveur.
+	game:BindToClose(function()
+		if RunService:IsStudio() then
+			return
+		end
+		for _, player in ipairs(Players:GetPlayers()) do
+			task.spawn(DataService.save, player)
+		end
+		task.wait(3)
+	end)
+end
+
+return DataService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX12"><Properties><string name="Name">EconomyService</string><ProtectedString name="Source">--[[
+	EconomyService — argent, multiplicateurs, et la poussée d'état vers le client.
+
+	Deux poches distinctes, c'est tout le jeu :
+	  • Unbanked  — ce que tu as gagné cette nuit, sur toi. Perdu si tu es attrapé.
+	  • Cash      — déposé au coffre. Jamais perdu.
+
+	Tout l'argent passe par ici. Aucun autre script ne doit modifier le profil
+	directement : comme ça il n'y a qu'un endroit à relire quand un chiffre est faux.
+]]
+
+local Players = game:GetService(&quot;Players&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+local ShopCatalog = require(Shared.ShopCatalog)
+local Net = require(Shared.Net)
+
+local EconomyService = {}
+
+local services
+local unbanked: { [Player]: number } = {}
+local passCache: { [Player]: { [string]: boolean } } = {}
+
+function EconomyService.init(registry)
+	services = registry
+end
+
+-- ─── leaderstats ────────────────────────────────────────────────────────────
+local function ensureLeaderstats(player: Player)
+	local folder = player:FindFirstChild(&quot;leaderstats&quot;)
+	if not folder then
+		folder = Instance.new(&quot;Folder&quot;)
+		folder.Name = &quot;leaderstats&quot;
+		folder.Parent = player
+	end
+	local function ensureValue(name: string)
+		local value = folder:FindFirstChild(name)
+		if not value then
+			value = Instance.new(&quot;IntValue&quot;)
+			value.Name = name
+			value.Parent = folder
+		end
+		return value
+	end
+	return ensureValue(&quot;Argent&quot;), ensureValue(&quot;Sur toi&quot;)
+end
+
+function EconomyService.onPlayerAdded(player: Player)
+	unbanked[player] = 0
+	passCache[player] = {}
+	ensureLeaderstats(player)
+end
+
+function EconomyService.onPlayerRemoving(player: Player)
+	unbanked[player] = nil
+	passCache[player] = nil
+end
+
+-- ─── multiplicateurs ────────────────────────────────────────────────────────
+
+--[[ Niveau possédé d'un objet de boutique (0 si rien). ]]
+function EconomyService.getItemLevel(player: Player, itemId: string): number
+	local profile = services.Data.get(player)
+	if not profile then
+		return 0
+	end
+	return profile.Items[itemId] or 0
+end
+
+--[[ Somme des effets d'un type donné, tous objets confondus. ]]
+local function sumEffect(player: Player, effectName: string): number
+	local total = 0
+	for _, item in ipairs(ShopCatalog.Items) do
+		if item.Effect == effectName then
+			local level = EconomyService.getItemLevel(player, item.Id)
+			if level &gt; 0 then
+				total += item.Value * level
+			end
+		end
+	end
+	return total
+end
+
+--[[ Tous les modificateurs actifs du joueur, en une table.
+	 C'est la seule fonction que les autres services doivent appeler. ]]
+function EconomyService.getModifiers(player: Player)
+	local earnBonus = sumEffect(player, &quot;EarnMultiplier&quot;)
+	local detectReduction = sumEffect(player, &quot;DetectMultiplier&quot;)
+	local warningBonus = sumEffect(player, &quot;WarningBonus&quot;)
+	local walkBonus = sumEffect(player, &quot;WalkSpeedBonus&quot;)
+	local bankBonus = sumEffect(player, &quot;BankBonus&quot;)
+
+	local passMultiplier = 1
+	if services.Monetization and services.Monetization.ownsPass(player, &quot;DoubleCash&quot;) then
+		passMultiplier = 2
+	end
+
+	return {
+		-- multiplicateur de gains par seconde
+		Earn = (1 + earnBonus) * passMultiplier,
+		-- facteur appliqué à la chance de détection : 0.55 = −45 % de risque.
+		-- Plancher à 0.2 pour qu'aucun objet ne rende un palier totalement sûr.
+		Detect = math.max(0.2, 1 - detectReduction),
+		-- secondes de fenêtre de fuite en plus
+		Warning = warningBonus,
+		-- vitesse de marche
+		WalkSpeed = GameConfig.Misc.BaseWalkSpeed + walkBonus,
+		-- bonus au dépôt
+		BankBonus = bankBonus,
+	}
+end
+
+function EconomyService.applyWalkSpeed(player: Player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if humanoid then
+		humanoid.WalkSpeed = EconomyService.getModifiers(player).WalkSpeed
+	end
+end
+
+-- ─── mouvements d'argent ────────────────────────────────────────────────────
+
+function EconomyService.getUnbanked(player: Player): number
+	return unbanked[player] or 0
+end
+
+--[[ Ajoute à la poche non déposée.
+	 silent = true : n'envoie pas l'état au client. La boucle de sommeil l'utilise
+	 pour accumuler sans saturer le réseau ; elle pousse elle-même deux fois
+	 par seconde. ]]
+function EconomyService.addUnbanked(player: Player, amount: number, silent: boolean?)
+	if amount &lt;= 0 then
+		return
+	end
+	unbanked[player] = (unbanked[player] or 0) + amount
+	if not silent then
+		EconomyService.push(player)
+	end
+end
+
+--[[ Dépose tout ce que le joueur a sur lui. Retourne le montant crédité. ]]
+function EconomyService.bank(player: Player): number
+	local profile = services.Data.get(player)
+	local amount = unbanked[player] or 0
+	if not profile or amount &lt;= 0 then
+		return 0
+	end
+
+	local bonus = EconomyService.getModifiers(player).BankBonus
+	local credited = math.floor(amount * (1 + bonus))
+
+	profile.Cash += credited
+	profile.TotalBanked += credited
+	unbanked[player] = 0
+
+	services.Progression.check(player)
+	EconomyService.push(player)
+	return credited
+end
+
+--[[ Supprime l'argent non déposé (capture). Retourne ce qui a été perdu. ]]
+function EconomyService.wipeUnbanked(player: Player, fraction: number): number
+	local amount = unbanked[player] or 0
+	local lost = math.floor(amount * fraction)
+	unbanked[player] = amount - lost
+	EconomyService.push(player)
+	return lost
+end
+
+--[[ Dépense de l'argent déposé. false si fonds insuffisants. ]]
+function EconomyService.spend(player: Player, amount: number): boolean
+	local profile = services.Data.get(player)
+	if not profile or profile.Cash &lt; amount then
+		return false
+	end
+	profile.Cash -= amount
+	EconomyService.push(player)
+	return true
+end
+
+--[[ Crédit direct (achat Robux). ]]
+function EconomyService.grantCash(player: Player, amount: number)
+	local profile = services.Data.get(player)
+	if not profile then
+		return
+	end
+	profile.Cash += amount
+	EconomyService.push(player)
+end
+
+-- ─── synchronisation client ─────────────────────────────────────────────────
+
+--[[ Envoie l'état complet au client. Appelé après chaque changement. ]]
+function EconomyService.push(player: Player)
+	local profile = services.Data.get(player)
+	if not profile then
+		return
+	end
+
+	local cashValue, unbankedValue = ensureLeaderstats(player)
+	cashValue.Value = math.floor(profile.Cash)
+	unbankedValue.Value = math.floor(unbanked[player] or 0)
+
+	local modifiers = EconomyService.getModifiers(player)
+	local sleepState = services.Sleep and services.Sleep.describe(player) or nil
+
+	;(Net.get(&quot;StateUpdate&quot;) :: RemoteEvent):FireClient(player, {
+		Cash = math.floor(profile.Cash),
+		Unbanked = math.floor(unbanked[player] or 0),
+		TotalBanked = math.floor(profile.TotalBanked),
+		Items = profile.Items,
+		NightsSurvived = profile.NightsSurvived,
+		DeepestTier = profile.DeepestTier,
+		Modifiers = {
+			Earn = modifiers.Earn,
+			Detect = modifiers.Detect,
+			Warning = modifiers.Warning,
+		},
+		Sleep = sleepState,
+		Life = services.Life and services.Life.describe(player) or nil,
+		DataSaving = services.Data.isAvailable(),
+	})
+end
+
+--[[ Demande de dépôt venue du coffre. Vérifie que le joueur est bien debout. ]]
+function EconomyService.requestBank(player: Player)
+	if services.Sleep.isSleeping(player) then
+		services.Notify.send(player, &quot;Tu dors. Réveille-toi d'abord.&quot;, &quot;info&quot;)
+		return
+	end
+	if services.Life.isDown(player) then
+		return
+	end
+	local amount = EconomyService.getUnbanked(player)
+	if amount &lt;= 0 then
+		services.Notify.send(player, &quot;Tu n'as rien sur toi.&quot;, &quot;info&quot;)
+		return
+	end
+	local credited = EconomyService.bank(player)
+	services.Notify.send(player, (&quot;+%d $ déposés. C'est à toi pour de bon.&quot;):format(credited), &quot;cash&quot;)
+end
+
+function EconomyService.pushAll()
+	for _, player in ipairs(Players:GetPlayers()) do
+		EconomyService.push(player)
+	end
+end
+
+return EconomyService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13"><Properties><string name="Name">EntityBuilder</string><ProtectedString name="Source">--[[
+	EntityBuilder — construit le corps des créatures.
+
+	Ce qui fait peur dans un jeu Roblox sombre, ce n'est pas le détail du
+	modèle : c'est la SILHOUETTE et les YEUX. On ne voit presque jamais le
+	corps. Chaque créature est donc construite sur trois principes :
+
+	  1. Le corps est presque noir. Seuls les yeux émettent de la lumière.
+	     On lit une forme qui bouge, pas un personnage.
+	  2. Les proportions sont fausses exprès — tête trop petite, bras trop
+	     longs, jambes trop fines. Le cerveau voit « humain », puis « non ».
+	  3. La démarche est désarticulée (balancement calculé par ThreatService),
+	     et pas une animation propre.
+
+	⚠️  NOTE TECHNIQUE IMPORTANTE
+	Toutes les parties sont `Anchored` : les créatures ne sont pas gérées par
+	le moteur physique, on les déplace à la main. Du coup un `WeldConstraint`
+	ne sert à RIEN ici — une soudure ne déplace pas une partie ancrée. C'est
+	pour ça que chaque partie garde son décalage par rapport au torse
+	(fonction `offsets`) et que ThreatService repositionne tout chaque frame.
+	Si tu soudes des parties en pensant qu'elles suivront, elles resteront
+	plantées sur place.
+
+	Tu veux un vrai modèle à la place ? Mets-le dans
+	`ServerStorage/Entities/&lt;Id&gt;` (watchman, crawler, mimic, starved) et il sera
+	utilisé automatiquement. Il lui faut juste un PrimaryPart. Rien d'autre
+	à changer dans le code.
+]]
+
+local ServerStorage = game:GetService(&quot;ServerStorage&quot;)
+
+local EntityBuilder = {}
+
+local function limb(name: string, size: Vector3, color: Color3, parent: Instance): BasePart
+	local part = Instance.new(&quot;Part&quot;)
+	part.Name = name
+	part.Size = size
+	part.Color = color
+	part.Material = Enum.Material.Slate
+	part.Anchored = true
+	part.CanCollide = false
+	part.Massless = true
+	part.CastShadow = true
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.Parent = parent
+	return part
+end
+
+--[[ Les yeux : la seule source de lumière du corps, et donc tout l'effet. ]]
+local function addEyes(def, head: BasePart, model: Model)
+	if def.EyeCount &lt;= 0 then
+		-- La Rampante n'a pas d'yeux du tout. Une bouche à la place : une fente
+		-- claire, juste assez visible pour qu'on sache où est sa tête.
+		local mouth = limb(&quot;Mouth&quot;, Vector3.new(1.5, 0.3, 0.2), Color3.fromRGB(230, 60, 70), model)
+		mouth.Material = Enum.Material.Neon
+		mouth.CFrame = head.CFrame * CFrame.new(0, -0.35, -head.Size.Z / 2 - 0.1)
+		return
+	end
+
+	for index = 1, def.EyeCount do
+		-- Un oeil : centré. Deux : symétriques. Plus : une couronne autour du crâne.
+		local offsetX, offsetY
+		if def.EyeCount == 1 then
+			offsetX, offsetY = 0, 0.1
+		elseif def.EyeCount == 2 then
+			offsetX = (index == 1) and -0.42 or 0.42
+			offsetY = 0.1
+		else
+			local angle = (index - 1) / def.EyeCount * math.pi * 2
+			offsetX = math.cos(angle) * 0.5
+			offsetY = math.sin(angle) * 0.4
+		end
+
+		local eye = limb(&quot;Eye&quot; .. index, Vector3.new(0.34, 0.16, 0.18), def.EyeColor, model)
+		eye.Material = Enum.Material.Neon
+		eye.CFrame = head.CFrame * CFrame.new(offsetX, offsetY, -head.Size.Z / 2 - 0.08)
+	end
+
+	local glow = Instance.new(&quot;PointLight&quot;)
+	glow.Name = &quot;EyeGlow&quot;
+	glow.Brightness = 1.2
+	glow.Range = 18
+	glow.Color = def.EyeColor
+	glow.Parent = head
+end
+
+--[[ Construit la créature à partir de sa définition. ]]
+function EntityBuilder.build(def): Model
+	-- Un vrai modèle fourni par toi gagne toujours.
+	local folder = ServerStorage:FindFirstChild(&quot;Entities&quot;)
+	local override = folder and folder:FindFirstChild(def.Id)
+	if override and override:IsA(&quot;Model&quot;) then
+		local clone = override:Clone()
+		clone.Name = def.Id
+		if not clone.PrimaryPart then
+			clone.PrimaryPart = clone:FindFirstChildWhichIsA(&quot;BasePart&quot;)
+		end
+		for _, descendant in ipairs(clone:GetDescendants()) do
+			if descendant:IsA(&quot;BasePart&quot;) then
+				descendant.Anchored = true
+				descendant.CanCollide = false
+				descendant.Massless = true
+			end
+		end
+		return clone
+	end
+
+	local model = Instance.new(&quot;Model&quot;)
+	model.Name = def.Id
+
+	local height = def.Height
+	local crawling = height &lt; 4.5
+
+	-- Torse : étroit et haut. C'est le PrimaryPart, donc la référence de tous
+	-- les déplacements et de tous les décalages.
+	local torsoHeight = crawling and height * 0.5 or height * 0.46
+	local torso = limb(&quot;Torso&quot;, Vector3.new(height * 0.26, torsoHeight, height * 0.17), def.BodyColor, model)
+	torso.CFrame = CFrame.new(0, height * 0.55, 0)
+	model.PrimaryPart = torso
+
+	-- Tête : volontairement petite par rapport au corps.
+	local headSize = height * 0.15
+	local head = limb(&quot;Head&quot;, Vector3.new(headSize, headSize * 1.15, headSize),
+		def.BodyColor:Lerp(Color3.new(0, 0, 0), 0.3), model)
+	if crawling then
+		-- La Rampante avance tête en avant, pas tête en haut.
+		head.CFrame = torso.CFrame
+			* CFrame.new(0, torsoHeight * 0.1, -torsoHeight * 0.75)
+			* CFrame.Angles(math.rad(-25), 0, 0)
+	else
+		head.CFrame = torso.CFrame * CFrame.new(0, torsoHeight / 2 + headSize * 0.7, -0.15)
+	end
+	addEyes(def, head, model)
+
+	-- Bras : trop longs. C'est le détail qui met mal à l'aise.
+	for _, side in ipairs({ -1, 1 }) do
+		local arm = limb(side &lt; 0 and &quot;LeftArm&quot; or &quot;RightArm&quot;,
+			Vector3.new(height * 0.055, def.ArmLength, height * 0.055), def.BodyColor, model)
+		arm.CFrame = torso.CFrame
+			* CFrame.new(side * (torso.Size.X / 2 + arm.Size.X), torsoHeight / 2 - def.ArmLength / 2, 0)
+	end
+
+	-- Jambes.
+	local legLength = height * 0.5
+	for _, side in ipairs({ -1, 1 }) do
+		local leg = limb(side &lt; 0 and &quot;LeftLeg&quot; or &quot;RightLeg&quot;,
+			Vector3.new(height * 0.06, legLength, height * 0.06), def.BodyColor, model)
+		leg.CFrame = torso.CFrame * CFrame.new(side * torso.Size.X * 0.26, -torsoHeight / 2 - legLength / 2, 0)
+	end
+
+	-- La lanterne du Veilleur : elle le trahit de loin, et c'est voulu.
+	-- Une créature qu'on voit arriver fait plus peur qu'une qui surgit.
+	if def.CarriesLantern then
+		local lantern = limb(&quot;Lantern&quot;, Vector3.new(0.6, 0.8, 0.6), Color3.fromRGB(255, 200, 120), model)
+		lantern.Material = Enum.Material.Neon
+		lantern.CFrame = torso.CFrame * CFrame.new(torso.Size.X / 2 + 0.6, torsoHeight / 2 - def.ArmLength, 0)
+
+		local light = Instance.new(&quot;PointLight&quot;)
+		light.Name = &quot;LanternLight&quot;
+		light.Brightness = 2.2
+		light.Range = 34
+		light.Color = Color3.fromRGB(255, 196, 120)
+		light.Parent = lantern
+	end
+
+	-- Le déguisement du Mime : au repos, c'est un lit de plus dans la salle.
+	if def.Teleports then
+		local disguise = limb(&quot;Disguise&quot;, Vector3.new(7, 1.6, 12), Color3.fromRGB(90, 80, 92), model)
+		disguise.Material = Enum.Material.Fabric
+		disguise.CFrame = torso.CFrame * CFrame.new(0, -height * 0.55 + 0.8, 0)
+	end
+
+	-- Sons. Les IDs sont vides par défaut : voir docs/SOUND.md.
+	local function sound(name: string, id: string, volume: number, looped: boolean)
+		if id == &quot;&quot; then
+			return
+		end
+		local instance = Instance.new(&quot;Sound&quot;)
+		instance.Name = name
+		instance.SoundId = id
+		instance.Volume = volume
+		instance.Looped = looped
+		instance.RollOffMode = Enum.RollOffMode.InverseTapered
+		instance.RollOffMaxDistance = 140
+		instance.RollOffMinDistance = 8
+		instance.Parent = torso
+		if looped then
+			instance:Play()
+		end
+	end
+	sound(&quot;Step&quot;, def.StepSoundId, 0.6, false)
+	sound(&quot;Voice&quot;, def.VoiceSoundId, 0.8, true)
+
+	return model
+end
+
+--[[ Décalage de chaque partie par rapport au torse, mesuré une fois à la
+	 construction. ThreatService s'en sert pour repositionner tout le corps
+	 quand la créature avance (voir la note technique en haut du fichier). ]]
+function EntityBuilder.offsets(model: Model)
+	local torso = model.PrimaryPart
+	if not torso then
+		return {}
+	end
+	local list = {}
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA(&quot;BasePart&quot;) and descendant ~= torso then
+			local offset = torso.CFrame:ToObjectSpace(descendant.CFrame)
+			table.insert(list, {
+				Part = descendant,
+				Offset = offset,
+				-- Décalage d'origine, jamais modifié : ThreatService.rescale en
+				-- repart à chaque stade d'éveil pour ne pas cumuler l'erreur.
+				BaseOffset = offset,
+				-- Les membres se balancent, le reste suit rigidement.
+				Swing = (descendant.Name == &quot;LeftArm&quot; and 1)
+					or (descendant.Name == &quot;RightArm&quot; and -1)
+					or (descendant.Name == &quot;LeftLeg&quot; and -1)
+					or (descendant.Name == &quot;RightLeg&quot; and 1)
+					or 0,
+			})
+		end
+	end
+	return list
+end
+
+return EntityBuilder
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX14"><Properties><string name="Name">LifeService</string><ProtectedString name="Source">--[[
+	LifeService — être à terre, saigner, se faire relever.
+
+	C'est le levier coopératif du jeu : quand quelqu'un est attrapé, il n'est pas
+	mort, il est à terre. Un coéquipier peut le relever, mais il doit rester
+	immobile 6 secondes à côté — donc à portée du monstre. Décider si ça vaut le
+	coup, c'est le moment le plus intéressant d'une partie en multi.
+
+	Récompense : celui qui relève récupère la moitié de l'argent que la victime
+	avait perdu (voir GameConfig.Economy.UnbankedRecoveredOnRevive) — sinon
+	personne ne prendrait le risque.
+]]
+
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+
+local LifeService = {}
+
+local services
+-- downed[player] = { At, BleedoutAt, LostAmount, Prompt, Reviver, HoldStart }
+local downed: { [Player]: any } = {}
+local freeReviveUsed: { [Player]: boolean } = {}
+
+function LifeService.init(registry)
+	services = registry
+end
+
+function LifeService.isDown(player: Player): boolean
+	return downed[player] ~= nil
+end
+
+function LifeService.describe(player: Player)
+	local entry = downed[player]
+	if not entry then
+		return nil
+	end
+	return {
+		Down = true,
+		SecondsLeft = math.max(0, entry.BleedoutAt - os.clock()),
+		BleedoutSeconds = GameConfig.Downed.BleedoutSeconds,
+		LostAmount = entry.LostAmount,
+		BeingRevivedBy = entry.Reviver and entry.Reviver.Name or nil,
+		ReviveProgress = entry.Reviver
+			and math.clamp((os.clock() - entry.HoldStart) / GameConfig.Downed.ReviveHoldSeconds, 0, 1)
+			or 0,
+	}
+end
+
+-- ─── mise à terre ───────────────────────────────────────────────────────────
+
+local function setRagdollLike(player: Player, down: boolean)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if not humanoid then
+		return
+	end
+	if down then
+		humanoid.WalkSpeed = 0
+		humanoid.JumpPower = 0
+		humanoid.PlatformStand = true
+	else
+		humanoid.PlatformStand = false
+		humanoid.JumpPower = 50
+		services.Economy.applyWalkSpeed(player)
+	end
+end
+
+local function attachRevivePrompt(player: Player)
+	local character = player.Character
+	local root = character and character:FindFirstChild(&quot;HumanoidRootPart&quot;)
+	if not root then
+		return nil
+	end
+	local prompt = Instance.new(&quot;ProximityPrompt&quot;)
+	prompt.Name = &quot;RevivePrompt&quot;
+	prompt.ActionText = &quot;Relever&quot;
+	prompt.ObjectText = player.DisplayName
+	prompt.HoldDuration = GameConfig.Downed.ReviveHoldSeconds
+	prompt.MaxActivationDistance = GameConfig.Downed.ReviveRange
+	prompt.RequiresLineOfSight = false
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.Parent = root
+
+	prompt.PromptButtonHoldBegan:Connect(function(reviver)
+		local entry = downed[player]
+		if entry and not entry.Reviver then
+			entry.Reviver = reviver
+			entry.HoldStart = os.clock()
+			services.Economy.push(player)
+			services.Notify.send(reviver, (&quot;Tu relèves %s. Ne bouge pas.&quot;):format(player.DisplayName), &quot;info&quot;)
+		end
+	end)
+
+	prompt.PromptButtonHoldEnded:Connect(function(reviver)
+		local entry = downed[player]
+		if entry and entry.Reviver == reviver then
+			entry.Reviver = nil
+			services.Economy.push(player)
+		end
+	end)
+
+	prompt.Triggered:Connect(function(reviver)
+		LifeService.revive(player, reviver)
+	end)
+
+	return prompt
+end
+
+--[[ Le joueur a été attrapé. ]]
+function LifeService.down(player: Player, cause: string?)
+	if downed[player] then
+		return
+	end
+	if not player.Character then
+		return
+	end
+
+	services.Sleep.stop(player, &quot;caught&quot;)
+
+	local lost = services.Economy.wipeUnbanked(player, GameConfig.Economy.UnbankedLossOnCatch)
+
+	-- Pass &quot;Seconde chance&quot; : une réanimation gratuite par nuit.
+	if not freeReviveUsed[player] and services.Monetization.ownsPass(player, &quot;ExtraLife&quot;) then
+		freeReviveUsed[player] = true
+		services.Notify.send(player, &quot;Seconde chance utilisée. Tu te relèves seul.&quot;, &quot;unlock&quot;)
+		services.Economy.addUnbanked(player, lost)
+		return
+	end
+
+	-- Trousse de secours : se relever tout seul.
+	if services.Shop.consume(player, &quot;medkit&quot;) then
+		services.Notify.send(player, &quot;Trousse de secours utilisée. Debout.&quot;, &quot;cash&quot;)
+		services.Economy.addUnbanked(player, math.floor(lost * GameConfig.Economy.UnbankedRecoveredOnRevive))
+		return
+	end
+
+	downed[player] = {
+		At = os.clock(),
+		BleedoutAt = os.clock() + GameConfig.Downed.BleedoutSeconds,
+		LostAmount = lost,
+		Reviver = nil,
+		HoldStart = 0,
+	}
+	downed[player].Prompt = attachRevivePrompt(player)
+
+	setRagdollLike(player, true)
+
+	services.Notify.send(player, (&quot;Il t'a eu. −%d $. Un coéquipier peut te relever.&quot;):format(lost), &quot;danger&quot;)
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= player then
+			services.Notify.send(other, (&quot;%s est à terre.&quot;):format(player.DisplayName), &quot;danger&quot;)
+		end
+	end
+	services.Economy.push(player)
+end
+
+--[[ Relève le joueur. reviver = nil pour un relevage automatique (aube, produit). ]]
+function LifeService.revive(player: Player, reviver: Player?)
+	local entry = downed[player]
+	if not entry then
+		return
+	end
+	downed[player] = nil
+
+	if entry.Prompt then
+		entry.Prompt:Destroy()
+	end
+	setRagdollLike(player, false)
+
+	local recovered = math.floor(entry.LostAmount * GameConfig.Economy.UnbankedRecoveredOnRevive)
+	if recovered &gt; 0 then
+		services.Economy.addUnbanked(player, recovered)
+	end
+
+	if reviver then
+		services.Notify.send(player, (&quot;%s t'a relevé. +%d $ récupérés.&quot;):format(reviver.DisplayName, recovered), &quot;cash&quot;)
+		-- Celui qui prend le risque touche la même somme : sans ça, personne ne vient.
+		if recovered &gt; 0 then
+			services.Economy.addUnbanked(reviver, recovered)
+			services.Notify.send(reviver, (&quot;Sauvetage réussi. +%d $.&quot;):format(recovered), &quot;cash&quot;)
+		end
+	else
+		services.Notify.send(player, &quot;Tu reprends tes esprits.&quot;, &quot;info&quot;)
+	end
+
+	services.Economy.push(player)
+	if reviver then
+		services.Economy.push(reviver)
+	end
+end
+
+--[[ Mort définitive : personne n'est venu. ]]
+local function bleedOut(player: Player)
+	local entry = downed[player]
+	if not entry then
+		return
+	end
+	downed[player] = nil
+	if entry.Prompt then
+		entry.Prompt:Destroy()
+	end
+	services.Notify.send(player, &quot;Tu n'as pas tenu. Tu repars à l'entrée.&quot;, &quot;danger&quot;)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if humanoid then
+		humanoid.Health = 0
+	end
+	services.Economy.push(player)
+end
+
+function LifeService.reviveAll()
+	for player in pairs(downed) do
+		LifeService.revive(player, nil)
+	end
+end
+
+function LifeService.resetNightFlags()
+	freeReviveUsed = {}
+end
+
+function LifeService.onPlayerRemoving(player: Player)
+	local entry = downed[player]
+	if entry and entry.Prompt then
+		entry.Prompt:Destroy()
+	end
+	downed[player] = nil
+	freeReviveUsed[player] = nil
+end
+
+function LifeService.start()
+	local accumulator = 0
+	RunService.Heartbeat:Connect(function(deltaTime)
+		accumulator += deltaTime
+		if accumulator &lt; 0.5 then
+			return
+		end
+		accumulator = 0
+
+		local now = os.clock()
+		for player, entry in pairs(downed) do
+			if not player.Parent then
+				downed[player] = nil
+			else
+				-- Le secouriste s'est éloigné ? On annule.
+				if entry.Reviver then
+					local reviverChar = entry.Reviver.Character
+					local victimChar = player.Character
+					local tooFar = true
+					if reviverChar and victimChar and reviverChar.PrimaryPart and victimChar.PrimaryPart then
+						tooFar = (reviverChar.PrimaryPart.Position - victimChar.PrimaryPart.Position).Magnitude
+							&gt; GameConfig.Downed.ReviveRange + 2
+					end
+					if tooFar then
+						entry.Reviver = nil
+					end
+				end
+
+				if now &gt;= entry.BleedoutAt then
+					bleedOut(player)
+				else
+					services.Economy.push(player)
+				end
+			end
+		end
+	end)
+end
+
+return LifeService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX15"><Properties><string name="Name">MapBuilder</string><ProtectedString name="Source">--[[
+	MapBuilder — génère une carte jouable au démarrage.
+
+	Pourquoi générer la carte en code plutôt que te livrer un fichier à importer :
+	tu peux lancer le jeu immédiatement, sans rien modéliser, et tu vois tout de
+	suite si l'équilibrage te plaît. Quand tu auras ta vraie carte, tu mets
+	`GameConfig.Map.UseGeneratedMap = false` et tu tagues tes propres parts.
+
+	Choix de level design volontaire : plus un palier paie, plus sa salle est
+	LOIN du coffre. Le risque n'est donc pas seulement le tirage pendant le
+	sommeil, c'est aussi le trajet de retour avec l'argent sur toi.
+]]
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+
+local MapBuilder = {}
+
+local FOLDER_NAME = &quot;GeneratedMap&quot;
+
+local function part(props): BasePart
+	local p = Instance.new(&quot;Part&quot;)
+	p.Anchored = true
+	p.Material = Enum.Material.Concrete
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	for key, value in pairs(props) do
+		(p :: any)[key] = value
+	end
+	return p
+end
+
+local function label(parent: BasePart, text: string, color: Color3)
+	local gui = Instance.new(&quot;BillboardGui&quot;)
+	gui.Size = UDim2.fromScale(14, 3)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
+	gui.AlwaysOnTop = false
+	gui.MaxDistance = 140
+	gui.Parent = parent
+
+	local textLabel = Instance.new(&quot;TextLabel&quot;)
+	textLabel.Size = UDim2.fromScale(1, 1)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Font = Enum.Font.GothamBold
+	textLabel.TextScaled = true
+	textLabel.TextColor3 = color
+	textLabel.TextStrokeTransparency = 0.4
+	textLabel.Text = text
+	textLabel.Parent = gui
+end
+
+-- ─── éléments ───────────────────────────────────────────────────────────────
+
+local function buildRoom(folder: Folder, tier: number, center: Vector3)
+	local tierData = GameConfig.Tiers[tier]
+	local roomSize = Vector3.new(34, 1, 30)
+
+	local floor = part({
+		Name = (&quot;Floor_T%d&quot;):format(tier),
+		Size = roomSize,
+		Position = center,
+		Color = Color3.fromRGB(46, 46, 52),
+		Material = Enum.Material.Slate,
+	})
+	floor.Parent = folder
+
+	-- Murs : trois côtés, l'entrée reste ouverte vers le hall.
+	local wallHeight = 14
+	local walls = {
+		{ Vector3.new(roomSize.X, wallHeight, 1), center + Vector3.new(0, wallHeight / 2, -roomSize.Z / 2) },
+		{ Vector3.new(1, wallHeight, roomSize.Z), center + Vector3.new(-roomSize.X / 2, wallHeight / 2, 0) },
+		{ Vector3.new(1, wallHeight, roomSize.Z), center + Vector3.new(roomSize.X / 2, wallHeight / 2, 0) },
+	}
+	for index, spec in ipairs(walls) do
+		local wall = part({
+			Name = (&quot;Wall_T%d_%d&quot;):format(tier, index),
+			Size = spec[1],
+			Position = spec[2],
+			Color = Color3.fromRGB(34, 34, 40),
+			Material = Enum.Material.Brick,
+		})
+		wall.Parent = folder
+	end
+
+	-- La planque elle-même.
+	local bed = part({
+		Name = (&quot;SleepSpot_T%d&quot;):format(tier),
+		Size = Vector3.new(7, 1.6, 12),
+		Position = center + Vector3.new(0, 1.3, -4),
+		Color = tierData.Color,
+		Material = Enum.Material.Fabric,
+	})
+	bed:SetAttribute(&quot;Tier&quot;, tier)
+	bed:SetAttribute(&quot;SpotLabel&quot;, tierData.Name)
+	bed.Parent = folder
+	CollectionService:AddTag(bed, &quot;SleepSpot&quot;)
+
+	label(bed, (&quot;%s\n%d $/s · risque %s&quot;):format(tierData.Name, tierData.Rate, tierData.RiskLabel:lower()), tierData.Color)
+
+	-- Une lumière faible : juste assez pour trouver la salle, pas pour s'y sentir bien.
+	local lamp = part({
+		Name = (&quot;Lamp_T%d&quot;):format(tier),
+		Size = Vector3.new(2, 0.4, 2),
+		Position = center + Vector3.new(0, 12, 6),
+		Color = Color3.fromRGB(20, 20, 20),
+	})
+	lamp.Parent = folder
+	local light = Instance.new(&quot;PointLight&quot;)
+	light.Brightness = 1.4
+	light.Range = 26
+	light.Color = tierData.Color:Lerp(Color3.new(1, 1, 1), 0.5)
+	light.Parent = lamp
+
+	-- Point de patrouille dans la salle : c'est aussi un point d'apparition
+	-- possible pour le monstre quand il vient chercher quelqu'un.
+	local patrol = part({
+		Name = (&quot;Patrol_T%d&quot;):format(tier),
+		Size = Vector3.new(2, 2, 2),
+		Position = center + Vector3.new(0, 2, 10),
+		Transparency = 1,
+		CanCollide = false,
+	})
+	patrol.Parent = folder
+	CollectionService:AddTag(patrol, &quot;PatrolPoint&quot;)
+end
+
+local function buildLobby(folder: Folder)
+	local floor = part({
+		Name = &quot;LobbyFloor&quot;,
+		Size = Vector3.new(60, 1, 60),
+		Position = Vector3.new(0, 0, 0),
+		Color = Color3.fromRGB(62, 62, 70),
+		Material = Enum.Material.Pavement,
+	})
+	floor.Parent = folder
+
+	local spawn = Instance.new(&quot;SpawnLocation&quot;)
+	spawn.Name = &quot;Spawn&quot;
+	spawn.Size = Vector3.new(12, 1, 12)
+	spawn.Position = Vector3.new(0, 1, 18)
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Duration = 0
+	spawn.BrickColor = BrickColor.new(&quot;Institutional white&quot;)
+	spawn.Material = Enum.Material.SmoothPlastic
+	spawn.Parent = folder
+
+	-- Coffre.
+	local vault = part({
+		Name = &quot;BankTerminal&quot;,
+		Size = Vector3.new(6, 7, 3),
+		Position = Vector3.new(-14, 4.5, 0),
+		Color = Color3.fromRGB(70, 150, 90),
+		Material = Enum.Material.Metal,
+	})
+	vault.Parent = folder
+	CollectionService:AddTag(vault, &quot;BankTerminal&quot;)
+	label(vault, &quot;COFFRE\nE pour déposer&quot;, Color3.fromRGB(130, 230, 160))
+
+	-- Boutique d'équipement.
+	local shop = part({
+		Name = &quot;ShopTerminal&quot;,
+		Size = Vector3.new(6, 7, 3),
+		Position = Vector3.new(14, 4.5, 0),
+		Color = Color3.fromRGB(90, 110, 190),
+		Material = Enum.Material.Metal,
+	})
+	shop.Parent = folder
+	CollectionService:AddTag(shop, &quot;ShopTerminal&quot;)
+	label(shop, &quot;ÉQUIPEMENT\nE pour ouvrir&quot;, Color3.fromRGB(150, 180, 255))
+
+	-- Boutique de skins. Séparée exprès : l'équipement et le cosmétique ne
+	-- s'achètent pas dans le même état d'esprit, et deux bornes distinctes
+	-- rendent les skins visibles au lieu de les cacher dans un onglet.
+	local skins = part({
+		Name = &quot;SkinTerminal&quot;,
+		Size = Vector3.new(6, 7, 3),
+		Position = Vector3.new(14, 4.5, -14),
+		Color = Color3.fromRGB(150, 100, 190),
+		Material = Enum.Material.Metal,
+	})
+	skins.Parent = folder
+	CollectionService:AddTag(skins, &quot;SkinTerminal&quot;)
+	label(skins, &quot;SKINS\nE pour ouvrir&quot;, Color3.fromRGB(200, 160, 255))
+
+	-- Lumière du hall : c'est le seul endroit vraiment éclairé.
+	local ceiling = part({
+		Name = &quot;LobbyLight&quot;,
+		Size = Vector3.new(6, 0.4, 6),
+		Position = Vector3.new(0, 16, 0),
+		Color = Color3.fromRGB(240, 240, 220),
+		Material = Enum.Material.Neon,
+	})
+	ceiling.Parent = folder
+	local light = Instance.new(&quot;PointLight&quot;)
+	light.Brightness = 3
+	light.Range = 60
+	light.Parent = ceiling
+
+	-- Points de patrouille du hall.
+	for _, position in ipairs({ Vector3.new(-22, 2, -22), Vector3.new(22, 2, -22), Vector3.new(0, 2, 24) }) do
+		local patrol = part({
+			Name = &quot;Patrol_Lobby&quot;,
+			Size = Vector3.new(2, 2, 2),
+			Position = position,
+			Transparency = 1,
+			CanCollide = false,
+		})
+		patrol.Parent = folder
+		CollectionService:AddTag(patrol, &quot;PatrolPoint&quot;)
+	end
+end
+
+local function buildCorridor(folder: Folder, from: Vector3, to: Vector3)
+	local middle = (from + to) / 2
+	local delta = to - from
+	local length = Vector3.new(delta.X, 0, delta.Z).Magnitude
+
+	local floor = part({
+		Name = &quot;Corridor&quot;,
+		Size = Vector3.new(12, 1, length),
+		CFrame = CFrame.lookAt(middle, middle + Vector3.new(delta.X, 0, delta.Z).Unit),
+		Color = Color3.fromRGB(40, 40, 46),
+		Material = Enum.Material.Slate,
+	})
+	floor.Parent = folder
+
+	local patrol = part({
+		Name = &quot;Patrol_Corridor&quot;,
+		Size = Vector3.new(2, 2, 2),
+		Position = middle + Vector3.new(0, 2, 0),
+		Transparency = 1,
+		CanCollide = false,
+	})
+	patrol.Parent = folder
+	CollectionService:AddTag(patrol, &quot;PatrolPoint&quot;)
+end
+
+-- ─── point d'entrée ─────────────────────────────────────────────────────────
+
+function MapBuilder.build()
+	if not GameConfig.Map.UseGeneratedMap then
+		return
+	end
+
+	local existing = Workspace:FindFirstChild(FOLDER_NAME)
+	if existing then
+		existing:Destroy()
+	end
+
+	if GameConfig.Map.RemoveBaseplate then
+		local baseplate = Workspace:FindFirstChild(&quot;Baseplate&quot;)
+		if baseplate then
+			baseplate:Destroy()
+		end
+	end
+
+	local folder = Instance.new(&quot;Folder&quot;)
+	folder.Name = FOLDER_NAME
+	folder.Parent = Workspace
+
+	buildLobby(folder)
+
+	-- Les salles s'éloignent du hall à mesure que le palier monte : plus ça
+	-- paie, plus le retour au coffre est long.
+	local layout = {
+		[1] = Vector3.new(-50, 0, 0),
+		[2] = Vector3.new(50, 0, 0),
+		[3] = Vector3.new(0, 0, -62),
+		[4] = Vector3.new(-78, 0, -70),
+		[5] = Vector3.new(84, 0, -84),
+	}
+
+	for tier, center in pairs(layout) do
+		buildRoom(folder, tier, center)
+		buildCorridor(folder, Vector3.new(0, 0, 0), center)
+	end
+
+	print(&quot;[MapBuilder] carte générée : 5 planques, coffre, boutique, skins, &quot;
+		.. &quot;points de patrouille. Les créatures sont créées par ThreatService.&quot;)
+end
+
+return MapBuilder
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX16"><Properties><string name="Name">MonetizationService</string><ProtectedString name="Source">--[[
+	MonetizationService — Robux.
+
+	Deux choses à savoir si tu n'as jamais fait ça :
+
+	1. ProcessReceipt doit TOUJOURS renvoyer une valeur de
+	   Enum.ProductPurchaseDecision. Si tu renvoies NotProcessedYet, Roblox
+	   rappellera la fonction plus tard (utile si la sauvegarde a échoué : le
+	   joueur ne perd pas ses Robux). Si tu renvoies PurchaseGranted, l'achat
+	   est consommé définitivement.
+
+	2. Tant que `Monetization.luau` ne contient que des IDs à 0, ce service ne
+	   fait rien du tout et n'affiche rien. Le jeu reste parfaitement jouable.
+]]
+
+local MarketplaceService = game:GetService(&quot;MarketplaceService&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Monetization = require(Shared.Monetization)
+
+local MonetizationService = {}
+
+local services
+-- cache[player][passKey] = booléen
+local cache: { [Player]: { [string]: boolean } } = {}
+
+function MonetizationService.init(registry)
+	services = registry
+end
+
+function MonetizationService.onPlayerAdded(player: Player)
+	cache[player] = {}
+	-- Pré-chargement des pass possédés, en arrière-plan : un appel réseau raté
+	-- ne doit jamais empêcher le joueur de jouer.
+	task.spawn(function()
+		for key, pass in pairs(Monetization.activePasses()) do
+			local ok, owns = pcall(function()
+				return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.Id)
+			end)
+			if ok and cache[player] then
+				cache[player][key] = owns and true or false
+			end
+		end
+		if services.Economy then
+			services.Economy.push(player)
+		end
+	end)
+end
+
+function MonetizationService.onPlayerRemoving(player: Player)
+	cache[player] = nil
+end
+
+--[[ Possède-t-il ce pass ? false si l'ID n'est pas configuré. ]]
+function MonetizationService.ownsPass(player: Player, passKey: string): boolean
+	local pass = Monetization.Passes[passKey]
+	if not pass or not pass.Id or pass.Id &lt;= 0 then
+		return false
+	end
+	local entry = cache[player]
+	return (entry and entry[passKey]) == true
+end
+
+local function applyProduct(player: Player, product): boolean
+	if product.Effect == &quot;GrantCash&quot; then
+		services.Economy.grantCash(player, product.Value)
+		services.Notify.send(player, (&quot;+%d $ crédités. Merci.&quot;):format(product.Value), &quot;cash&quot;)
+		return true
+	elseif product.Effect == &quot;InstantRevive&quot; then
+		if services.Life.isDown(player) then
+			services.Life.revive(player, nil)
+			return true
+		end
+		-- Rien à soigner : on refuse plutôt que de prendre l'argent pour rien.
+		services.Notify.send(player, &quot;Tu n'es pas à terre — achat annulé.&quot;, &quot;info&quot;)
+		return false
+	end
+	warn((&quot;[MonetizationService] effet non implémenté : %s&quot;):format(tostring(product.Effect)))
+	return false
+end
+
+function MonetizationService.start()
+	local products = Monetization.activeProducts()
+
+	MarketplaceService.ProcessReceipt = function(receiptInfo)
+		local player = game:GetService(&quot;Players&quot;):GetPlayerByUserId(receiptInfo.PlayerId)
+		if not player then
+			-- Le joueur est parti : on réessaiera à sa prochaine session.
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		local product = products[receiptInfo.ProductId]
+		if not product then
+			warn((&quot;[MonetizationService] produit %d inconnu&quot;):format(receiptInfo.ProductId))
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		local ok, granted = pcall(applyProduct, player, product)
+		if not (ok and granted) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		-- On ne confirme l'achat qu'une fois la sauvegarde réussie, sinon le
+		-- joueur pourrait payer et perdre son argent au prochain redémarrage.
+		if services.Data.isAvailable() and not services.Data.save(player) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, wasPurchased)
+		if not wasPurchased then
+			return
+		end
+		for key, pass in pairs(Monetization.Passes) do
+			if pass.Id == passId then
+				if cache[player] then
+					cache[player][key] = true
+				end
+				services.Notify.send(player, (&quot;%s activé.&quot;):format(pass.Name), &quot;unlock&quot;)
+				services.Economy.push(player)
+			end
+		end
+	end)
+end
+
+return MonetizationService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX17"><Properties><string name="Name">NotifyService</string><ProtectedString name="Source">--[[
+	NotifyService — messages à l'écran.
+
+	`kind` sert au client pour choisir la couleur :
+	  &quot;info&quot; (blanc) · &quot;cash&quot; (vert) · &quot;danger&quot; (rouge) · &quot;unlock&quot; (violet)
+]]
+
+local Players = game:GetService(&quot;Players&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Net = require(Shared.Net)
+
+local NotifyService = {}
+
+function NotifyService.init() end
+
+function NotifyService.send(player: Player, message: string, kind: string?)
+	;(Net.get(&quot;Notify&quot;) :: RemoteEvent):FireClient(player, message, kind or &quot;info&quot;)
+end
+
+function NotifyService.broadcast(message: string, kind: string?)
+	for _, player in ipairs(Players:GetPlayers()) do
+		NotifyService.send(player, message, kind)
+	end
+end
+
+return NotifyService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX18"><Properties><string name="Name">ProgressionService</string><ProtectedString name="Source">--[[
+	ProgressionService — paliers d'ouverture des planques.
+
+	La progression est volontairement basée sur le TOTAL DÉPOSÉ À VIE
+	(TotalBanked), pas sur l'argent en banque. Sinon il suffirait de dépenser
+	son argent pour perdre l'accès aux planques profondes, ce qui serait absurde.
+]]
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+
+local ProgressionService = {}
+
+local services
+local announced: { [Player]: { [number]: boolean } } = {}
+
+function ProgressionService.init(registry)
+	services = registry
+end
+
+function ProgressionService.onPlayerAdded(player: Player)
+	announced[player] = {}
+end
+
+function ProgressionService.onPlayerRemoving(player: Player)
+	announced[player] = nil
+end
+
+--[[ Palier maximum accessible au joueur. ]]
+function ProgressionService.maxTier(player: Player): number
+	local profile = services.Data.get(player)
+	local total = profile and profile.TotalBanked or 0
+	local best = 1
+	for tier = 1, GameConfig.MaxTier do
+		if total &gt;= GameConfig.Tiers[tier].UnlockTotal then
+			best = tier
+		end
+	end
+	return best
+end
+
+function ProgressionService.canUse(player: Player, tier: number): (boolean, string?)
+	if tier &lt;= ProgressionService.maxTier(player) then
+		return true, nil
+	end
+	local needed = GameConfig.Tiers[tier].UnlockTotal
+	return false, (&quot;Il te faut %d $ déposés au total pour dormir ici.&quot;):format(needed)
+end
+
+--[[ Annonce les paliers franchis depuis le dernier appel. ]]
+function ProgressionService.check(player: Player)
+	local profile = services.Data.get(player)
+	if not profile then
+		return
+	end
+	local seen = announced[player]
+	if not seen then
+		return
+	end
+	for index, milestone in ipairs(GameConfig.Progression.Milestones) do
+		if profile.TotalBanked &gt;= milestone.Total and not seen[index] then
+			seen[index] = true
+			services.Notify.send(player, milestone.Message, &quot;unlock&quot;)
+		end
+	end
+end
+
+return ProgressionService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">RoundService</string><ProtectedString name="Source">--[[
+	RoundService — cycle nuit / aube.
+
+	NUIT  : noir, monstre actif, on peut dormir.
+	AUBE  : lumière, monstre rangé, tout le monde est relevé, et l'argent que
+	        les survivants ont encore sur eux est déposé automatiquement.
+
+	Le dépôt automatique à l'aube est important : sans lui, un joueur pourrait
+	garder sa cagnotte indéfiniment et le risque disparaîtrait. Avec lui, chaque
+	nuit est une décision complète — tu encaisses, ou tu tentes une planque de
+	plus avant le lever du jour.
+]]
+
+local Lighting = game:GetService(&quot;Lighting&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+local Net = require(Shared.Net)
+
+local RoundService = {}
+
+local services
+local phase = &quot;Dawn&quot;
+local phaseEndsAt = 0
+local nightNumber = 0
+
+function RoundService.init(registry)
+	services = registry
+end
+
+function RoundService.getPhase(): string
+	return phase
+end
+
+function RoundService.getNightNumber(): number
+	return nightNumber
+end
+
+local function broadcast()
+	;(Net.get(&quot;RoundUpdate&quot;) :: RemoteEvent):FireAllClients({
+		Phase = phase,
+		SecondsLeft = math.max(0, phaseEndsAt - os.clock()),
+		Duration = (phase == &quot;Night&quot;) and GameConfig.Round.NightDuration or GameConfig.Round.DawnDuration,
+		NightNumber = nightNumber,
+	})
+end
+
+function RoundService.pushTo(player: Player)
+	;(Net.get(&quot;RoundUpdate&quot;) :: RemoteEvent):FireClient(player, {
+		Phase = phase,
+		SecondsLeft = math.max(0, phaseEndsAt - os.clock()),
+		Duration = (phase == &quot;Night&quot;) and GameConfig.Round.NightDuration or GameConfig.Round.DawnDuration,
+		NightNumber = nightNumber,
+	})
+end
+
+-- ─── ambiance ───────────────────────────────────────────────────────────────
+
+local function setNightLighting(night: boolean)
+	if night then
+		Lighting.ClockTime = 0
+		Lighting.Brightness = 0.35
+		Lighting.Ambient = Color3.fromRGB(14, 14, 22)
+		Lighting.OutdoorAmbient = Color3.fromRGB(18, 18, 30)
+		Lighting.FogEnd = 110
+		Lighting.FogColor = Color3.fromRGB(10, 10, 16)
+	else
+		Lighting.ClockTime = 7.2
+		Lighting.Brightness = 2
+		Lighting.Ambient = Color3.fromRGB(110, 110, 120)
+		Lighting.OutdoorAmbient = Color3.fromRGB(140, 140, 150)
+		Lighting.FogEnd = 420
+		Lighting.FogColor = Color3.fromRGB(150, 155, 165)
+	end
+end
+
+-- ─── transitions ────────────────────────────────────────────────────────────
+
+local function beginNight()
+	nightNumber += 1
+	phase = &quot;Night&quot;
+	phaseEndsAt = os.clock() + GameConfig.Round.NightDuration
+	setNightLighting(true)
+
+	services.Life.resetNightFlags()
+	services.Threat.startPatrol()
+
+	services.Notify.broadcast((&quot;Nuit %d. Va dormir — plus c'est moche, plus ça paie.&quot;):format(nightNumber), &quot;danger&quot;)
+	broadcast()
+	services.Economy.pushAll()
+end
+
+local function beginDawn()
+	phase = &quot;Dawn&quot;
+	phaseEndsAt = os.clock() + GameConfig.Round.DawnDuration
+	setNightLighting(false)
+
+	services.Sleep.stopAll(&quot;dawn&quot;)
+	services.Threat.park()
+	services.Life.reviveAll()
+	services.Awakening.reset()
+
+	-- Dépôt automatique des survivants.
+	for _, player in ipairs(Players:GetPlayers()) do
+		local amount = services.Economy.getUnbanked(player)
+		if amount &gt; 0 then
+			local credited = services.Economy.bank(player)
+			services.Notify.send(player, (&quot;Le jour se lève. +%d $ déposés.&quot;):format(credited), &quot;cash&quot;)
+		end
+		local profile = services.Data.get(player)
+		if profile then
+			profile.NightsSurvived += 1
+			services.Data.save(player)
+		end
+	end
+
+	services.Notify.broadcast(&quot;Jour. Dépose, achète, respire.&quot;, &quot;info&quot;)
+	broadcast()
+	services.Economy.pushAll()
+end
+
+function RoundService.start()
+	setNightLighting(false)
+	phase = &quot;Dawn&quot;
+	phaseEndsAt = os.clock() + GameConfig.Round.DawnDuration
+
+	task.spawn(function()
+		-- Petite marge pour laisser les autres services finir leur démarrage.
+		task.wait(2)
+		while true do
+			broadcast()
+			if os.clock() &gt;= phaseEndsAt then
+				if phase == &quot;Night&quot; then
+					beginDawn()
+				else
+					beginNight()
+				end
+			end
+			task.wait(1)
+		end
+	end)
+end
+
+return RoundService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX20"><Properties><string name="Name">ShopService</string><ProtectedString name="Source">--[[
+	ShopService — achats en argent du jeu.
+
+	Règle de sécurité : le client n'envoie QUE l'identifiant de l'objet voulu.
+	Jamais un prix, jamais un niveau. Tout est recalculé ici à partir du
+	catalogue et du profil. Un client modifié ne peut donc pas s'offrir un objet
+	gratuitement : c'est la base de tout système d'achat sur Roblox.
+]]
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local ShopCatalog = require(Shared.ShopCatalog)
+local Monetization = require(Shared.Monetization)
+local Net = require(Shared.Net)
+
+local ShopService = {}
+
+local services
+
+function ShopService.init(registry)
+	services = registry
+end
+
+--[[ Ce que le client a le droit de voir : catalogue + prix calculés pour LUI. ]]
+local function buildCatalogFor(player: Player)
+	local profile = services.Data.get(player)
+	local total = profile and profile.TotalBanked or 0
+	local entries = {}
+
+	for _, item in ipairs(ShopCatalog.Items) do
+		if not item.RequiresTotal or total &gt;= item.RequiresTotal then
+			local owned = services.Economy.getItemLevel(player, item.Id)
+			table.insert(entries, {
+				Id = item.Id,
+				Name = item.Name,
+				Desc = item.Desc,
+				Kind = item.Kind,
+				Order = item.Order,
+				Owned = owned,
+				MaxLevel = item.MaxLevel or item.MaxStock or 1,
+				Price = ShopCatalog.getPrice(item, owned),
+				CanBuy = ShopCatalog.canBuyMore(item, owned),
+			})
+		end
+	end
+
+	table.sort(entries, function(a, b)
+		return a.Order &lt; b.Order
+	end)
+
+	-- Offres Robux : uniquement celles dont l'ID a été renseigné.
+	local robux = {}
+	for key, pass in pairs(Monetization.activePasses()) do
+		table.insert(robux, {
+			Kind = &quot;Pass&quot;,
+			Key = key,
+			Id = pass.Id,
+			Name = pass.Name,
+			Desc = pass.Desc,
+			Owned = services.Monetization.ownsPass(player, key),
+		})
+	end
+	for id, product in pairs(Monetization.activeProducts()) do
+		table.insert(robux, {
+			Kind = &quot;Product&quot;,
+			Id = id,
+			Name = product.Name,
+			Desc = product.Desc,
+			Owned = false,
+		})
+	end
+
+	return { Items = entries, Robux = robux }
+end
+
+function ShopService.openFor(player: Player)
+	;(Net.get(&quot;ShopResult&quot;) :: RemoteEvent):FireClient(player, {
+		Action = &quot;Open&quot;,
+		Catalog = buildCatalogFor(player),
+	})
+end
+
+--[[ Tentative d'achat. Retourne (succès, message). ]]
+function ShopService.buy(player: Player, itemId: string): (boolean, string)
+	local item = ShopCatalog.ById[itemId]
+	if not item then
+		return false, &quot;Objet inconnu.&quot;
+	end
+
+	local profile = services.Data.get(player)
+	if not profile then
+		return false, &quot;Profil pas encore chargé.&quot;
+	end
+
+	if item.RequiresTotal and profile.TotalBanked &lt; item.RequiresTotal then
+		return false, (&quot;Il te faut %d $ déposés au total.&quot;):format(item.RequiresTotal)
+	end
+
+	local owned = services.Economy.getItemLevel(player, itemId)
+	if not ShopCatalog.canBuyMore(item, owned) then
+		return false, (item.Kind == &quot;Consumable&quot;) and &quot;Stock maximum atteint.&quot; or &quot;Niveau maximum atteint.&quot;
+	end
+
+	local price = ShopCatalog.getPrice(item, owned)
+	if not services.Economy.spend(player, price) then
+		return false, (&quot;Il te manque %d $.&quot;):format(price - profile.Cash)
+	end
+
+	profile.Items[itemId] = owned + 1
+	services.Economy.applyWalkSpeed(player)
+	services.Economy.push(player)
+	services.Data.save(player)
+
+	return true, (&quot;%s acheté — %d $.&quot;):format(item.Name, price)
+end
+
+--[[ Consomme un objet de type Consumable. true si un exemplaire a été retiré. ]]
+function ShopService.consume(player: Player, itemId: string): boolean
+	local profile = services.Data.get(player)
+	if not profile then
+		return false
+	end
+	local stock = profile.Items[itemId] or 0
+	if stock &lt;= 0 then
+		return false
+	end
+	profile.Items[itemId] = stock - 1
+	services.Economy.push(player)
+	return true
+end
+
+function ShopService.start()
+	;(Net.get(&quot;RequestBuy&quot;) :: RemoteEvent).OnServerEvent:Connect(function(player, itemId)
+		if type(itemId) ~= &quot;string&quot; then
+			return
+		end
+		local ok, message = ShopService.buy(player, itemId)
+		;(Net.get(&quot;ShopResult&quot;) :: RemoteEvent):FireClient(player, {
+			Action = &quot;Buy&quot;,
+			Success = ok,
+			Message = message,
+			Catalog = buildCatalogFor(player),
+		})
+		services.Notify.send(player, message, ok and &quot;cash&quot; or &quot;info&quot;)
+	end)
+
+	;(Net.get(&quot;GetCatalog&quot;) :: RemoteFunction).OnServerInvoke = function(player)
+		return buildCatalogFor(player)
+	end
+end
+
+return ShopService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">SleepService</string><ProtectedString name="Source">--[[
+	SleepService — la boucle centrale du jeu.
+
+	Quand un joueur dort :
+	  • il gagne `Tier.Rate × multiplicateurs` dollars par seconde, dans sa poche
+	    non déposée ;
+	  • toutes les `RiskTickInterval` secondes, on tire un dé contre
+	    `Tier.DetectChance × multiplicateur de discrétion`.
+
+	Si le dé tombe : le joueur est RÉVEILLÉ par l'alerte et le monstre part vers
+	sa planque. Il a `WarningLead + bonus` secondes pour décoller. C'est cette
+	fenêtre qui fait que les paliers profonds sont jouables au skill, et pas une
+	simple loterie — voir docs/DESIGN.md.
+]]
+
+local RunService = game:GetService(&quot;RunService&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+local Net = require(Shared.Net)
+
+local SleepService = {}
+
+local services
+-- state[player] = { Spot, Tier, StartedAt, Earned, NextRiskAt, Alerted }
+local state: { [Player]: any } = {}
+
+function SleepService.init(registry)
+	services = registry
+end
+
+-- ─── lecture d'état ─────────────────────────────────────────────────────────
+
+function SleepService.isSleeping(player: Player): boolean
+	return state[player] ~= nil
+end
+
+--[[ Résumé envoyé au client pour le HUD. nil si le joueur ne dort pas. ]]
+function SleepService.describe(player: Player)
+	local entry = state[player]
+	if not entry then
+		return nil
+	end
+	local tierData = GameConfig.Tiers[entry.Tier]
+	local modifiers = services.Economy.getModifiers(player)
+	return {
+		Tier = entry.Tier,
+		TierName = tierData.Name,
+		SpotLabel = services.Zone.getLabel(entry.Spot),
+		RatePerSecond = tierData.Rate * modifiers.Earn,
+		-- risque effectif par tick, en %, ce que le joueur doit vraiment voir
+		RiskPercent = tierData.DetectChance * modifiers.Detect * 100,
+		Earned = entry.Earned,
+		SecondsToNextRoll = math.max(0, entry.NextRiskAt - os.clock()),
+		TickInterval = GameConfig.Round.RiskTickInterval,
+	}
+end
+
+-- ─── entrer / sortir du sommeil ─────────────────────────────────────────────
+
+local function anchorCharacter(player: Player, spot: BasePart, anchored: boolean)
+	local character = player.Character
+	if not character then
+		return
+	end
+	local root = character:FindFirstChild(&quot;HumanoidRootPart&quot;) :: BasePart?
+	local humanoid = character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if not (root and humanoid) then
+		return
+	end
+
+	if anchored then
+		-- On pose le personnage sur la planque, puis on le fige.
+		local target = spot.CFrame * CFrame.new(0, spot.Size.Y / 2 + 2.5, 0)
+		character:PivotTo(target)
+		root.Anchored = true
+		humanoid.WalkSpeed = 0
+		humanoid.JumpPower = 0
+		humanoid.AutoRotate = false
+	else
+		root.Anchored = false
+		humanoid.AutoRotate = true
+		humanoid.JumpPower = 50
+		services.Economy.applyWalkSpeed(player)
+	end
+end
+
+function SleepService.tryStart(player: Player, spot: BasePart)
+	if not spot or not spot.Parent then
+		return
+	end
+	if state[player] then
+		services.Notify.send(player, &quot;Tu dors déjà.&quot;, &quot;info&quot;)
+		return
+	end
+	if services.Life.isDown(player) then
+		return
+	end
+	if services.Round.getPhase() ~= &quot;Night&quot; then
+		services.Notify.send(player, &quot;C'est le jour. Dépose, achète, et attends la nuit.&quot;, &quot;info&quot;)
+		return
+	end
+
+	local tier = services.Zone.getTier(spot)
+
+	if services.Zone.isVip(spot) and not services.Monetization.ownsPass(player, &quot;VipRoom&quot;) then
+		services.Notify.send(player, &quot;Chambre VIP — réservée aux détenteurs du pass.&quot;, &quot;info&quot;)
+		return
+	end
+
+	local allowed, reason = services.Progression.canUse(player, tier)
+	if not allowed then
+		services.Notify.send(player, reason or &quot;Planque verrouillée.&quot;, &quot;info&quot;)
+		return
+	end
+
+	if not services.Zone.claim(spot, player) then
+		services.Notify.send(player, &quot;Quelqu'un dort déjà là.&quot;, &quot;info&quot;)
+		return
+	end
+
+	state[player] = {
+		Spot = spot,
+		Tier = tier,
+		StartedAt = os.clock(),
+		Earned = 0,
+		NextRiskAt = os.clock() + GameConfig.Round.RiskTickInterval,
+		Alerted = false,
+	}
+
+	anchorCharacter(player, spot, true)
+	services.Cosmetic.dressSpot(player, spot)
+
+	local profile = services.Data.get(player)
+	if profile and tier &gt; (profile.DeepestTier or 1) then
+		profile.DeepestTier = tier
+	end
+
+	;(Net.get(&quot;SleepChanged&quot;) :: RemoteEvent):FireClient(player, true, SleepService.describe(player))
+	services.Economy.push(player)
+end
+
+--[[ reason : &quot;manual&quot; | &quot;alert&quot; | &quot;caught&quot; | &quot;dawn&quot; | &quot;left&quot; ]]
+function SleepService.stop(player: Player, reason: string)
+	local entry = state[player]
+	if not entry then
+		return
+	end
+	state[player] = nil
+	services.Zone.release(entry.Spot)
+
+	services.Cosmetic.undressSpot(entry.Spot)
+
+	if reason ~= &quot;left&quot; then
+		anchorCharacter(player, entry.Spot, false)
+	end
+
+	;(Net.get(&quot;SleepChanged&quot;) :: RemoteEvent):FireClient(player, false, nil)
+
+	if reason == &quot;manual&quot; then
+		services.Notify.send(player, (&quot;Réveillé. %d $ sur toi — ramène-les au coffre.&quot;):format(
+			services.Economy.getUnbanked(player)), &quot;info&quot;)
+	end
+
+	services.Economy.push(player)
+end
+
+function SleepService.requestWake(player: Player)
+	if not state[player] then
+		return
+	end
+	SleepService.stop(player, &quot;manual&quot;)
+end
+
+function SleepService.stopAll(reason: string)
+	for player in pairs(state) do
+		SleepService.stop(player, reason)
+	end
+end
+
+function SleepService.getSpotOf(player: Player): BasePart?
+	local entry = state[player]
+	return entry and entry.Spot or nil
+end
+
+function SleepService.onPlayerRemoving(player: Player)
+	if state[player] then
+		SleepService.stop(player, &quot;left&quot;)
+	end
+	services.Zone.releaseAllFor(player)
+end
+
+-- ─── la boucle ──────────────────────────────────────────────────────────────
+
+local function rollRisk(player: Player, entry)
+	local tierData = GameConfig.Tiers[entry.Tier]
+	local modifiers = services.Economy.getModifiers(player)
+	local chance = tierData.DetectChance * modifiers.Detect
+
+	if chance &lt;= 0 then
+		return
+	end
+	if math.random() &gt;= chance then
+		return
+	end
+
+	-- Repéré. On réveille, on prévient, et le monstre se met en route.
+	entry.Alerted = true
+	local window = GameConfig.Round.WarningLead + modifiers.Warning
+	local spot = entry.Spot
+
+	SleepService.stop(player, &quot;alert&quot;)
+	;(Net.get(&quot;DangerAlert&quot;) :: RemoteEvent):FireClient(player, window)
+	services.Notify.send(player, &quot;Un bruit. Il vient par ici — BOUGE.&quot;, &quot;danger&quot;)
+	services.Threat.beginHunt(spot, player, window)
+end
+
+function SleepService.start()
+	local accumulator = 0
+	local pushAccumulator = 0
+
+	RunService.Heartbeat:Connect(function(deltaTime)
+		accumulator += deltaTime
+		pushAccumulator += deltaTime
+		if accumulator &lt; 0.25 then
+			return
+		end
+		local step = accumulator
+		accumulator = 0
+
+		local now = os.clock()
+
+		for player, entry in pairs(state) do
+			if not player.Parent then
+				state[player] = nil
+				services.Zone.release(entry.Spot)
+			else
+				local tierData = GameConfig.Tiers[entry.Tier]
+				local modifiers = services.Economy.getModifiers(player)
+
+				-- Gains (silencieux : on pousse l'état plus bas, 2 fois/s)
+				local gain = tierData.Rate * modifiers.Earn * step
+				entry.Earned += gain
+				services.Economy.addUnbanked(player, gain, true)
+
+				-- Tirage de risque
+				if now &gt;= entry.NextRiskAt then
+					entry.NextRiskAt = now + GameConfig.Round.RiskTickInterval
+					-- Dormir profond réveille la maison pour TOUT LE MONDE,
+					-- que le tirage tombe ou non.
+					services.Awakening.feed(entry.Tier)
+					rollRisk(player, entry)
+				end
+			end
+		end
+
+		-- Rafraîchissement du HUD des dormeurs, deux fois par seconde.
+		if pushAccumulator &gt;= 0.5 then
+			pushAccumulator = 0
+			for player in pairs(state) do
+				services.Economy.push(player)
+			end
+		end
+	end)
+end
+
+return SleepService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX22"><Properties><string name="Name">ThreatService</string><ProtectedString name="Source">--[[
+	ThreatService — les créatures, leur comportement, leur traque.
+
+	Ce n'est PAS un seul monstre. Il y a une créature par palier de planque,
+	chacune avec son comportement et sa contre-mesure (voir EntityCatalog) :
+
+	  Palier 2  LE VEILLEUR   lent, te perd si tu casses sa ligne de vue
+	  Palier 3  LA RAMPANTE   aveugle, ne suit que le MOUVEMENT
+	  Palier 4  LE MIME       se téléporte quand personne ne le regarde
+	  Palier 5  L'AFFAMÉ      ne lâche jamais, ignore les murs du regard
+
+	Le joueur n'apprend donc pas « le monstre », il apprend quatre monstres,
+	et chacun lui demande un réflexe différent. C'est ça qui fait durer le jeu.
+
+	Organisation du code : deux boucles séparées, exprès.
+	  • Heartbeat        → déplacement, capture, balancement, lumières.
+	    Doit être rapide et ne JAMAIS yielder.
+	  • boucle décisions → choix de cible, calcul de chemin, téléportations.
+	    Tourne 2 fois par seconde et peut yielder (ComputeAsync bloque).
+	Mélanger les deux fait tomber le framerate du serveur en multijoueur.
+]]
+
+local Lighting = game:GetService(&quot;Lighting&quot;)
+local PathfindingService = game:GetService(&quot;PathfindingService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+local Workspace = game:GetService(&quot;Workspace&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local EntityCatalog = require(Shared.EntityCatalog)
+local GameConfig = require(Shared.GameConfig)
+local Net = require(Shared.Net)
+
+local EntityBuilder = require(script.Parent.EntityBuilder)
+
+local ThreatService = {}
+
+local FOLDER_NAME = &quot;Entities&quot;
+local PARK_POSITION = Vector3.new(0, -500, 0)
+
+local services
+local folder: Folder
+local instances: { [string]: any } = {}
+local revealed: { [Player]: { [string]: boolean } } = {}
+local trackedLights: { { Light: PointLight, Base: number } } = {}
+
+function ThreatService.init(registry)
+	services = registry
+end
+
+-- ─── utilitaires de monde ───────────────────────────────────────────────────
+
+local function characterFilter(): { Instance }
+	local filter = { folder }
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			table.insert(filter, player.Character)
+		end
+	end
+	return filter
+end
+
+local function groundAt(position: Vector3): Vector3
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = characterFilter()
+
+	local result = Workspace:Raycast(position + Vector3.new(0, 60, 0), Vector3.new(0, -400, 0), params)
+	if result then
+		return result.Position
+	end
+	return position
+end
+
+local function rootOf(player: Player): BasePart?
+	local character = player.Character
+	if not character then
+		return nil
+	end
+	local humanoid = character:FindFirstChildOfClass(&quot;Humanoid&quot;)
+	if humanoid and humanoid.Health &lt;= 0 then
+		return nil
+	end
+	local part = character.PrimaryPart or character:FindFirstChild(&quot;HumanoidRootPart&quot;)
+	return part :: BasePart?
+end
+
+--[[ Y a-t-il un mur entre la créature et le joueur ? ]]
+local function hasLineOfSight(from: Vector3, target: BasePart): boolean
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = characterFilter()
+
+	local delta = target.Position - from
+	local result = Workspace:Raycast(from, delta, params)
+	return result == nil
+end
+
+--[[ Un joueur vivant a-t-il cette créature dans son champ de vision ?
+
+	 Le serveur ne connaît pas l'orientation des caméras : on approxime avec
+	 l'orientation du PERSONNAGE. C'est volontairement généreux (demi-angle
+	 d'environ 70°) et ça reste explicable au joueur : « tourne-toi vers lui et
+	 il ne peut pas sauter ». Une règle un peu fausse mais lisible vaut mieux
+	 qu'une règle exacte que personne ne comprend. ]]
+local function isObservedByAnyone(position: Vector3): boolean
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = characterFilter()
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		local root = rootOf(player)
+		if root and not services.Life.isDown(player) then
+			local delta = position - root.Position
+			if delta.Magnitude &lt; 90 and delta.Magnitude &gt; 0.1 then
+				local facing = root.CFrame.LookVector
+				if facing:Dot(delta.Unit) &gt; 0.35 then
+					-- Dans le champ ET sans mur entre les deux.
+					if Workspace:Raycast(root.Position, delta, params) == nil then
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
+local function playerSpeed(player: Player): number
+	local root = rootOf(player)
+	if not root then
+		return 0
+	end
+	local velocity = root.AssemblyLinearVelocity
+	return Vector3.new(velocity.X, 0, velocity.Z).Magnitude
+end
+
+-- ─── création / cycle de vie des créatures ──────────────────────────────────
+
+local function ensureFolder(): Folder
+	local existing = Workspace:FindFirstChild(FOLDER_NAME)
+    if existing and existing:IsA(&quot;Folder&quot;) then
+		return existing
+	end
+	local created = Instance.new(&quot;Folder&quot;)
+	created.Name = FOLDER_NAME
+	created.Parent = Workspace
+	return created
+end
+
+local function spawnInstance(def)
+	local model = EntityBuilder.build(def)
+	model.Parent = folder
+
+	local instance = {
+		Def = def,
+		Model = model,
+		Root = model.PrimaryPart,
+		Offsets = EntityBuilder.offsets(model),
+		BaseSizes = {},
+		Mode = &quot;Parked&quot;,
+		Target = nil,
+		LastKnown = nil,
+		Waypoints = {},
+		WaypointIndex = 1,
+		HuntEndsAt = 0,
+		LostSightFor = 0,
+		StillFor = 0,
+		NextTeleportAt = 0,
+		NextRepathAt = 0,
+		WalkPhase = 0,
+		PatrolIndex = 0,
+		Stats = EntityCatalog.resolve(def, 1),
+	}
+
+	-- Tailles d'origine, pour pouvoir agrandir la créature quand l'éveil monte.
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA(&quot;BasePart&quot;) then
+			instance.BaseSizes[descendant] = descendant.Size
+		end
+	end
+
+	if instance.Root then
+		instance.Root.CFrame = CFrame.new(PARK_POSITION)
+	end
+
+	instances[def.Id] = instance
+	return instance
+end
+
+local function getInstance(def)
+	local instance = instances[def.Id]
+	if instance and instance.Model and instance.Model.Parent then
+		return instance
+	end
+	return spawnInstance(def)
+end
+
+--[[ Place le corps entier : torse d'abord, puis chaque partie à son décalage.
+	 Obligatoire parce que les parties sont ancrées — voir la note technique
+	 en haut de EntityBuilder.luau. ]]
+local function placeBody(instance, cframe: CFrame, deltaTime: number, moving: boolean)
+	local root = instance.Root
+	if not root then
+		return
+	end
+	root.CFrame = cframe
+
+	if moving then
+		instance.WalkPhase += deltaTime * (instance.Stats.Speed * 0.45)
+	end
+	local swing = math.sin(instance.WalkPhase) * (moving and 0.5 or 0.06)
+
+	for _, entry in ipairs(instance.Offsets) do
+		local part = entry.Part
+		if part.Parent then
+			if entry.Swing ~= 0 then
+				part.CFrame = cframe * entry.Offset * CFrame.Angles(swing * entry.Swing, 0, 0)
+			else
+				part.CFrame = cframe * entry.Offset
+			end
+		end
+	end
+end
+
+function ThreatService.park(def)
+	for _, instance in pairs(instances) do
+		instance.Mode = &quot;Parked&quot;
+		instance.Target = nil
+		instance.LastKnown = nil
+		instance.Waypoints = {}
+		if instance.Root then
+			placeBody(instance, CFrame.new(PARK_POSITION), 0, false)
+		end
+		local disguise = instance.Model:FindFirstChild(&quot;Disguise&quot;)
+		if disguise then
+			disguise.Transparency = 0
+		end
+	end
+end
+
+--[[ Agrandit et accélère les créatures quand l'éveil monte. ]]
+function ThreatService.rescale(stage: number)
+	for _, instance in pairs(instances) do
+		instance.Stats = EntityCatalog.resolve(instance.Def, stage)
+		local scale = instance.Stats.Scale
+		for part, baseSize in pairs(instance.BaseSizes) do
+			if part.Parent then
+				part.Size = baseSize * scale
+			end
+		end
+		-- Les décalages doivent suivre l'échelle, sinon le corps se disloque.
+		-- On repart TOUJOURS de BaseOffset (le décalage d'origine) : recalculer
+		-- à partir de la valeur déjà mise à l'échelle accumulerait l'erreur à
+		-- chaque changement de stade.
+		for _, entry in ipairs(instance.Offsets) do
+			local base = entry.BaseOffset
+			local rotation = base - base.Position
+			entry.Offset = CFrame.new(base.Position * scale) * rotation
+		end
+	end
+end
+
+-- ─── patrouille ─────────────────────────────────────────────────────────────
+
+local function patrolPoints(): { BasePart }
+	return services.Zone.getPatrolPoints()
+end
+
+local function nextPatrolTarget(instance): Vector3?
+	local points = patrolPoints()
+	if #points == 0 then
+		return nil
+	end
+	instance.PatrolIndex = (instance.PatrolIndex % #points) + 1
+	return groundAt(points[instance.PatrolIndex].Position)
+end
+
+--[[ Le Veilleur patrouille en permanence pendant la nuit : il y a toujours
+	 quelque chose qui marche quelque part. C'est l'ambiance de base. ]]
+function ThreatService.startPatrol()
+	ThreatService.park()
+	local watchman = EntityCatalog.forTier(2)
+	if not watchman then
+		return
+	end
+	local instance = getInstance(watchman)
+	instance.Mode = &quot;Patrol&quot;
+	local points = patrolPoints()
+	if #points &gt; 0 and instance.Root then
+		placeBody(instance, CFrame.new(groundAt(points[1].Position)), 0, false)
+	end
+end
+
+--[[ Stade 4 : L'AFFAMÉ sort, et il erre pour de bon. ]]
+function ThreatService.releaseApex()
+	local apex = EntityCatalog.forTier(5)
+	if not apex then
+		return
+	end
+	local instance = getInstance(apex)
+	if instance.Mode == &quot;Parked&quot; then
+		instance.Mode = &quot;Patrol&quot;
+		local points = patrolPoints()
+		if #points &gt; 0 and instance.Root then
+			placeBody(instance, CFrame.new(groundAt(points[#points].Position)), 0, false)
+		end
+	end
+end
+
+-- ─── chasse ─────────────────────────────────────────────────────────────────
+
+--[[ Point d'apparition à `distance` studs de la planque : on veut que la
+	 créature arrive pile à la fin de la fenêtre de fuite du joueur. ]]
+local function pickSpawn(spotPosition: Vector3, distance: number): Vector3
+	local best, bestError = nil, math.huge
+	for _, point in ipairs(patrolPoints()) do
+		local gap = (point.Position - spotPosition).Magnitude
+		local errorMargin = math.abs(gap - distance)
+		if gap &gt; 12 and errorMargin &lt; bestError then
+			bestError, best = errorMargin, point.Position
+		end
+	end
+	if best then
+		return groundAt(best)
+	end
+	local angle = math.random() * math.pi * 2
+	return groundAt(spotPosition + Vector3.new(math.cos(angle), 0, math.sin(angle)) * distance)
+end
+
+--[[ Appelé par SleepService quand un dormeur est repéré. ]]
+function ThreatService.beginHunt(spot: BasePart, player: Player, window: number)
+	local tier = services.Zone.getTier(spot)
+	local def = EntityCatalog.forTier(tier)
+	if not def then
+		return -- palier 1 : personne ne vient.
+	end
+
+	local instance = getInstance(def)
+	instance.Mode = &quot;Hunt&quot;
+	instance.Target = player
+	instance.LastKnown = spot.Position
+	instance.HuntEndsAt = os.clock() + instance.Stats.HuntTimeout
+	instance.LostSightFor = 0
+	instance.StillFor = 0
+	instance.NextTeleportAt = os.clock() + (def.Teleports or 999)
+	instance.Waypoints = {}
+	instance.NextRepathAt = 0
+
+	local distance = math.max(18, window * instance.Stats.Speed)
+	if instance.Root then
+		placeBody(instance, CFrame.new(pickSpawn(spot.Position, distance)), 0, false)
+	end
+
+	-- Le déguisement du Mime tombe quand il chasse.
+	local disguise = instance.Model:FindFirstChild(&quot;Disguise&quot;)
+	if disguise then
+		disguise.Transparency = 1
+	end
+
+	-- Première rencontre : on montre au joueur à qui il a affaire, avec la
+	-- contre-mesure. Un joueur qui ne comprend pas pourquoi il meurt s'en va.
+	revealed[player] = revealed[player] or {}
+	if not revealed[player][def.Id] then
+		revealed[player][def.Id] = true
+		;(Net.get(&quot;EntityReveal&quot;) :: RemoteEvent):FireClient(player, {
+			Name = def.Name,
+			Tagline = def.Tagline,
+			Counter = def.Counter,
+			EyeColor = def.EyeColor,
+		})
+	end
+end
+
+function ThreatService.isHunting(): boolean
+	for _, instance in pairs(instances) do
+		if instance.Mode == &quot;Hunt&quot; then
+			return true
+		end
+	end
+	return false
+end
+
+--[[ Quelle créature est active en ce moment ? Pour le HUD. ]]
+function ThreatService.activeEntityName(): string?
+	for _, instance in pairs(instances) do
+		if instance.Mode == &quot;Hunt&quot; then
+			return instance.Def.Name
+		end
+	end
+	return nil
+end
+
+function ThreatService.onPlayerRemoving(player: Player)
+	revealed[player] = nil
+	for _, instance in pairs(instances) do
+		if instance.Target == player then
+			instance.Target = nil
+			instance.Mode = (instance.Mode == &quot;Hunt&quot;) and &quot;Search&quot; or instance.Mode
+		end
+	end
+end
+
+-- ─── capture ────────────────────────────────────────────────────────────────
+
+local function tryCatch(instance)
+	local root = instance.Root
+	if not root then
+		return
+	end
+	for _, player in ipairs(Players:GetPlayers()) do
+		local target = rootOf(player)
+		if target and not services.Life.isDown(player) then
+			if (target.Position - root.Position).Magnitude &lt;= instance.Stats.CatchRadius then
+				services.Life.down(player, instance.Def.Id)
+			end
+		end
+	end
+end
+
+-- ─── lumières qui vacillent ─────────────────────────────────────────────────
+
+local function collectLights()
+	trackedLights = {}
+	for _, descendant in ipairs(Workspace:GetDescendants()) do
+		if descendant:IsA(&quot;PointLight&quot;) and not descendant:IsDescendantOf(folder) then
+			table.insert(trackedLights, { Light = descendant, Base = descendant.Brightness })
+		end
+	end
+end
+
+--[[ Une ampoule qui grésille quand la créature approche, c'est l'effet le
+	 moins cher et le plus efficace du jeu : le joueur sait avant de voir. ]]
+local function updateFlicker()
+	for _, entry in ipairs(trackedLights) do
+		local light = entry.Light
+		if light.Parent then
+			local lightPosition = light.Parent:IsA(&quot;BasePart&quot;) and (light.Parent :: BasePart).Position or nil
+			if lightPosition then
+				local nearest = math.huge
+				local flickerRange = 0
+				for _, instance in pairs(instances) do
+					if instance.Mode ~= &quot;Parked&quot; and instance.Root then
+						local gap = (instance.Root.Position - lightPosition).Magnitude
+						if gap &lt; nearest then
+							nearest = gap
+							flickerRange = instance.Def.FlickerRange
+						end
+					end
+				end
+				if nearest &lt; flickerRange then
+					local closeness = 1 - (nearest / flickerRange)
+					local noise = math.noise(os.clock() * 9, lightPosition.X * 0.1) * 0.5 + 0.5
+					light.Brightness = entry.Base * (1 - closeness * (0.75 + 0.25 * noise))
+				elseif light.Brightness ~= entry.Base then
+					light.Brightness = entry.Base
+				end
+			end
+		end
+	end
+end
+
+-- ─── boucle de décisions (peut yielder) ─────────────────────────────────────
+
+local function computePath(from: Vector3, to: Vector3): { Vector3 }
+	local ok, result = pcall(function()
+		local path = PathfindingService:CreatePath({
+			AgentRadius = 3,
+			AgentHeight = 6,
+			AgentCanJump = false,
+		})
+		path:ComputeAsync(from, to)
+		if path.Status ~= Enum.PathStatus.Success then
+			return nil
+		end
+		local points = {}
+		for _, waypoint in ipairs(path:GetWaypoints()) do
+			table.insert(points, waypoint.Position)
+		end
+		return points
+	end)
+	if ok and type(result) == &quot;table&quot; and #result &gt; 1 then
+		return result
+	end
+	return { to }
+end
+
+local function setDestination(instance, target: Vector3)
+	if not instance.Root then
+		return
+	end
+	instance.Waypoints = computePath(instance.Root.Position, target)
+	instance.WaypointIndex = 1
+end
+
+local function decideHunt(instance, step: number)
+	local def = instance.Def
+	local player = instance.Target
+	local target = player and rootOf(player)
+
+	if not target or (player and services.Life.isDown(player)) then
+		instance.Target = nil
+		instance.Mode = &quot;Search&quot;
+		return
+	end
+
+	local root = instance.Root
+	if not root then
+		return
+	end
+
+	local gap = (target.Position - root.Position).Magnitude
+	local sees = gap &lt;= instance.Stats.SightRange and hasLineOfSight(root.Position + Vector3.new(0, 2, 0), target)
+
+	-- LA RAMPANTE : aveugle. Elle ne suit que ce qui bouge.
+	if def.Blind then
+		if playerSpeed(player) &lt; 2.5 then
+			instance.StillFor += step
+			if instance.StillFor &gt;= def.Blind then
+				instance.LastKnown = target.Position
+				instance.Target = nil
+				instance.Mode = &quot;Search&quot;
+				return
+			end
+		else
+			instance.StillFor = 0
+		end
+		-- Elle n'a pas besoin de ligne de vue : elle entend.
+		sees = gap &lt;= instance.Stats.SightRange
+	end
+
+	-- LE VEILLEUR : perd la trace si on casse sa ligne de vue assez longtemps.
+	if def.LosesTrack and not def.Relentless then
+		if sees then
+			instance.LostSightFor = 0
+		else
+			instance.LostSightFor += step
+			if instance.LostSightFor &gt;= def.LosesTrack then
+				instance.Target = nil
+				instance.Mode = &quot;Search&quot;
+				return
+			end
+		end
+	end
+
+	-- LE MIME : se rapproche par sauts, mais seulement si personne ne le regarde.
+	if def.Teleports and os.clock() &gt;= instance.NextTeleportAt then
+		if not isObservedByAnyone(root.Position) then
+			local candidates = patrolPoints()
+			local best, bestGap = nil, gap
+			for _, point in ipairs(candidates) do
+				local candidateGap = (point.Position - target.Position).Magnitude
+				if candidateGap &lt; bestGap and candidateGap &gt; 10 then
+					bestGap, best = candidateGap, point.Position
+				end
+			end
+			if best then
+				placeBody(instance, CFrame.new(groundAt(best)), 0, false)
+				instance.Waypoints = {}
+			end
+		end
+		instance.NextTeleportAt = os.clock() + def.Teleports
+	end
+
+	if sees or def.Relentless then
+		instance.LastKnown = target.Position
+	end
+
+	setDestination(instance, groundAt(instance.LastKnown or target.Position))
+
+	if not def.Relentless and os.clock() &gt;= instance.HuntEndsAt then
+		instance.Target = nil
+		instance.Mode = &quot;Search&quot;
+	end
+end
+
+local function decideSearch(instance)
+	local root = instance.Root
+	if not root then
+		return
+	end
+	-- Elle fouille le dernier endroit connu, puis repart en ronde.
+	if instance.LastKnown and (root.Position - instance.LastKnown).Magnitude &gt; 6 then
+		setDestination(instance, groundAt(instance.LastKnown))
+	else
+		instance.LastKnown = nil
+		instance.Mode = (instance.Def.Tier == 2 or instance.Def.Relentless) and &quot;Patrol&quot; or &quot;Parked&quot;
+		if instance.Mode == &quot;Parked&quot; then
+			placeBody(instance, CFrame.new(PARK_POSITION), 0, false)
+		end
+	end
+end
+
+local function decidePatrol(instance)
+	if #instance.Waypoints == 0 or instance.WaypointIndex &gt; #instance.Waypoints then
+		local target = nextPatrolTarget(instance)
+		if target then
+			setDestination(instance, target)
+		end
+	end
+
+	-- En ronde, une créature qui te croise de près te prend en chasse.
+	local root = instance.Root
+	if not root then
+		return
+	end
+	for _, player in ipairs(Players:GetPlayers()) do
+		local target = rootOf(player)
+		if target and not services.Life.isDown(player) then
+			local gap = (target.Position - root.Position).Magnitude
+			if gap &lt;= instance.Stats.SightRange * 0.5 then
+				local visible = instance.Def.Blind
+					and playerSpeed(player) &gt; 2.5
+					or hasLineOfSight(root.Position + Vector3.new(0, 2, 0), target)
+				if visible then
+					instance.Mode = &quot;Hunt&quot;
+					instance.Target = player
+					instance.LastKnown = target.Position
+					instance.HuntEndsAt = os.clock() + instance.Stats.HuntTimeout
+					instance.LostSightFor = 0
+					instance.StillFor = 0
+					services.Notify.send(player, (&quot;%s t'a vu.&quot;):format(instance.Def.Name), &quot;danger&quot;)
+					;(Net.get(&quot;DangerAlert&quot;) :: RemoteEvent):FireClient(player, 2)
+					return
+				end
+			end
+		end
+	end
+end
+
+-- ─── démarrage ──────────────────────────────────────────────────────────────
+
+function ThreatService.start()
+	folder = ensureFolder()
+	folder:ClearAllChildren()
+
+	for tier = 2, GameConfig.MaxTier do
+		local def = EntityCatalog.forTier(tier)
+		if def then
+			spawnInstance(def)
+		end
+	end
+
+	collectLights()
+	task.delay(5, collectLights)
+
+	-- Boucle de décisions : peut yielder (le pathfinding bloque).
+	task.spawn(function()
+		local step = 0.5
+		while true do
+			task.wait(step)
+			for _, instance in pairs(instances) do
+				if instance.Mode == &quot;Hunt&quot; then
+					decideHunt(instance, step)
+				elseif instance.Mode == &quot;Search&quot; then
+					decideSearch(instance)
+				elseif instance.Mode == &quot;Patrol&quot; then
+					decidePatrol(instance)
+				end
+			end
+		end
+	end)
+
+	-- Boucle de rendu : déplacement, capture, corps, lumières. Jamais de yield.
+	RunService.Heartbeat:Connect(function(deltaTime)
+		for _, instance in pairs(instances) do
+			if instance.Mode ~= &quot;Parked&quot; and instance.Root then
+				local root = instance.Root
+				local target = instance.Waypoints[instance.WaypointIndex]
+				local moving = false
+
+				if target then
+					local current = root.Position
+					local flat = Vector3.new(target.X - current.X, 0, target.Z - current.Z)
+					if flat.Magnitude &lt; 2.5 then
+						instance.WaypointIndex += 1
+					else
+						local direction = flat.Unit
+						local travel = math.min(instance.Stats.Speed * deltaTime, flat.Magnitude)
+						local nextPosition = current + direction * travel
+						local grounded = groundAt(nextPosition)
+						local eyeHeight = instance.Def.Height * 0.55 * instance.Stats.Scale
+						local placed = Vector3.new(nextPosition.X, grounded.Y + eyeHeight, nextPosition.Z)
+						placeBody(instance, CFrame.lookAt(placed, placed + direction), deltaTime, true)
+						moving = true
+					end
+				end
+
+				if not moving then
+					-- Respiration sur place : elle n'est jamais complètement immobile.
+					placeBody(instance, root.CFrame, deltaTime, false)
+				end
+
+				-- Les yeux pulsent plus fort quand elle chasse.
+				local head = instance.Model:FindFirstChild(&quot;Head&quot;)
+				local glow = head and head:FindFirstChildOfClass(&quot;PointLight&quot;)
+				if glow then
+					local base = (instance.Mode == &quot;Hunt&quot;) and 2.4 or 1.1
+					glow.Brightness = base + math.sin(os.clock() * 6) * 0.35
+				end
+
+				tryCatch(instance)
+			end
+		end
+
+		updateFlicker()
+	end)
+end
+
+return ThreatService
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">ZoneService</string><ProtectedString name="Source">--[[
+	ZoneService — inventaire des lieux interactifs de la carte.
+
+	Une planque, c'est juste une BasePart taguée &quot;SleepSpot&quot; avec un attribut
+	numérique &quot;Tier&quot; (1 à 5). Rien d'autre. Tu peux donc dessiner ta propre carte
+	dans Studio sans toucher au code : tu poses une part, tu lui mets le tag et
+	l'attribut, elle est jouable.
+
+	Tags reconnus :
+	  SleepSpot     — planque. Attribut requis : Tier (nombre 1-5).
+	                  Attribut optionnel : SpotLabel (texte affiché).
+	  BankTerminal  — coffre : dépose l'argent que tu as sur toi.
+	  ShopTerminal  — ouvre la boutique d'équipement.
+	  SkinTerminal  — ouvre la boutique de skins.
+	  PatrolPoint   — point de passage du monstre en patrouille.
+]]
+
+local CollectionService = game:GetService(&quot;CollectionService&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local GameConfig = require(Shared.GameConfig)
+
+local ZoneService = {}
+
+local TAG_SPOT = &quot;SleepSpot&quot;
+local TAG_BANK = &quot;BankTerminal&quot;
+local TAG_SHOP = &quot;ShopTerminal&quot;
+local TAG_SKIN = &quot;SkinTerminal&quot;
+local TAG_PATROL = &quot;PatrolPoint&quot;
+
+local services
+local occupant: { [BasePart]: Player } = {}
+local spots: { BasePart } = {}
+
+function ZoneService.init(registry)
+	services = registry
+end
+
+-- ─── lecture d'une planque ──────────────────────────────────────────────────
+
+function ZoneService.getTier(spot: BasePart): number
+	local tier = spot:GetAttribute(&quot;Tier&quot;)
+	if type(tier) ~= &quot;number&quot; then
+		return 1
+	end
+	return math.clamp(math.floor(tier), 1, GameConfig.MaxTier)
+end
+
+function ZoneService.getTierData(spot: BasePart)
+	return GameConfig.Tiers[ZoneService.getTier(spot)]
+end
+
+function ZoneService.getLabel(spot: BasePart): string
+	local label = spot:GetAttribute(&quot;SpotLabel&quot;)
+	if type(label) == &quot;string&quot; and #label &gt; 0 then
+		return label
+	end
+	return ZoneService.getTierData(spot).Name
+end
+
+--[[ Est-ce une planque VIP (réservée au game pass) ? ]]
+function ZoneService.isVip(spot: BasePart): boolean
+	return spot:GetAttribute(&quot;Vip&quot;) == true
+end
+
+-- ─── occupation ─────────────────────────────────────────────────────────────
+
+function ZoneService.getOccupant(spot: BasePart): Player?
+	local player = occupant[spot]
+	if player and not player.Parent then
+		occupant[spot] = nil
+		return nil
+	end
+	return player
+end
+
+function ZoneService.claim(spot: BasePart, player: Player): boolean
+	if ZoneService.getOccupant(spot) then
+		return false
+	end
+	occupant[spot] = player
+	ZoneService.refreshPrompt(spot)
+	return true
+end
+
+function ZoneService.release(spot: BasePart)
+	occupant[spot] = nil
+	ZoneService.refreshPrompt(spot)
+end
+
+function ZoneService.releaseAllFor(player: Player)
+	for spot, holder in pairs(occupant) do
+		if holder == player then
+			occupant[spot] = nil
+			ZoneService.refreshPrompt(spot)
+		end
+	end
+end
+
+function ZoneService.getSpots(): { BasePart }
+	return spots
+end
+
+function ZoneService.getPatrolPoints(): { BasePart }
+	local points = {}
+	for _, instance in ipairs(CollectionService:GetTagged(TAG_PATROL)) do
+		if instance:IsA(&quot;BasePart&quot;) then
+			table.insert(points, instance)
+		end
+	end
+	return points
+end
+
+-- ─── invites (ProximityPrompt) ──────────────────────────────────────────────
+
+function ZoneService.refreshPrompt(spot: BasePart)
+	local prompt = spot:FindFirstChildOfClass(&quot;ProximityPrompt&quot;)
+	if not prompt then
+		return
+	end
+	local tier = ZoneService.getTierData(spot)
+	local taken = ZoneService.getOccupant(spot) ~= nil
+	prompt.ActionText = taken and &quot;Occupée&quot; or &quot;Dormir&quot;
+	prompt.ObjectText = (&quot;%s — %d $/s · %s&quot;):format(ZoneService.getLabel(spot), tier.Rate, tier.RiskLabel)
+	prompt.Enabled = not taken
+end
+
+local function attachSpot(instance: Instance)
+	if not instance:IsA(&quot;BasePart&quot;) then
+		return
+	end
+	if table.find(spots, instance) then
+		return
+	end
+	table.insert(spots, instance)
+
+	local prompt = instance:FindFirstChildOfClass(&quot;ProximityPrompt&quot;)
+	if not prompt then
+		prompt = Instance.new(&quot;ProximityPrompt&quot;)
+		prompt.HoldDuration = 0.4
+		prompt.MaxActivationDistance = 9
+		prompt.RequiresLineOfSight = false
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.Parent = instance
+	end
+
+	prompt.Triggered:Connect(function(player)
+		services.Sleep.tryStart(player, instance)
+	end)
+
+	ZoneService.refreshPrompt(instance)
+end
+
+local function attachBank(instance: Instance)
+	if not instance:IsA(&quot;BasePart&quot;) then
+		return
+	end
+	local prompt = instance:FindFirstChildOfClass(&quot;ProximityPrompt&quot;)
+	if not prompt then
+		prompt = Instance.new(&quot;ProximityPrompt&quot;)
+		prompt.ActionText = &quot;Déposer&quot;
+		prompt.ObjectText = &quot;Coffre&quot;
+		prompt.HoldDuration = 0.6
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.Parent = instance
+	end
+	prompt.Triggered:Connect(function(player)
+		services.Economy.requestBank(player)
+	end)
+end
+
+local function attachShop(instance: Instance)
+	if not instance:IsA(&quot;BasePart&quot;) then
+		return
+	end
+	local prompt = instance:FindFirstChildOfClass(&quot;ProximityPrompt&quot;)
+	if not prompt then
+		prompt = Instance.new(&quot;ProximityPrompt&quot;)
+		prompt.ActionText = &quot;Ouvrir&quot;
+		prompt.ObjectText = &quot;Boutique&quot;
+		prompt.HoldDuration = 0.2
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.Parent = instance
+	end
+	prompt.Triggered:Connect(function(player)
+		services.Shop.openFor(player)
+	end)
+end
+
+local function attachSkinShop(instance: Instance)
+	if not instance:IsA(&quot;BasePart&quot;) then
+		return
+	end
+	local prompt = instance:FindFirstChildOfClass(&quot;ProximityPrompt&quot;)
+	if not prompt then
+		prompt = Instance.new(&quot;ProximityPrompt&quot;)
+		prompt.ActionText = &quot;Ouvrir&quot;
+		prompt.ObjectText = &quot;Skins&quot;
+		prompt.HoldDuration = 0.2
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.Parent = instance
+	end
+	prompt.Triggered:Connect(function(player)
+		services.Cosmetic.openFor(player)
+	end)
+end
+
+function ZoneService.start()
+	for _, instance in ipairs(CollectionService:GetTagged(TAG_SPOT)) do
+		attachSpot(instance)
+	end
+	CollectionService:GetInstanceAddedSignal(TAG_SPOT):Connect(attachSpot)
+
+	for _, instance in ipairs(CollectionService:GetTagged(TAG_BANK)) do
+		attachBank(instance)
+	end
+	CollectionService:GetInstanceAddedSignal(TAG_BANK):Connect(attachBank)
+
+	for _, instance in ipairs(CollectionService:GetTagged(TAG_SHOP)) do
+		attachShop(instance)
+	end
+	CollectionService:GetInstanceAddedSignal(TAG_SHOP):Connect(attachShop)
+
+	for _, instance in ipairs(CollectionService:GetTagged(TAG_SKIN)) do
+		attachSkinShop(instance)
+	end
+	CollectionService:GetInstanceAddedSignal(TAG_SKIN):Connect(attachSkinShop)
+
+	CollectionService:GetInstanceRemovedSignal(TAG_SPOT):Connect(function(instance)
+		local index = table.find(spots, instance)
+		if index then
+			table.remove(spots, index)
+		end
+		occupant[instance :: BasePart] = nil
+	end)
+
+	if #spots == 0 then
+		warn(&quot;[ZoneService] aucune planque taguée \&quot;SleepSpot\&quot; trouvée. &quot;
+			.. &quot;Vérifie que MapBuilder est activé ou que ta carte a les tags.&quot;)
+	end
+end
+
+return ZoneService
+</ProtectedString></Properties></Item></Item></Item><Item class="ServerStorage" referent="RBX34"><Properties><string name="Name">ServerStorage</string></Properties><Item class="Folder" referent="RBX33"><Properties><string name="Name">Entities</string></Properties></Item></Item><Item class="StarterPlayer" referent="RBX32"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX31"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX30"><Properties><string name="Name">Client</string><ProtectedString name="Source">--[[
+	DEAD TIRED — client.
+
+	Il ne décide de rien : il affiche ce que le serveur envoie et transmet les
+	intentions du joueur. Toutes les règles (argent, risque, capture) sont côté
+	serveur. C'est la seule architecture qui résiste aux exploits sur Roblox.
+
+	Touches :
+	  E       — interagir (dormir, déposer, ouvrir une borne, relever) via les invites
+	  Espace  — se réveiller
+	  B       — ouvrir/fermer la boutique d'équipement
+	  N       — ouvrir/fermer les skins
+]]
+
+local ContextActionService = game:GetService(&quot;ContextActionService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+local StarterGui = game:GetService(&quot;StarterGui&quot;)
+local UserInputService = game:GetService(&quot;UserInputService&quot;)
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Net = require(Shared.Net)
+
+local Hud = require(script.Hud)
+local ShopUI = require(script.ShopUI)
+local CosmeticUI = require(script.CosmeticUI)
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild(&quot;PlayerGui&quot;)
+
+-- ─── interface ──────────────────────────────────────────────────────────────
+
+local gui = Instance.new(&quot;ScreenGui&quot;)
+gui.Name = &quot;DeadTiredUI&quot;
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = playerGui
+
+Hud.build(gui)
+ShopUI.build(gui)
+CosmeticUI.build(gui)
+Hud.start()
+
+-- ─── réception serveur ─────────────────────────────────────────────────────
+
+local isSleeping = false
+
+;(Net.get(&quot;StateUpdate&quot;) :: RemoteEvent).OnClientEvent:Connect(function(state)
+	Hud.setState(state)
+	ShopUI.setCash(state.Cash or 0)
+	CosmeticUI.setCash(state.Cash or 0)
+end)
+
+;(Net.get(&quot;RoundUpdate&quot;) :: RemoteEvent).OnClientEvent:Connect(function(round)
+	round.ReceivedAt = os.clock()
+	Hud.setRound(round)
+end)
+
+;(Net.get(&quot;AwakeningUpdate&quot;) :: RemoteEvent).OnClientEvent:Connect(function(data)
+	Hud.setAwakening(data)
+end)
+
+;(Net.get(&quot;EntityReveal&quot;) :: RemoteEvent).OnClientEvent:Connect(function(data)
+	Hud.revealEntity(data)
+end)
+
+;(Net.get(&quot;CosmeticResult&quot;) :: RemoteEvent).OnClientEvent:Connect(function(payload)
+	if payload.Catalog then
+		CosmeticUI.render(payload.Catalog)
+	end
+	if payload.Action == &quot;Open&quot; then
+		ShopUI.setVisible(false)
+		CosmeticUI.setVisible(true)
+	end
+end)
+
+;(Net.get(&quot;Notify&quot;) :: RemoteEvent).OnClientEvent:Connect(function(message, kind)
+	Hud.toast(message, kind or &quot;info&quot;)
+end)
+
+;(Net.get(&quot;DangerAlert&quot;) :: RemoteEvent).OnClientEvent:Connect(function(window)
+	Hud.flashDanger(window or 4)
+end)
+
+;(Net.get(&quot;SleepChanged&quot;) :: RemoteEvent).OnClientEvent:Connect(function(sleeping)
+	isSleeping = sleeping == true
+	-- On coupe le saut pendant le sommeil pour que Espace serve au réveil.
+	if isSleeping then
+		ShopUI.setVisible(false)
+		CosmeticUI.setVisible(false)
+	end
+end)
+
+;(Net.get(&quot;ShopResult&quot;) :: RemoteEvent).OnClientEvent:Connect(function(payload)
+	if payload.Catalog then
+		ShopUI.render(payload.Catalog)
+	end
+	if payload.Action == &quot;Open&quot; then
+		CosmeticUI.setVisible(false)
+		ShopUI.setVisible(true)
+	end
+end)
+
+-- ─── entrées ────────────────────────────────────────────────────────────────
+
+local function onWake(actionName: string, inputState: Enum.UserInputState)
+	if inputState ~= Enum.UserInputState.Begin then
+		return Enum.ContextActionResult.Pass
+	end
+	if not isSleeping then
+		return Enum.ContextActionResult.Pass
+	end
+	;(Net.get(&quot;RequestWake&quot;) :: RemoteEvent):FireServer()
+	return Enum.ContextActionResult.Sink
+end
+
+-- BindActionAtPriority : on passe devant le saut par défaut, mais seulement
+-- quand le joueur dort (sinon on rend l'input au jeu avec Pass).
+ContextActionService:BindActionAtPriority(
+	&quot;DeadTiredWake&quot;,
+	onWake,
+	false,
+	Enum.ContextActionPriority.High.Value,
+	Enum.KeyCode.Space
+)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then
+		return
+	end
+	if input.KeyCode == Enum.KeyCode.B then
+		if ShopUI.isVisible() then
+			ShopUI.setVisible(false)
+		elseif not isSleeping then
+			CosmeticUI.setVisible(false)
+			ShopUI.refreshFromServer()
+			ShopUI.setVisible(true)
+		end
+	elseif input.KeyCode == Enum.KeyCode.N then
+		if CosmeticUI.isVisible() then
+			CosmeticUI.setVisible(false)
+		elseif not isSleeping then
+			ShopUI.setVisible(false)
+			-- Le serveur renvoie le catalogue complet dans CosmeticResult.
+			;(Net.get(&quot;RequestCosmetic&quot;) :: RemoteEvent):FireServer({ action = &quot;open&quot;, id = &quot;&quot; })
+			CosmeticUI.setVisible(true)
+		end
+	end
+end)
+
+-- ─── confort ────────────────────────────────────────────────────────────────
+
+-- On masque la liste des joueurs par défaut : le HUD donne déjà l'argent, et
+-- l'écran doit rester sombre et vide pour que le jeu fasse peur.
+pcall(function()
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+end)
+
+ShopUI.refreshFromServer()
+
+print(&quot;[DEAD TIRED] client prêt.&quot;)
+</ProtectedString></Properties><Item class="ModuleScript" referent="RBX26"><Properties><string name="Name">CosmeticUI</string><ProtectedString name="Source">--[[
+	CosmeticUI — la boutique de skins.
+
+	Choix d'affichage volontaire : les skins VERROUILLÉS restent visibles, avec
+	leur condition écrite en clair (« il faut avoir dormi au palier 5 »).
+	Cacher ce qu'on ne peut pas encore avoir, c'est se priver du seul truc qui
+	donne envie de continuer à jouer. On montre la carotte.
+]]
+
+local Players = game:GetService(&quot;Players&quot;)
+
+local UiKit = require(script.Parent.UiKit)
+local new = UiKit.new
+local Colors = UiKit.Colors
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Net = require(Shared.Net)
+
+local CosmeticUI = {}
+
+local frame: Frame
+local list: ScrollingFrame
+local cashLabel: TextLabel
+local currentCash = 0
+
+local SLOT_LABELS = {
+	Skin = &quot;Apparence&quot;,
+	Trail = &quot;Traînée&quot;,
+	Aura = &quot;Aura&quot;,
+	Title = &quot;Titre&quot;,
+	BedSkin = &quot;Literie&quot;,
+}
+
+function CosmeticUI.build(gui: ScreenGui)
+	frame = new(&quot;Frame&quot;, {
+		Name = &quot;Cosmetics&quot;,
+		Parent = gui,
+		Visible = false,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(540, 540),
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.04,
+		ZIndex = 10,
+	}, { UiKit.corner(14), UiKit.padding(18) }) :: Frame
+
+	new(&quot;TextLabel&quot;, {
+		Parent = frame,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -40, 0, 28),
+		Font = Enum.Font.GothamBold,
+		TextSize = 22,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Unlock,
+		Text = &quot;Skins&quot;,
+	})
+
+	cashLabel = new(&quot;TextLabel&quot;, {
+		Parent = frame,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 30),
+		Size = UDim2.new(1, -40, 0, 18),
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Cash,
+		Text = &quot;0 $ en banque · aucun skin ne donne d'avantage&quot;,
+	}) :: TextLabel
+
+	local close = new(&quot;TextButton&quot;, {
+		Parent = frame,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromOffset(32, 32),
+		BackgroundColor3 = Colors.PanelLight,
+		Font = Enum.Font.GothamBold,
+		TextSize = 18,
+		TextColor3 = Colors.Text,
+		Text = &quot;✕&quot;,
+	}, { UiKit.corner(8) }) :: TextButton
+	close.Activated:Connect(function()
+		CosmeticUI.setVisible(false)
+	end)
+
+	list = new(&quot;ScrollingFrame&quot;, {
+		Parent = frame,
+		Position = UDim2.fromOffset(0, 58),
+		Size = UDim2.new(1, 0, 1, -58),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 5,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	}, {
+		new(&quot;UIListLayout&quot;, {
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 8),
+		}),
+	}) :: ScrollingFrame
+end
+
+local function sectionTitle(text: string, order: number)
+	new(&quot;TextLabel&quot;, {
+		Parent = list,
+		LayoutOrder = order,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 24),
+		Font = Enum.Font.GothamBold,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = text:upper(),
+	})
+end
+
+local function row(entry, order: number)
+	local container = new(&quot;Frame&quot;, {
+		Parent = list,
+		LayoutOrder = order,
+		Size = UDim2.new(1, -8, 0, 78),
+		BackgroundColor3 = Colors.PanelLight,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(10), UiKit.padding(12) })
+
+	-- Pastille de couleur : on voit le skin avant de l'acheter.
+	new(&quot;Frame&quot;, {
+		Parent = container,
+		Size = UDim2.fromOffset(10, 54),
+		BackgroundColor3 = entry.Color or Colors.Muted,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(5) })
+
+	new(&quot;TextLabel&quot;, {
+		Parent = container,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(20, 0),
+		Size = UDim2.new(1, -140, 0, 20),
+		Font = Enum.Font.GothamBold,
+		TextSize = 15,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = entry.Locked and Colors.Muted or Colors.Text,
+		Text = entry.Name,
+	})
+
+	new(&quot;TextLabel&quot;, {
+		Parent = container,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(20, 22),
+		Size = UDim2.new(1, -140, 0, 34),
+		Font = Enum.Font.Gotham,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+		TextColor3 = entry.Locked and Colors.Danger or Colors.Muted,
+		Text = entry.Locked and (entry.LockReason or &quot;Verrouillé&quot;) or entry.Desc,
+	})
+
+	-- Un seul bouton, trois états : ÉQUIPÉ / ÉQUIPER / le prix.
+	local text, color, enabled
+	if entry.Equipped then
+		text, color, enabled = &quot;ÉQUIPÉ&quot;, Colors.Panel, false
+	elseif entry.Owned then
+		text, color, enabled = &quot;ÉQUIPER&quot;, Colors.Accent, true
+	elseif entry.Locked then
+		text, color, enabled = &quot;🔒&quot;, Colors.Panel, false
+	else
+		local affordable = currentCash &gt;= entry.Price
+		text = entry.Price &gt; 0 and UiKit.money(entry.Price) or &quot;GRATUIT&quot;
+		color = affordable and Colors.Unlock or Colors.Panel
+		enabled = affordable
+	end
+
+	local button = new(&quot;TextButton&quot;, {
+		Parent = container,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
+		Size = UDim2.fromOffset(106, 38),
+		BackgroundColor3 = color,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = enabled and Color3.new(1, 1, 1) or Colors.Muted,
+		Text = text,
+		AutoButtonColor = enabled,
+	}, { UiKit.corner(8) }) :: TextButton
+
+	if enabled then
+		button.Activated:Connect(function()
+			;(Net.get(&quot;RequestCosmetic&quot;) :: RemoteEvent):FireServer({
+				action = entry.Owned and &quot;equip&quot; or &quot;buy&quot;,
+				id = entry.Id,
+			})
+		end)
+	end
+end
+
+function CosmeticUI.render(catalog)
+	for _, child in ipairs(list:GetChildren()) do
+		if not child:IsA(&quot;UIListLayout&quot;) then
+			child:Destroy()
+		end
+	end
+
+	local order = 0
+	for _, slot in ipairs(catalog.Slots or {}) do
+		local slotEntries = {}
+		for _, entry in ipairs(catalog.Items or {}) do
+			if entry.Slot == slot then
+				table.insert(slotEntries, entry)
+			end
+		end
+		if #slotEntries &gt; 0 then
+			order += 1
+			sectionTitle(SLOT_LABELS[slot] or slot, order)
+			for _, entry in ipairs(slotEntries) do
+				order += 1
+				row(entry, order)
+			end
+		end
+	end
+end
+
+function CosmeticUI.setCash(amount: number)
+	currentCash = amount
+	if cashLabel then
+		cashLabel.Text = (&quot;%s en banque · aucun skin ne donne d'avantage&quot;):format(UiKit.money(amount))
+	end
+end
+
+function CosmeticUI.setVisible(visible: boolean)
+	frame.Visible = visible
+end
+
+function CosmeticUI.isVisible(): boolean
+	return frame.Visible
+end
+
+return CosmeticUI
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX27"><Properties><string name="Name">Hud</string><ProtectedString name="Source">--[[
+	Hud — tout ce que le joueur lit à l'écran.
+
+	Principe d'affichage : les deux poches d'argent ne se ressemblent pas.
+	&quot;En banque&quot; est discret et stable. &quot;Sur toi&quot; est gros, vert, et pulse quand
+	il monte — c'est ce que tu es en train de risquer. Le joueur doit sentir la
+	différence sans qu'on lui explique.
+]]
+
+local Players = game:GetService(&quot;Players&quot;)
+local RunService = game:GetService(&quot;RunService&quot;)
+local TweenService = game:GetService(&quot;TweenService&quot;)
+
+local UiKit = require(script.Parent.UiKit)
+local new = UiKit.new
+local Colors = UiKit.Colors
+
+local Hud = {}
+
+local player = Players.LocalPlayer
+local gui: ScreenGui
+local refs = {}
+local state = { Cash = 0, Unbanked = 0, Sleep = nil, Life = nil }
+local round = { Phase = &quot;Dawn&quot;, SecondsLeft = 0, NightNumber = 0 }
+local awakening = { Stage = 1, MaxStage = 4, StageName = &quot;CALME&quot;, ToNext = nil }
+local dangerUntil = 0
+local revealUntil = 0
+
+-- ─── construction ───────────────────────────────────────────────────────────
+
+local function buildWallet(parent: Instance)
+	local panel = new(&quot;Frame&quot;, {
+		Name = &quot;Wallet&quot;,
+		Parent = parent,
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.15,
+		Size = UDim2.fromOffset(240, 92),
+		Position = UDim2.fromOffset(16, 16),
+	}, { UiKit.corner(10), UiKit.padding(12) })
+
+	refs.CashLabel = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 20),
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;En banque  0 $&quot;,
+	})
+
+	refs.UnbankedLabel = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 24),
+		Size = UDim2.new(1, 0, 0, 30),
+		Font = Enum.Font.GothamBold,
+		TextSize = 26,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;0 $&quot;,
+	})
+
+	refs.UnbankedHint = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 56),
+		Size = UDim2.new(1, 0, 0, 16),
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;sur toi — perdu s'il t'attrape&quot;,
+	})
+end
+
+local function buildClock(parent: Instance)
+	local panel = new(&quot;Frame&quot;, {
+		Name = &quot;Clock&quot;,
+		Parent = parent,
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.15,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 16),
+		Size = UDim2.fromOffset(200, 58),
+	}, { UiKit.corner(10), UiKit.padding(10) })
+
+	refs.PhaseLabel = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 16),
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextColor3 = Colors.Muted,
+		Text = &quot;JOUR&quot;,
+	})
+
+	refs.TimerLabel = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 18),
+		Size = UDim2.new(1, 0, 0, 24),
+		Font = Enum.Font.GothamBold,
+		TextSize = 22,
+		TextColor3 = Colors.Text,
+		Text = &quot;0:00&quot;,
+	})
+end
+
+local function buildSleepPanel(parent: Instance)
+	local panel = new(&quot;Frame&quot;, {
+		Name = &quot;SleepPanel&quot;,
+		Parent = parent,
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.1,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -24),
+		Size = UDim2.fromOffset(380, 120),
+		Visible = false,
+	}, { UiKit.corner(12), UiKit.padding(14) })
+	refs.SleepPanel = panel
+
+	refs.SleepTitle = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 22),
+		Font = Enum.Font.GothamBold,
+		TextSize = 18,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Text,
+		Text = &quot;Dortoir&quot;,
+	})
+
+	refs.SleepRate = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 24),
+		Size = UDim2.new(1, 0, 0, 18),
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Cash,
+		Text = &quot;+0 $/s&quot;,
+	})
+
+	refs.SleepRisk = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, 0, 0, 18),
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Danger,
+		Text = &quot;risque 0 % par tirage&quot;,
+	})
+
+	-- Barre qui se vide : le temps avant le prochain tirage de risque.
+	local track = new(&quot;Frame&quot;, {
+		Parent = panel,
+		Position = UDim2.fromOffset(0, 70),
+		Size = UDim2.new(1, 0, 0, 6),
+		BackgroundColor3 = Colors.PanelLight,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(3) })
+
+	refs.RiskBar = new(&quot;Frame&quot;, {
+		Parent = track,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Colors.Danger,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(3) })
+
+	refs.SleepHint = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 84),
+		Size = UDim2.new(1, 0, 0, 16),
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;Espace pour te réveiller · le prochain tirage arrive&quot;,
+	})
+end
+
+local function buildDanger(parent: Instance)
+	refs.DangerFrame = new(&quot;Frame&quot;, {
+		Name = &quot;Danger&quot;,
+		Parent = parent,
+		BackgroundColor3 = Colors.Danger,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Visible = false,
+		ZIndex = 5,
+	})
+
+	refs.DangerLabel = new(&quot;TextLabel&quot;, {
+		Parent = refs.DangerFrame,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.32),
+		Size = UDim2.fromOffset(600, 70),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 44,
+		TextColor3 = Color3.new(1, 1, 1),
+		TextStrokeTransparency = 0.2,
+		Text = &quot;IL ARRIVE — COURS&quot;,
+	})
+end
+
+local function buildDowned(parent: Instance)
+	refs.DownedFrame = new(&quot;Frame&quot;, {
+		Name = &quot;Downed&quot;,
+		Parent = parent,
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.45,
+		Size = UDim2.fromScale(1, 1),
+		Visible = false,
+		ZIndex = 4,
+	})
+
+	refs.DownedTitle = new(&quot;TextLabel&quot;, {
+		Parent = refs.DownedFrame,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.fromOffset(700, 48),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 34,
+		TextColor3 = Colors.Danger,
+		Text = &quot;À TERRE&quot;,
+	})
+
+	refs.DownedInfo = new(&quot;TextLabel&quot;, {
+		Parent = refs.DownedFrame,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(700, 28),
+		Font = Enum.Font.Gotham,
+		TextSize = 18,
+		TextColor3 = Colors.Text,
+		Text = &quot;&quot;,
+	})
+
+	local track = new(&quot;Frame&quot;, {
+		Parent = refs.DownedFrame,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.56),
+		Size = UDim2.fromOffset(360, 8),
+		BackgroundColor3 = Colors.PanelLight,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(4) })
+
+	refs.DownedBar = new(&quot;Frame&quot;, {
+		Parent = track,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Colors.Danger,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(4) })
+end
+
+--[[ La jauge d'ÉVEIL : le joueur doit voir que SES choix de planque réveillent
+	 la maison. Sans cet affichage, l'évolution des créatures passerait pour de
+	 l'arbitraire — et un joueur qui trouve le jeu arbitraire s'en va. ]]
+local function buildAwakening(parent: Instance)
+	local panel = new(&quot;Frame&quot;, {
+		Name = &quot;Awakening&quot;,
+		Parent = parent,
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.15,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -16, 0, 16),
+		Size = UDim2.fromOffset(212, 86),
+	}, { UiKit.corner(10), UiKit.padding(12) })
+
+	new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 14),
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;ÉVEIL DE LA MAISON&quot;,
+	})
+
+	refs.AwakeningName = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 16),
+		Size = UDim2.new(1, 0, 0, 22),
+		Font = Enum.Font.GothamBold,
+		TextSize = 19,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Text,
+		Text = &quot;CALME&quot;,
+	})
+
+	-- Quatre segments : on lit le stade d'un coup d'oeil, sans chiffre.
+	local segments = new(&quot;Frame&quot;, {
+		Parent = panel,
+		Position = UDim2.fromOffset(0, 42),
+		Size = UDim2.new(1, 0, 0, 7),
+		BackgroundTransparency = 1,
+	}, {
+		new(&quot;UIListLayout&quot;, {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 4),
+		}),
+	})
+
+	refs.AwakeningSegments = {}
+	for index = 1, 4 do
+		refs.AwakeningSegments[index] = new(&quot;Frame&quot;, {
+			Parent = segments,
+			LayoutOrder = index,
+			Size = UDim2.new(0.25, -3, 1, 0),
+			BackgroundColor3 = Colors.PanelLight,
+			BorderSizePixel = 0,
+		}, { UiKit.corner(3) })
+	end
+
+	refs.AwakeningHint = new(&quot;TextLabel&quot;, {
+		Parent = panel,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 54),
+		Size = UDim2.new(1, 0, 0, 14),
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;dormir profond la réveille&quot;,
+	})
+end
+
+--[[ Première rencontre avec une créature : on affiche son nom ET sa
+	 contre-mesure. Un joueur qui meurt sans comprendre pourquoi ne revient
+	 pas ; un joueur qui meurt en sachant ce qu'il aurait dû faire relance. ]]
+local function buildReveal(parent: Instance)
+	refs.RevealFrame = new(&quot;Frame&quot;, {
+		Name = &quot;Reveal&quot;,
+		Parent = parent,
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.25,
+		Size = UDim2.fromScale(1, 1),
+		Visible = false,
+		ZIndex = 8,
+	})
+
+	local card = new(&quot;Frame&quot;, {
+		Parent = refs.RevealFrame,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(520, 220),
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.02,
+	}, { UiKit.corner(14), UiKit.padding(22) })
+
+	new(&quot;TextLabel&quot;, {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 16),
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;TU VIENS D'EN RÉVEILLER UN&quot;,
+	})
+
+	refs.RevealName = new(&quot;TextLabel&quot;, {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 20),
+		Size = UDim2.new(1, 0, 0, 42),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 36,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Danger,
+		Text = &quot;LE VEILLEUR&quot;,
+	})
+
+	refs.RevealTagline = new(&quot;TextLabel&quot;, {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 66),
+		Size = UDim2.new(1, 0, 0, 40),
+		Font = Enum.Font.GothamMedium,
+		TextSize = 17,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+		TextColor3 = Colors.Text,
+		Text = &quot;&quot;,
+	})
+
+	new(&quot;TextLabel&quot;, {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 118),
+		Size = UDim2.new(1, 0, 0, 14),
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = &quot;COMMENT T'EN SORTIR&quot;,
+	})
+
+	refs.RevealCounter = new(&quot;TextLabel&quot;, {
+		Parent = card,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 136),
+		Size = UDim2.new(1, 0, 0, 44),
+		Font = Enum.Font.GothamBold,
+		TextSize = 17,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+		TextColor3 = Colors.Cash,
+		Text = &quot;&quot;,
+	})
+end
+
+local function buildToasts(parent: Instance)
+	refs.ToastList = new(&quot;Frame&quot;, {
+		Name = &quot;Toasts&quot;,
+		Parent = parent,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 16, 1, -16),
+		Size = UDim2.fromOffset(340, 220),
+	}, {
+		new(&quot;UIListLayout&quot;, {
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			VerticalAlignment = Enum.VerticalAlignment.Bottom,
+			Padding = UDim.new(0, 6),
+		}),
+	})
+end
+
+function Hud.build(parentGui: ScreenGui)
+	gui = parentGui
+	buildWallet(gui)
+	buildClock(gui)
+	buildSleepPanel(gui)
+	buildAwakening(gui)
+	buildReveal(gui)
+	buildDanger(gui)
+	buildDowned(gui)
+	buildToasts(gui)
+end
+
+-- ─── mises à jour venues du serveur ─────────────────────────────────────────
+
+function Hud.setState(newState)
+	state = newState
+end
+
+function Hud.setRound(newRound)
+	round = newRound
+end
+
+function Hud.setAwakening(data)
+	awakening = data
+end
+
+function Hud.revealEntity(data)
+	refs.RevealName.Text = data.Name or &quot;?&quot;
+	refs.RevealName.TextColor3 = data.EyeColor or Colors.Danger
+	refs.RevealTagline.Text = data.Tagline or &quot;&quot;
+	refs.RevealCounter.Text = data.Counter or &quot;&quot;
+	refs.RevealFrame.Visible = true
+	revealUntil = os.clock() + 6
+end
+
+function Hud.flashDanger(window: number)
+	dangerUntil = os.clock() + window
+	refs.DangerFrame.Visible = true
+end
+
+local toastOrder = 0
+
+function Hud.toast(message: string, kind: string)
+	toastOrder += 1
+
+	local color = Colors.Text
+	if kind == &quot;cash&quot; then
+		color = Colors.Cash
+	elseif kind == &quot;danger&quot; then
+		color = Colors.Danger
+	elseif kind == &quot;unlock&quot; then
+		color = Colors.Unlock
+	end
+
+	local frame = new(&quot;Frame&quot;, {
+		Parent = refs.ToastList,
+		LayoutOrder = toastOrder,
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.12,
+		Size = UDim2.new(1, 0, 0, 34),
+	}, { UiKit.corner(8), UiKit.padding(8) })
+
+	new(&quot;TextLabel&quot;, {
+		Parent = frame,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = color,
+		TextWrapped = true,
+		Text = message,
+	})
+
+	task.delay(5, function()
+		if frame.Parent then
+			TweenService:Create(frame, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+			task.wait(0.35)
+			frame:Destroy()
+		end
+	end)
+end
+
+-- ─── boucle d'affichage ─────────────────────────────────────────────────────
+
+local lastUnbanked = 0
+
+function Hud.start()
+	RunService.RenderStepped:Connect(function()
+		-- Porte-monnaie
+		refs.CashLabel.Text = (&quot;En banque  %s&quot;):format(UiKit.money(state.Cash or 0))
+		local unbanked = state.Unbanked or 0
+		refs.UnbankedLabel.Text = UiKit.money(unbanked)
+		refs.UnbankedLabel.TextColor3 = (unbanked &gt; 0) and Colors.Cash or Colors.Muted
+		refs.UnbankedHint.TextColor3 = (unbanked &gt; 0) and Colors.Danger or Colors.Muted
+
+		if unbanked &gt; lastUnbanked + 0.01 then
+			refs.UnbankedLabel.TextSize = 28
+		else
+			refs.UnbankedLabel.TextSize = 26
+		end
+		lastUnbanked = unbanked
+
+		-- Horloge
+		local remaining = math.max(0, round.SecondsLeft - (os.clock() - (round.ReceivedAt or os.clock())))
+		refs.PhaseLabel.Text = (round.Phase == &quot;Night&quot;)
+			and (&quot;NUIT %d&quot;):format(round.NightNumber or 0)
+			or &quot;JOUR&quot;
+		refs.PhaseLabel.TextColor3 = (round.Phase == &quot;Night&quot;) and Colors.Danger or Colors.Accent
+		refs.TimerLabel.Text = UiKit.clockText(remaining)
+
+		-- Panneau de sommeil
+		local sleep = state.Sleep
+		if sleep then
+			refs.SleepPanel.Visible = true
+			refs.SleepTitle.Text = sleep.SpotLabel or sleep.TierName
+			refs.SleepRate.Text = (&quot;+%.1f $/s   ·   %s gagnés ici&quot;):format(
+				sleep.RatePerSecond or 0, UiKit.money(sleep.Earned or 0))
+			if (sleep.RiskPercent or 0) &lt;= 0 then
+				refs.SleepRisk.Text = &quot;aucun risque — mais ça ne paie rien&quot;
+				refs.SleepRisk.TextColor3 = Colors.Muted
+			else
+				refs.SleepRisk.Text = (&quot;risque %.1f %% à chaque tirage (toutes les %d s)&quot;):format(
+					sleep.RiskPercent, sleep.TickInterval or 6)
+				refs.SleepRisk.TextColor3 = Colors.Danger
+			end
+			local fraction = 0
+			if (sleep.TickInterval or 0) &gt; 0 then
+				fraction = math.clamp((sleep.SecondsToNextRoll or 0) / sleep.TickInterval, 0, 1)
+			end
+			refs.RiskBar.Size = UDim2.fromScale(fraction, 1)
+		else
+			refs.SleepPanel.Visible = false
+		end
+
+		-- Éveil de la maison
+		refs.AwakeningName.Text = awakening.StageName or &quot;CALME&quot;
+		local stageColors = { Colors.Cash, Color3.fromRGB(230, 200, 90), Color3.fromRGB(240, 140, 70), Colors.Danger }
+		local stage = awakening.Stage or 1
+		refs.AwakeningName.TextColor3 = stageColors[math.clamp(stage, 1, 4)]
+		for index, segment in ipairs(refs.AwakeningSegments) do
+			segment.BackgroundColor3 = (index &lt;= stage)
+				and stageColors[math.clamp(stage, 1, 4)]
+				or Colors.PanelLight
+		end
+		if awakening.ToNext then
+			refs.AwakeningHint.Text = (&quot;stade suivant dans %d pts&quot;):format(math.max(0, awakening.ToNext))
+		else
+			refs.AwakeningHint.Text = &quot;maximum — il est dehors&quot;
+		end
+
+		-- Fiche de créature
+		if refs.RevealFrame.Visible and os.clock() &gt;= revealUntil then
+			refs.RevealFrame.Visible = false
+		end
+
+		-- Alerte
+		if refs.DangerFrame.Visible then
+			local left = dangerUntil - os.clock()
+			if left &lt;= -1.5 then
+				refs.DangerFrame.Visible = false
+				refs.DangerFrame.BackgroundTransparency = 1
+			else
+				local pulse = 0.78 + 0.1 * math.sin(os.clock() * 14)
+				refs.DangerFrame.BackgroundTransparency = pulse
+				refs.DangerLabel.Text = (left &gt; 0)
+					and (&quot;IL ARRIVE — COURS   %.1f s&quot;):format(left)
+					or &quot;IL EST LÀ&quot;
+			end
+		end
+
+		-- À terre
+		local life = state.Life
+		if life and life.Down then
+			refs.DownedFrame.Visible = true
+			refs.DownedBar.Size = UDim2.fromScale(
+				math.clamp((life.SecondsLeft or 0) / (life.BleedoutSeconds or 1), 0, 1), 1)
+			if life.BeingRevivedBy then
+				refs.DownedInfo.Text = (&quot;%s te relève… %d %%&quot;):format(
+					life.BeingRevivedBy, math.floor((life.ReviveProgress or 0) * 100))
+				refs.DownedBar.BackgroundColor3 = Colors.Cash
+			else
+				refs.DownedInfo.Text = (&quot;%s perdus · %d s avant de lâcher&quot;):format(
+					UiKit.money(life.LostAmount or 0), math.floor(life.SecondsLeft or 0))
+				refs.DownedBar.BackgroundColor3 = Colors.Danger
+			end
+		else
+			refs.DownedFrame.Visible = false
+		end
+	end)
+end
+
+return Hud
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX28"><Properties><string name="Name">ShopUI</string><ProtectedString name="Source">--[[
+	ShopUI — la boutique.
+
+	Elle n'affiche que ce que le serveur lui envoie (prix et niveaux déjà
+	calculés). Le client ne décide rien : il envoie juste &quot;je veux l'objet
+	earplugs&quot; et il attend la réponse. C'est ce qui rend la triche inutile.
+]]
+
+local MarketplaceService = game:GetService(&quot;MarketplaceService&quot;)
+local Players = game:GetService(&quot;Players&quot;)
+
+local UiKit = require(script.Parent.UiKit)
+local new = UiKit.new
+local Colors = UiKit.Colors
+
+local Shared = game:GetService(&quot;ReplicatedStorage&quot;):WaitForChild(&quot;Shared&quot;)
+local Net = require(Shared.Net)
+
+local ShopUI = {}
+
+local player = Players.LocalPlayer
+local frame: Frame
+local list: ScrollingFrame
+local cashLabel: TextLabel
+local currentCash = 0
+
+-- ─── construction ───────────────────────────────────────────────────────────
+
+function ShopUI.build(gui: ScreenGui)
+	frame = new(&quot;Frame&quot;, {
+		Name = &quot;Shop&quot;,
+		Parent = gui,
+		Visible = false,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(520, 520),
+		BackgroundColor3 = Colors.Panel,
+		BackgroundTransparency = 0.04,
+		ZIndex = 10,
+	}, { UiKit.corner(14), UiKit.padding(18) }) :: Frame
+
+	new(&quot;TextLabel&quot;, {
+		Parent = frame,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -40, 0, 28),
+		Font = Enum.Font.GothamBold,
+		TextSize = 22,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Text,
+		Text = &quot;Boutique&quot;,
+	})
+
+	cashLabel = new(&quot;TextLabel&quot;, {
+		Parent = frame,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 30),
+		Size = UDim2.new(1, -40, 0, 18),
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Cash,
+		Text = &quot;0 $ en banque&quot;,
+	}) :: TextLabel
+
+	local close = new(&quot;TextButton&quot;, {
+		Parent = frame,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromOffset(32, 32),
+		BackgroundColor3 = Colors.PanelLight,
+		Font = Enum.Font.GothamBold,
+		TextSize = 18,
+		TextColor3 = Colors.Text,
+		Text = &quot;✕&quot;,
+		AutoButtonColor = true,
+	}, { UiKit.corner(8) }) :: TextButton
+	close.Activated:Connect(function()
+		ShopUI.setVisible(false)
+	end)
+
+	list = new(&quot;ScrollingFrame&quot;, {
+		Parent = frame,
+		Position = UDim2.fromOffset(0, 58),
+		Size = UDim2.new(1, 0, 1, -58),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 5,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	}, {
+		new(&quot;UIListLayout&quot;, {
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 8),
+		}),
+	}) :: ScrollingFrame
+end
+
+-- ─── lignes ─────────────────────────────────────────────────────────────────
+
+local function sectionTitle(text: string, order: number)
+	new(&quot;TextLabel&quot;, {
+		Parent = list,
+		LayoutOrder = order,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 24),
+		Font = Enum.Font.GothamBold,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Muted,
+		Text = text:upper(),
+	})
+end
+
+local function itemRow(entry, order: number)
+	local row = new(&quot;Frame&quot;, {
+		Parent = list,
+		LayoutOrder = order,
+		Size = UDim2.new(1, -8, 0, 84),
+		BackgroundColor3 = Colors.PanelLight,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(10), UiKit.padding(12) })
+
+	local levelText = &quot;&quot;
+	if entry.MaxLevel &gt; 1 then
+		levelText = (&quot;   ·   niveau %d/%d&quot;):format(entry.Owned, entry.MaxLevel)
+	elseif entry.Owned &gt; 0 then
+		levelText = &quot;   ·   possédé&quot;
+	end
+
+	new(&quot;TextLabel&quot;, {
+		Parent = row,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -120, 0, 20),
+		Font = Enum.Font.GothamBold,
+		TextSize = 15,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Text,
+		Text = entry.Name .. levelText,
+	})
+
+	new(&quot;TextLabel&quot;, {
+		Parent = row,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 22),
+		Size = UDim2.new(1, -120, 0, 38),
+		Font = Enum.Font.Gotham,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+		TextColor3 = Colors.Muted,
+		Text = entry.Desc,
+	})
+
+	local affordable = entry.CanBuy and currentCash &gt;= entry.Price
+	local button = new(&quot;TextButton&quot;, {
+		Parent = row,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
+		Size = UDim2.fromOffset(104, 38),
+		BackgroundColor3 = entry.CanBuy and (affordable and Colors.Accent or Colors.Panel) or Colors.Panel,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = affordable and Color3.new(1, 1, 1) or Colors.Muted,
+		Text = entry.CanBuy and UiKit.money(entry.Price) or &quot;MAX&quot;,
+		AutoButtonColor = entry.CanBuy,
+	}, { UiKit.corner(8) }) :: TextButton
+
+	if entry.CanBuy then
+		button.Activated:Connect(function()
+			;(Net.get(&quot;RequestBuy&quot;) :: RemoteEvent):FireServer(entry.Id)
+		end)
+	end
+end
+
+local function robuxRow(entry, order: number)
+	local row = new(&quot;Frame&quot;, {
+		Parent = list,
+		LayoutOrder = order,
+		Size = UDim2.new(1, -8, 0, 76),
+		BackgroundColor3 = Colors.PanelLight,
+		BorderSizePixel = 0,
+	}, { UiKit.corner(10), UiKit.padding(12) })
+
+	new(&quot;TextLabel&quot;, {
+		Parent = row,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -120, 0, 20),
+		Font = Enum.Font.GothamBold,
+		TextSize = 15,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Unlock,
+		Text = entry.Name,
+	})
+
+	new(&quot;TextLabel&quot;, {
+		Parent = row,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 22),
+		Size = UDim2.new(1, -120, 0, 30),
+		Font = Enum.Font.Gotham,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+		TextColor3 = Colors.Muted,
+		Text = entry.Desc,
+	})
+
+	local button = new(&quot;TextButton&quot;, {
+		Parent = row,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
+		Size = UDim2.fromOffset(104, 38),
+		BackgroundColor3 = entry.Owned and Colors.Panel or Colors.Unlock,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = entry.Owned and Colors.Muted or Color3.new(1, 1, 1),
+		Text = entry.Owned and &quot;ACTIF&quot; or &quot;ROBUX&quot;,
+		AutoButtonColor = not entry.Owned,
+	}, { UiKit.corner(8) }) :: TextButton
+
+	if not entry.Owned then
+		button.Activated:Connect(function()
+			if entry.Kind == &quot;Pass&quot; then
+				MarketplaceService:PromptGamePassPurchase(player, entry.Id)
+			else
+				MarketplaceService:PromptProductPurchase(player, entry.Id)
+			end
+		end)
+	end
+end
+
+-- ─── rendu ──────────────────────────────────────────────────────────────────
+
+function ShopUI.render(catalog)
+	for _, child in ipairs(list:GetChildren()) do
+		if not child:IsA(&quot;UIListLayout&quot;) then
+			child:Destroy()
+		end
+	end
+
+	local order = 0
+	sectionTitle(&quot;Équipement&quot;, order)
+	order += 1
+	for _, entry in ipairs(catalog.Items or {}) do
+		order += 1
+		itemRow(entry, order)
+	end
+
+	if catalog.Robux and #catalog.Robux &gt; 0 then
+		order += 1
+		sectionTitle(&quot;Robux&quot;, order)
+		for _, entry in ipairs(catalog.Robux) do
+			order += 1
+			robuxRow(entry, order)
+		end
+	end
+end
+
+function ShopUI.setCash(amount: number)
+	currentCash = amount
+	if cashLabel then
+		cashLabel.Text = (&quot;%s en banque&quot;):format(UiKit.money(amount))
+	end
+end
+
+function ShopUI.setVisible(visible: boolean)
+	frame.Visible = visible
+end
+
+function ShopUI.isVisible(): boolean
+	return frame.Visible
+end
+
+function ShopUI.refreshFromServer()
+	local ok, catalog = pcall(function()
+		return (Net.get(&quot;GetCatalog&quot;) :: RemoteFunction):InvokeServer()
+	end)
+	if ok and type(catalog) == &quot;table&quot; then
+		ShopUI.render(catalog)
+	end
+end
+
+return ShopUI
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX29"><Properties><string name="Name">UiKit</string><ProtectedString name="Source">--!strict
+--[[
+	UiKit — petits outils pour construire l'interface en code.
+
+	Toute l'UI du jeu est créée par script, exprès : tu n'as aucun fichier .rbxm
+	à importer, et tu peux relire à quoi ressemble un écran sans ouvrir Studio.
+]]
+
+local UiKit = {}
+
+UiKit.Colors = {
+	Panel = Color3.fromRGB(18, 18, 22),
+	PanelLight = Color3.fromRGB(28, 28, 34),
+	Text = Color3.fromRGB(236, 236, 240),
+	Muted = Color3.fromRGB(150, 150, 160),
+	Cash = Color3.fromRGB(120, 225, 150),
+	Danger = Color3.fromRGB(255, 86, 72),
+	Unlock = Color3.fromRGB(190, 130, 255),
+	Accent = Color3.fromRGB(120, 160, 255),
+}
+
+--[[ Crée une instance et applique les propriétés. `children` est optionnel. ]]
+function UiKit.new(className: string, props: { [string]: any }?, children: { Instance }?): Instance
+	local instance = Instance.new(className)
+	if props then
+		for key, value in pairs(props) do
+			if key ~= &quot;Parent&quot; then
+				(instance :: any)[key] = value
+			end
+		end
+	end
+	if children then
+		for _, child in ipairs(children) do
+			child.Parent = instance
+		end
+	end
+	if props and props.Parent then
+		instance.Parent = props.Parent
+	end
+	return instance
+end
+
+function UiKit.corner(radius: number): UICorner
+	local corner = Instance.new(&quot;UICorner&quot;)
+	corner.CornerRadius = UDim.new(0, radius)
+	return corner
+end
+
+function UiKit.padding(amount: number): UIPadding
+	local padding = Instance.new(&quot;UIPadding&quot;)
+	padding.PaddingTop = UDim.new(0, amount)
+	padding.PaddingBottom = UDim.new(0, amount)
+	padding.PaddingLeft = UDim.new(0, amount)
+	padding.PaddingRight = UDim.new(0, amount)
+	return padding
+end
+
+function UiKit.stroke(color: Color3, thickness: number): UIStroke
+	local stroke = Instance.new(&quot;UIStroke&quot;)
+	stroke.Color = color
+	stroke.Thickness = thickness
+	stroke.Transparency = 0.5
+	return stroke
+end
+
+--[[ Formate un montant en dollars, avec séparateur de milliers. ]]
+function UiKit.money(amount: number): string
+	local rounded = math.floor(amount + 0.5)
+	local text = tostring(math.abs(rounded))
+	local grouped = &quot;&quot;
+	while #text &gt; 3 do
+		grouped = &quot; &quot; .. text:sub(-3) .. grouped
+		text = text:sub(1, -4)
+	end
+	grouped = text .. grouped
+	if rounded &lt; 0 then
+		grouped = &quot;-&quot; .. grouped
+	end
+	return grouped .. &quot; $&quot;
+end
+
+--[[ Formate un temps en m:ss. ]]
+function UiKit.clockText(seconds: number): string
+	local total = math.max(0, math.floor(seconds + 0.5))
+	return (&quot;%d:%02d&quot;):format(math.floor(total / 60), total % 60)
+end
+
+return UiKit
+</ProtectedString></Properties></Item></Item></Item></Item></roblox>

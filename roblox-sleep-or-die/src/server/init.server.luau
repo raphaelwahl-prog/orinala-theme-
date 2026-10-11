@@ -1,0 +1,572 @@
+--!strict
+-- Point d'entrée serveur. Tout le câblage est ici, et nulle part ailleurs :
+-- les services ne se connaissent que par appel direct, jamais par événement
+-- global, pour qu'on puisse lire le jeu de haut en bas depuis ce fichier.
+
+local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Format = require(Shared.Format)
+local GameConfig = require(Shared.GameConfig)
+local MissionConfig = require(Shared.MissionConfig)
+local EndgameConfig = require(Shared.EndgameConfig)
+local MonsterConfig = require(Shared.MonsterConfig)
+local Net = require(Shared.Net)
+local ZoneConfig = require(Shared.ZoneConfig)
+
+local AtmosphereService = require(script.AtmosphereService)
+local AwakeningService = require(script.AwakeningService)
+local BossService = require(script.BossService)
+local CombatService = require(script.CombatService)
+local CosmeticService = require(script.CosmeticService)
+local EconomyService = require(script.EconomyService)
+local EndgameService = require(script.EndgameService)
+local EventService = require(script.EventService)
+local InventoryService = require(script.InventoryService)
+local LeaderboardService = require(script.LeaderboardService)
+local LifeService = require(script.LifeService)
+local MissionService = require(script.MissionService)
+local MonetizationService = require(script.MonetizationService)
+local MonsterService = require(script.MonsterService)
+local ObjectiveService = require(script.ObjectiveService)
+local PlayerDataService = require(script.PlayerDataService)
+local ShelterService = require(script.ShelterService)
+local ShopService = require(script.ShopService)
+local SoundLib = require(script.SoundService)
+local SurvivalService = require(script.SurvivalService)
+local WorldService = require(script.WorldService)
+local ZoneBuilder = require(script.ZoneBuilder)
+local ZoneLayouts = require(script.ZoneLayouts)
+local ZoneService = require(script.ZoneService)
+
+Net.build()
+
+local function send(player: Player, event: string, ...)
+	Net.get(event):FireClient(player, ...)
+end
+
+local SOUND_BY_KIND = {
+	cash = "cash", unlock = "unlock", warn = "deny", danger = "hurt",
+}
+
+local function alert(player: Player, text: string, kind: string?)
+	-- §8, défi « SANS ALERTE » : plus un seul message n'arrive. C'est ici que
+	-- ça se joue et nulle part ailleurs — `alert` est le seul chemin par
+	-- lequel un texte atteint un joueur, donc le seul endroit où la règle
+	-- peut être tenue sans oubli possible.
+	if EndgameService.hasRule(player, "blind") then
+		return
+	end
+	send(player, "Alert", text, kind or "info")
+	local effect = SOUND_BY_KIND[kind or "info"]
+	if effect then
+		SoundLib.playFor(player, effect)
+	end
+end
+
+-- ── état complet envoyé au client ─────────────────────────────────────────
+local function pushState(player: Player)
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	local session = SurvivalService.get(player)
+	local shelter = ShelterService.ownedBy(player)
+	send(player, "StateChanged", {
+		Cash = profile.Cash,
+		Unbanked = profile.UnbankedCash,
+		LifetimeBanked = profile.LifetimeBanked,
+		Zone = profile.CurrentZone,
+		Zones = ZoneService.overview(player),
+		Inventory = profile.Inventory,
+		Placed = shelter and shelter.Placed or {},
+		Missions = MissionService.list(player),
+		Shop = ShopService.catalogue(player),
+		Sleeping = session ~= nil,
+		SessionEarned = session and session.Earned or 0,
+		SessionSeconds = session and session.EligibleSeconds or 0,
+		SessionMax = session and (ZoneConfig.get(session.ZoneId) :: any).MaxSessionSeconds or 0,
+		ShelterId = shelter and shelter.Id or "",
+		Multiplier = EconomyService.multiplier(player),
+		Event = EventService.active(),
+		Awakening = {
+			Points = AwakeningService.points(),
+			Stage = AwakeningService.stage(),
+			Data = AwakeningService.data(),
+		},
+		EventCollective = EventService.collectiveState(),
+		Cosmetics = CosmeticService.catalogue(player),
+		Skin = profile.Skin,
+		Settings = profile.Settings,
+		Downed = LifeService.isDowned(player),
+		-- §8 — juste ce qu'il faut pour le bandeau ; l'écran complet passe par
+		-- « EndgameData », qui n'est envoyé que quand on l'ouvre.
+		Endgame = {
+			Unlocked = EndgameService.unlocked(player),
+			Armed = EndgameService.armedChallenge(player),
+			Running = EndgameService.activeChallenge(player) ~= nil,
+			Titles = profile.Titles,
+		},
+		Stats = {
+			Nights = profile.NightsSurvived,
+			Deaths = profile.Deaths,
+			Survival = profile.SurvivalSeconds,
+			Main = profile.MainMissions,
+		},
+	})
+end
+
+EconomyService.onChanged(pushState)
+ShelterService.onChanged(function(shelter)
+	if shelter.Owner then
+		pushState(shelter.Owner)
+	end
+end)
+
+-- ── construction de la ville et peuplement ────────────────────────────────
+PlayerDataService.init()
+PlayerDataService.startAutosave()
+SoundLib.init()
+AtmosphereService.init()
+WorldService.build()
+ShelterService.init()
+MonsterService.init()
+SurvivalService.init()
+EventService.init()
+MonetizationService.init()
+ObjectiveService.init()
+BossService.init()
+AwakeningService.init()
+LifeService.init()
+LeaderboardService.init()
+EconomyService.setAwakeningBonus(AwakeningService.rewardMultiplier)
+-- §13 : le multiplicateur de l'événement agit sur les gains, comme celui de
+-- l'éveil. Il était calculé par EventService depuis le début, mais aucun
+-- service ne le lisait : un événement ne changeait rien aux revenus.
+EconomyService.setEventBonus(EventService.rewardMultiplier)
+EventService.onReward(function(player, amount)
+	EconomyService.grant(player, amount, "événement")
+	pushState(player)
+end)
+
+-- §8 — l'après-boss. Quatre branchements, parce que quatre choses agissent :
+--   · le bonus de gain (défi en cours + prime de la variante vivante) ;
+--   · la perte totale à la mort sous « TOUT OU RIEN » ;
+--   · la neutralisation des défenses sous « À NU » ;
+--   · le réveil brutal de la maison quand LE HURLEUR repère quelqu'un.
+EconomyService.setEndgameBonus(EndgameService.earningBonus)
+EconomyService.setEndgameTotalLoss(function(player)
+	return EndgameService.hasRule(player, "all_in")
+end)
+ShelterService.setDefenseVeto(function(player)
+	return EndgameService.hasRule(player, "no_defense")
+end)
+EndgameService.setAwakeningJolt(AwakeningService.jolt)
+EndgameService.onAlert(alert)
+EndgameService.onChanged(function(player)
+	pushState(player)
+	-- Et la vue complète, pour que l'écran du §8 se mette à jour en direct
+	-- quand une variante est croisée ou qu'un contrat avance. Le client ne
+	-- redessine que si le panneau est ouvert ; la vue est petite et ces
+	-- changements sont rares, donc l'envoyer coûte moins cher que de laisser
+	-- un écran afficher un contrat déjà rempli.
+	send(player, "EndgameData", EndgameService.view(player))
+end)
+MonsterService.onDetect(EndgameService.noteDetect)
+
+WorldService.startPopulating()
+ZoneService.setTeleporter(WorldService.teleport)
+
+-- Les documents de la collection : posés puis branchés, dans cet ordre.
+local documents = WorldService.placeDocuments()
+WorldService.bindDocuments(function(player, documentId)
+	local fresh, message = EndgameService.noteDocument(player, documentId)
+	if message ~= "" then
+		alert(player, message, fresh and "unlock" or "info")
+	end
+end)
+
+AwakeningService.onChanged(function(points, stage, data)
+	for _, player in ipairs(Players:GetPlayers()) do
+		send(player, "AwakeningChanged", points, stage, data)
+	end
+	-- On ne crie que quand le stade change vraiment, pas à chaque point.
+	for _, player in ipairs(Players:GetPlayers()) do
+		alert(player, "ÉVEIL — " .. data.Name .. " : " .. data.Text,
+			stage >= 3 and "danger" or "info")
+	end
+end)
+
+-- À terre plutôt que mort, quand il y a quelqu'un pour relever.
+LifeService.onChanged(function(player, isDown, secondsLeft)
+	for _, other in ipairs(Players:GetPlayers()) do
+		send(other, "DownedChanged", player.Name, isDown, secondsLeft)
+	end
+	if isDown and secondsLeft > 29 then
+		alert(player, "Tu es à terre. Quelqu'un peut te relever — tiens bon.", "danger")
+	end
+end)
+
+LifeService.onBleedOut(function(player)
+	alert(player, "Personne n'est venu.", "danger")
+end)
+
+EventService.onChanged(function(active)
+	for _, player in ipairs(Players:GetPlayers()) do
+		send(player, "EventChanged", active)
+		alert(player, active.Name .. " — " .. active.Text, "event")
+		-- Les effets sont déjà appliqués quand cette annonce part : le joueur
+		-- qui lit « la rue devient invivable » joue déjà contre cette rue.
+		pushState(player)
+	end
+end)
+
+MonsterService.onSignal(function(monsterId, kind, position)
+	for _, player in ipairs(Players:GetPlayers()) do
+		send(player, "MonsterSignal", monsterId, kind, position)
+		-- « repéré » lance le compte à rebours de la mission de poursuite.
+		if kind == "spotted" then
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if root and (root.Position - position).Magnitude < 90 then
+				ObjectiveService.noteChase(player)
+			end
+		end
+	end
+end)
+
+ObjectiveService.onFeedback(function(player, text)
+	alert(player, text, "info")
+end)
+
+BossService.onPhase(function(phase, text)
+	for _, player in ipairs(Players:GetPlayers()) do
+		alert(player, text, phase == 0 and "unlock" or "danger")
+	end
+end)
+
+BossService.onVictory(function(player)
+	alert(player, "Le carnaval est tombé. Trophée et titre débloqués.", "unlock")
+	pushState(player)
+end)
+
+-- ── sessions de survie ────────────────────────────────────────────────────
+SurvivalService.onAssault(function(session)
+	alert(session.Player, "Quelque chose vient vers ton refuge.", "danger")
+	MonsterService.assault(session.ShelterId)
+end)
+
+SurvivalService.onChanged(function(player, session, reason)
+	send(player, "SessionChanged", reason, session and {
+		Earned = session.Earned, Seconds = session.EligibleSeconds, Zone = session.ZoneId,
+	} or nil)
+
+	if reason == "complete" and session then
+		MissionService.progress(player, "survive_session", 1)
+		ObjectiveService.noteSession(player, session.ZoneId, reason)
+		-- Défi collectif (§13) : une session tenue compte pour tout le serveur.
+		EventService.noteSession()
+		alert(player, ("Session terminée. %s sur toi — va les déposer.")
+			:format(Format.money(session.Earned)), "cash")
+	elseif reason == "death" and session then
+		ObjectiveService.noteCaught(player)
+		-- Et une mort coûte au serveur entier, pas qu'à celui qui meurt.
+		EventService.noteDeath()
+		send(player, "DeathReport", {
+			Zone = session.ZoneId, Earned = session.Earned,
+			Seconds = session.EligibleSeconds,
+		})
+	end
+	pushState(player)
+end)
+
+CombatService.onRepel(function(player, _monsterId)
+	MissionService.progress(player, "repel", 1)
+end)
+
+-- ── remotes ───────────────────────────────────────────────────────────────
+local function onClaim(player: Player, shelterId: unknown)
+	if type(shelterId) ~= "string" then
+		return
+	end
+	local ok, message = ShelterService.claim(player, shelterId)
+	alert(player, message, ok and "info" or "warn")
+	pushState(player)
+end
+
+local function onSleep(player: Player)
+	local ok, message = SurvivalService.start(player)
+	alert(player, message, ok and "info" or "warn")
+	pushState(player)
+end
+
+local function onWake(player: Player)
+	local session = SurvivalService.stop(player, "wake")
+	if session then
+		alert(player, ("Réveillé. %s sur toi."):format(Format.money(session.Earned)), "info")
+	end
+	pushState(player)
+end
+
+local function onBank(player: Player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local vault = Workspace:FindFirstChild("City") and (Workspace.City :: any):FindFirstChild("Vault")
+	if not root or not vault then
+		return
+	end
+	if (root.Position - (vault :: BasePart).Position).Magnitude > GameConfig.Economy.BankRadius then
+		alert(player, "Trop loin du coffre.", "warn")
+		return
+	end
+	local amount = EconomyService.bank(player)
+	if amount > 0 then
+		alert(player, ("+%s déposés. C'est à toi pour de bon."):format(Format.money(amount)), "cash")
+		MissionService.progress(player, "bank", 1)
+		local opened = ZoneService.refresh(player)
+		for _, name in ipairs(opened) do
+			alert(player, name .. " — zone débloquée.", "unlock")
+		end
+	else
+		alert(player, "Tu n'as rien sur toi.", "info")
+	end
+	pushState(player)
+end
+
+local function onBuy(player: Player, itemId: unknown)
+	if type(itemId) ~= "string" then
+		return
+	end
+	local ok, message = ShopService.buy(player, itemId)
+	alert(player, message, ok and "cash" or "warn")
+	if ok then
+		SoundLib.playFor(player, "buy")
+	end
+	pushState(player)
+end
+
+local function onPlace(player: Player, itemId: unknown)
+	if type(itemId) ~= "string" then
+		return
+	end
+	local ok, message = ShelterService.place(player, itemId)
+	alert(player, message, ok and "info" or "warn")
+	pushState(player)
+end
+
+local function onEnterZone(player: Player, zoneId: unknown)
+	if type(zoneId) ~= "string" then
+		return
+	end
+	local ok, message = ZoneService.enter(player, zoneId)
+	alert(player, ok and ("Zone : " .. message) or message, ok and "info" or "warn")
+	if ok then
+		ObjectiveService.noteZoneEntered(player, zoneId)
+		AtmosphereService.setZone(zoneId)
+	end
+	pushState(player)
+end
+
+local function onAttack(player: Player, target: unknown)
+	if typeof(target) ~= "Instance" or not target:IsA("Model") then
+		return
+	end
+	if not CollectionService:HasTag(target, "Monster") then
+		return
+	end
+	local ok, label, stun = CombatService.playerAttack(player, target)
+	if ok then
+		MonsterService.stun(target, stun)
+		alert(player, label .. " — il recule.", "info")
+		if CollectionService:HasTag(target, "Boss") then
+			BossService.registerHit(player)
+		elseif EventService.isMiniBoss(target) then
+			local down, name = EventService.registerMiniBossHit(player, target)
+			if down then
+				for _, other in ipairs(Players:GetPlayers()) do
+					alert(other, name .. " est tombé. « Le Fêtard » est débloqué "
+						.. "pour ceux qui l'ont frappé.", "unlock")
+					pushState(other)
+				end
+			end
+		end
+	end
+end
+
+local function onMission(player: Player, action: unknown, missionId: unknown)
+	if type(action) ~= "string" or type(missionId) ~= "string" then
+		return
+	end
+	local mission = MissionConfig.get(missionId)
+	if not mission then
+		return
+	end
+	-- Les missions se valident par la progression, pas par un bouton : ce
+	-- remote ne sert qu'à afficher le détail côté client.
+	pushState(player)
+end
+
+local function onCosmetic(player: Player, action: unknown, id: unknown)
+	if type(action) ~= "string" or type(id) ~= "string" then
+		return
+	end
+	local ok, message
+	if action == "buy" then
+		ok, message = CosmeticService.obtain(player, id)
+	elseif action == "equip" then
+		ok, message = CosmeticService.equip(player, id)
+	else
+		return
+	end
+	alert(player, message, ok and "cash" or "warn")
+	pushState(player)
+end
+
+local function onEventClaim(player: Player)
+	local ok, message = EventService.claim(player)
+	if ok then
+		alert(player, message .. " — récompense versée.", "cash")
+	else
+		alert(player, message, "warn")
+	end
+	pushState(player)
+end
+
+local function onLeaderboard(player: Player)
+	-- La lecture est en cache côté service : cette demande ne déclenche aucun
+	-- appel DataStore, donc un joueur qui ouvre l'écran en boucle ne coûte rien.
+	send(player, "LeaderboardData", LeaderboardService.view(player))
+end
+
+local function onEndgame(player: Player)
+	send(player, "EndgameData", EndgameService.view(player))
+end
+
+local function onChallenge(player: Player, id: unknown)
+	-- `nil` et la chaîne vide retirent le défi ; tout le reste doit être un
+	-- identifiant connu, et c'est le service qui le vérifie.
+	if id ~= nil and type(id) ~= "string" then
+		return
+	end
+	local ok, message = EndgameService.arm(player, id :: string?)
+	alert(player, message, ok and "unlock" or "warn")
+	onEndgame(player)
+	pushState(player)
+end
+
+local function onContract(player: Player)
+	local ok, message = EndgameService.claimContract(player)
+	alert(player, message, ok and "cash" or "warn")
+	onEndgame(player)
+	pushState(player)
+end
+
+local function onSetting(player: Player, id: unknown, value: unknown)
+	if type(id) ~= "string" or type(value) ~= "boolean" then
+		return
+	end
+	local profile = PlayerDataService.get(player)
+	if not profile then
+		return
+	end
+	-- Un réglage inconnu est refusé : le client ne décide pas de la liste.
+	local known = false
+	for _, entry in ipairs(GameConfig.Ui.Settings) do
+		if entry.Id == id then
+			known = true
+			break
+		end
+	end
+	if not known then
+		return
+	end
+	profile.Settings[id] = value
+	PlayerDataService.markDirty(player)
+	if id == "UiSound" then
+		SoundLib.setUiSound(player, value)
+	end
+	pushState(player)
+end
+
+local function onPurchase(player: Player, productKey: unknown)
+	if type(productKey) ~= "string" then
+		return
+	end
+	if not MonetizationService.prompt(player, productKey) then
+		alert(player, "Ce produit n'est pas encore configuré sur le tableau de bord.", "warn")
+	end
+end
+
+Net.get("RequestClaim").OnServerEvent:Connect(onClaim)
+Net.get("RequestSleep").OnServerEvent:Connect(onSleep)
+Net.get("RequestWake").OnServerEvent:Connect(onWake)
+Net.get("RequestBank").OnServerEvent:Connect(onBank)
+Net.get("RequestBuy").OnServerEvent:Connect(onBuy)
+Net.get("RequestPlace").OnServerEvent:Connect(onPlace)
+Net.get("RequestEnterZone").OnServerEvent:Connect(onEnterZone)
+Net.get("RequestAttack").OnServerEvent:Connect(onAttack)
+Net.get("RequestMission").OnServerEvent:Connect(onMission)
+Net.get("RequestPurchase").OnServerEvent:Connect(onPurchase)
+Net.get("RequestCosmetic").OnServerEvent:Connect(onCosmetic)
+Net.get("RequestEventClaim").OnServerEvent:Connect(onEventClaim)
+Net.get("RequestLeaderboard").OnServerEvent:Connect(onLeaderboard)
+Net.get("RequestSetting").OnServerEvent:Connect(onSetting)
+Net.get("RequestEndgame").OnServerEvent:Connect(onEndgame)
+Net.get("RequestChallenge").OnServerEvent:Connect(onChallenge)
+Net.get("RequestContract").OnServerEvent:Connect(onContract)
+Net.get("RequestRepair").OnServerEvent:Connect(function(player)
+	alert(player, "Les défenses se remplacent à la boutique.", "info")
+end)
+
+-- ── cycle de vie des joueurs ──────────────────────────────────────────────
+Players.PlayerAdded:Connect(function(player)
+	local profile = PlayerDataService.load(player)
+	MissionService.rollPeriods(player)
+	ZoneService.refresh(player)
+	-- Le réglage de son suit le compte : il est appliqué avant le premier son.
+	SoundLib.setUiSound(player, profile.Settings.UiSound ~= false)
+
+	if not profile.Loaded then
+		alert(player, "Tes données n'ont pas pu être chargées. "
+			.. "Rien ne sera écrasé, mais cette session ne sera pas sauvegardée.", "warn")
+	end
+
+	player.CharacterAdded:Connect(function(character)
+		SurvivalService.onCharacterAdded(player, character)
+		CosmeticService.apply(player)
+		task.wait(0.5)
+		pushState(player)
+	end)
+
+	task.wait(1)
+	pushState(player)
+	alert(player, "Trouve un refuge, barricade-le, dors. L'argent vient en survivant.", "info")
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	-- Dans cet ordre : on publie le score pendant que le profil existe encore,
+	-- puis on le libère. L'inverse publierait un classement vide.
+	--
+	-- Sous `pcall`, et ce n'est pas de la superstition : la publication écrit
+	-- dans un DataStore, donc elle cède la main. Si elle levait, la sauvegarde
+	-- du profil juste en dessous ne partirait jamais — on perdrait la partie du
+	-- joueur pour une histoire de classement.
+	pcall(LeaderboardService.publish, player)
+	LeaderboardService.forget(player)
+	EndgameService.cleanup(player)
+	SoundLib.forget(player)
+	PlayerDataService.release(player)
+end)
+
+local built = 0
+for _, zone in ipairs(ZoneConfig.List) do
+	if ZoneLayouts.ById[zone.Id] then
+		built += 1
+	end
+end
+print(("[SLEEP OR DIE] serveur prêt — %d zones construites sur %d, %d missions, "
+	.. "%d documents sur %d, espacement %d studs.")
+	:format(built, #ZoneConfig.List, #MissionConfig.List,
+		documents, #EndgameConfig.Documents, ZoneBuilder.SPACING))
